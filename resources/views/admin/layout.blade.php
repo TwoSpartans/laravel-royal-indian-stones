@@ -13,8 +13,7 @@
 <header class="royal-header shadow-sm">
   <nav class="navbar navbar-expand-lg navbar-dark px-3 py-2">
     <a class="d-flex align-items-center text-decoration-none" href="{{ route('admin.enquiries') }}">
-      <img src="{{ asset('assets/img/royal-indian-stones-logo.png') }}" height="50" alt="Royal Indian Stones" class="me-2 bg-white rounded px-1">
-      <h1 class="brand-title">Royal Indian Stones</h1>
+      <img src="{{ asset('assets/img/royal-indian-stones-logo.png') }}" height="50" alt="Royal Indian Stones" class="bg-white rounded px-1">
     </a>
     <button class="navbar-toggler ms-auto border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminMenu" aria-controls="adminMenu" aria-label="Open menu">
       <span class="navbar-toggler-icon"></span>

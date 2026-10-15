@@ -13,7 +13,7 @@ class ImportCatalogue extends Command
 
     public function handle(CatalogueImporter $importer): int
     {
-        $source = $this->option('source') ?: dirname(base_path()).DIRECTORY_SEPARATOR.'Royal-Indian-Stones';
+        $source = $this->option('source') ?: (string) config('catalogue.source');
         $count = $importer->import($source);
         $this->info("Imported {$count} products from {$source}.");
 

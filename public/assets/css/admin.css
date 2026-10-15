@@ -12,13 +12,6 @@ body {
   z-index: 1030;
 }
 
-.royal-header .brand-title {
-  color: #fff;
-  font-size: 1.35rem;
-  text-decoration: underline;
-  margin: 0;
-}
-
 .royal-header .nav-link-btn {
   border-radius: 0.5rem;
   font-size: 0.85rem;

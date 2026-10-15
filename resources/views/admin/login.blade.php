@@ -11,8 +11,7 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 <header class="container text-center my-4">
-  <img src="{{ asset('assets/img/royal-indian-stones-logo.png') }}" height="80" class="mb-2" alt="Royal Indian Stones">
-  <h1 class="h3 text-uppercase"><u>Royal Indian Stones</u></h1>
+  <h1 class="m-0"><img src="{{ asset('assets/img/royal-indian-stones-logo.png') }}" height="80" alt="Royal Indian Stones"></h1>
 </header>
 <main class="container flex-grow-1 d-flex justify-content-center align-items-center">
   <div class="col-12 col-sm-8 col-md-6 col-lg-5 login-box shadow-sm">

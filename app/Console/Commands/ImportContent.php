@@ -14,7 +14,7 @@ class ImportContent extends Command
 
     public function handle(ContentImporter $importer): int
     {
-        $source = $this->option('source') ?: dirname(base_path()).DIRECTORY_SEPARATOR.'Royal-Indian-Stones';
+        $source = $this->option('source') ?: (string) config('catalogue.source');
         $counts = $importer->import($source);
         $this->info("Imported {$counts['pages']} pages, {$counts['projects']} projects, {$counts['faqs']} FAQs, {$counts['posts']} journal articles, and {$counts['introductions']} category introductions from {$source}.");
         if (AdminAccount::sync()) {
