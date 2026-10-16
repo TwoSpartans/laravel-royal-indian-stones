@@ -51,7 +51,7 @@ class ContentAndAdminTest extends TestCase
             'body' => '<p>Basalt from the Deccan Plateau.</p>',
         ]);
 
-        $this->get('/aboutus')->assertOk()->assertSee('Royal Indian Exports Group');
+        $this->get('/aboutus')->assertOk()->assertSee('A Jodhpur stone house for buildings and landscapes.')->assertSee('Quality checks')->assertSee('How stone is packed');
         $this->get('/aboutus.html')->assertRedirect('/aboutus');
         $this->get('/packaging-type-tiles')->assertOk()->assertSee('wooden crates');
         $this->get('/project-gallery')->assertOk()->assertSee('Discuss a similar project');

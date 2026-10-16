@@ -97,6 +97,14 @@ class SiteController extends Controller
             ]);
         }
 
+        if ($slug === 'aboutus') {
+            return view('about', [
+                'active' => 'about',
+                'title' => 'About Us | Royal Indian Stones',
+                'description' => 'Royal Indian Stones supplies Indian sandstone, limestone, marble, and granite from Jodhpur for buildings and landscapes.',
+            ]);
+        }
+
         $page = Page::query()->where('slug', $slug)->first();
         if ($page) {
             return view('content', [

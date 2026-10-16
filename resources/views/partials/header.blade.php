@@ -1,10 +1,19 @@
 <a class="skip-link" href="#main">Skip to content</a>
-<div id="topbar" class="d-flex align-items-center">
-  <div class="container topbar-inner">
-    <span>Natural stone from India · Export enquiries welcome</span>
-    <div><a href="tel:+918769873114" data-track="phone_click">+91 876 987 3114</a><a href="mailto:info@royalindianstones.com">info@royalindianstones.com</a></div>
+<section id="topbar" class="d-flex align-items-center">
+  <div class="container d-flex justify-content-center justify-content-md-between">
+    <div class="contact-info d-flex align-items-center">
+      <i class="bi bi-envelope d-flex align-items-center"><a href="mailto:info@royalindianstones.com">info@royalindianstones.com</a></i>
+    </div>
+    <div class="social-links d-none d-md-flex align-items-center">
+      <a href="https://www.facebook.com/RoyalIndianStones" target="_blank" rel="noopener noreferrer" class="facebook" title="Facebook" aria-label="Facebook"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+      <a href="https://twitter.com/Indian_Stones" target="_blank" rel="noopener noreferrer" class="twitter" title="Twitter" aria-label="Twitter"><i class="bi bi-twitter" aria-hidden="true"></i></a>
+      <a href="https://www.instagram.com/indianstoneexports" target="_blank" rel="noopener noreferrer" class="instagram" title="Instagram" aria-label="Instagram"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+      <a href="https://www.linkedin.com/company/royal-indian-stones" target="_blank" rel="noopener noreferrer" class="linkedin" title="Linkedin" aria-label="LinkedIn"><i class="bi bi-linkedin" aria-hidden="true"></i></a>
+      <a href="https://in.pinterest.com/royalindianstones" target="_blank" rel="noopener noreferrer" class="pinterest" title="Pinterest" aria-label="Pinterest"><i class="bi bi-pinterest" aria-hidden="true"></i></a>
+      <a href="https://www.youtube.com/@royalindianstones" target="_blank" rel="noopener noreferrer" class="youtube" title="Youtube" aria-label="YouTube"><i class="bi bi-youtube" aria-hidden="true"></i></a>
+    </div>
   </div>
-</div>
+</section>
 <header id="header" class="d-flex align-items-center">
   <div class="container d-flex justify-content-between align-items-center">
     <a class="logo" href="{{ url('/') }}">Royal Indian Stones</a>
@@ -41,8 +50,7 @@
             <li><a href="{{ url('/blog') }}">Journal</a></li>
           </ul>
         </li>
-        <li><a href="{{ route('contact') }}" @class(['active' => ($active ?? '') === 'contact']) @if(($active ?? '') === 'contact') aria-current="page" @endif>Contact</a></li>
-        <li><a class="nav-quote" href="{{ route('contact') }}" data-track="quote_click">Request a Quote</a></li>
+        <li><a href="{{ route('contact') }}" @class(['nav-quote', 'active' => ($active ?? '') === 'contact']) @if(($active ?? '') === 'contact') aria-current="page" @endif data-track="quote_click">Request a Quote</a></li>
       </ul>
       <button class="mobile-nav-toggle bi bi-list" type="button" aria-label="Open navigation" aria-controls="navbar" aria-expanded="false"></button>
     </nav>

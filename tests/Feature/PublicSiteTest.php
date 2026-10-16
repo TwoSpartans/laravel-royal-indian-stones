@@ -39,7 +39,7 @@ class PublicSiteTest extends TestCase
         $this->get('/sandstone-jodhpur-pink')->assertOk()->assertSee('Request a Quote for This Stone');
         $this->get('/sandstone-jodhpur-pink.html')->assertRedirect('/sandstone-jodhpur-pink');
         $this->get('/contact?product=sandstone-jodhpur-pink')->assertOk()->assertSee('Quotation: Jodhpur Pink Sandstone');
-        $this->get('/aboutus')->assertNotFound();
+        $this->get('/aboutus')->assertOk()->assertSee('A Jodhpur stone house for buildings and landscapes.');
     }
 
     public function test_enquiry_is_stored_and_keeps_quote_fields(): void

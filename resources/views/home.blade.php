@@ -52,20 +52,23 @@
       <a class="supplier-quote" href="{{ route('contact') }}" data-track="quote_click">Request a Quote</a>
     </div>
   </section>
-  <section class="home-categories" aria-labelledby="categories-title">
+  <section class="home-categories stone-origin" aria-labelledby="categories-title">
     <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">A material for every project</p><h2 id="categories-title">Explore the collection</h2></div>
-        <a class="text-link" href="{{ url('/products') }}">Search all products <span aria-hidden="true">→</span></a>
+      <div class="stone-origin-copy">
+        <div>
+          <p class="eyebrow">A material for every project</p>
+          <h2 id="categories-title">Explore the collection</h2>
+        </div>
+        <p>Sandstone, limestone, marble, granite, slate and the other stones we cut in India, chosen for floors, walls, roofs and gardens.</p>
       </div>
       <div class="category-grid">
         @foreach($categories as $category)
-          @if($category->slug !== 'stone-applications')
+          @if(! in_array($category->slug, ['stone-applications', 'stone-articles'], true))
             <a class="category-card" href="{{ url('/'.$category->slug) }}">
               @if($category->image)
                 <img src="{{ asset($category->image) }}" alt="{{ $category->name }} stone collection" width="480" height="320" loading="lazy" decoding="async">
               @endif
-              <div><h3>{{ $category->name }}</h3><span aria-hidden="true">↗</span></div>
+              <div><h3>{{ $category->name }}</h3><span aria-hidden="true">→</span></div>
             </a>
           @endif
         @endforeach
