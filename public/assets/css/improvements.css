@@ -103,3 +103,5 @@ img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:point
 #footer .footer-newsletter form input[type=submit]{position:absolute;top:0;right:-4px;bottom:0;border:0;background:#f03c02;color:#fff;font-size:16px;padding:0 20px;border-radius:0 4px 4px 0}
 #footer .social-links a{background:#f03c02;color:#fff;border:0}
 #footer .copyright,#footer .copyright a{color:#b4aca8;font-size:14px}
+@media(min-width:1400px){.container{max-width:1440px}}
+@media(min-width:1600px){.container{max-width:min(1560px,calc(100% - 80px))}}
