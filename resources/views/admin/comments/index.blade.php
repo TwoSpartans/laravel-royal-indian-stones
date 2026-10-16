@@ -1,7 +1,9 @@
 @extends('admin.layout')
 
+@section('pageTitle', 'Comments')
+@section('pageDescription', 'Reader comments waiting for a decision.')
+
 @section('content')
-<h2 class="text-center text-uppercase mb-4">Comments</h2>
 @forelse($comments as $comment)
   <div class="card mb-3 shadow-sm"><div class="card-body row">
     <div class="col-md-4">

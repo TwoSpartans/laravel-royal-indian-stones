@@ -1,7 +1,9 @@
 @extends('admin.layout')
 
+@section('pageTitle', 'Messages')
+@section('pageDescription', 'Enquiries sent from the site.')
+
 @section('content')
-<h2 class="text-center text-uppercase mb-4">Messages</h2>
 @if($enquiries->isEmpty())
   <div class="alert alert-info text-center">No messages found.</div>
 @endif

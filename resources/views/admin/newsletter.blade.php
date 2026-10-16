@@ -1,8 +1,9 @@
 @extends('admin.layout')
 
+@section('pageTitle', 'Newsletter')
+@section('pageDescription', 'Email addresses collected from the site.')
+
 @section('content')
-<h2 class="text-uppercase text-center mb-0">Newsletter (Email Address)</h2>
-<hr>
 <div class="my-4 d-flex justify-content-end">
   <input type="search" id="searchInput" class="form-control admin-search" placeholder="Search email...">
 </div>

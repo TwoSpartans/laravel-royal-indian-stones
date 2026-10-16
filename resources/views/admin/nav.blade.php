@@ -1,15 +1,94 @@
-<ul class="navbar-nav align-items-lg-center gap-2">
-  <li class="nav-item"><a class="btn btn-outline-light text-uppercase nav-link-btn" href="{{ route('admin.enquiries') }}">Message</a></li>
-  <li class="nav-item"><a class="btn btn-outline-light text-uppercase nav-link-btn" href="{{ route('admin.newsletter') }}">Newsletter</a></li>
-  <li class="nav-item"><a class="btn btn-outline-light text-uppercase nav-link-btn" href="{{ route('admin.posts.index') }}">Journal</a></li>
-  <li class="nav-item"><a class="btn btn-outline-light text-uppercase nav-link-btn" href="{{ route('admin.post-categories.index') }}">Category</a></li>
-  <li class="nav-item"><a class="btn btn-outline-light text-uppercase nav-link-btn" href="{{ route('admin.comments.index') }}">Comment</a></li>
-  <li class="nav-item"><a class="btn btn-outline-light text-uppercase nav-link-btn" href="{{ route('admin.products.index') }}">Products</a></li>
-  <li class="nav-item"><a class="btn btn-outline-light text-uppercase nav-link-btn" href="{{ route('admin.outreach.index') }}">Outreach</a></li>
-  <li class="nav-item">
-    <form method="post" action="{{ route('admin.logout') }}">
-      @csrf
-      <button class="btn btn-warning text-dark text-uppercase fw-bold nav-link-btn" type="submit"><i class="bi bi-box-arrow-right me-1"></i> Logout</button>
-    </form>
-  </li>
-</ul>
+@php
+  $messagesActive = request()->routeIs('admin.enquiries', 'admin.enquiries.*');
+  $productsActive = request()->routeIs('admin.products.*');
+  $postsActive = request()->routeIs('admin.posts.*');
+  $categoriesActive = request()->routeIs('admin.post-categories.*');
+  $commentsActive = request()->routeIs('admin.comments.*');
+  $newsletterActive = request()->routeIs('admin.newsletter', 'admin.newsletter.*');
+  $outreachActive = request()->routeIs('admin.outreach.*');
+@endphp
+<nav class="admin-nav" aria-label="Admin navigation">
+  <a href="{{ route('admin.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.dashboard') ? 'is-active' : '' }}" @if(request()->routeIs('admin.dashboard')) aria-current="page" @endif>
+    <i class="bi bi-speedometer2"></i>
+    <span>Dashboard</span>
+  </a>
+
+  <details class="admin-nav-group" open>
+    <summary>
+      <span>Today</span>
+      @if(($pendingCommentCount ?? 0) > 0)
+        <span class="admin-count">{{ $pendingCommentCount > 99 ? '99+' : $pendingCommentCount }}</span>
+      @endif
+      <i class="bi bi-chevron-down"></i>
+    </summary>
+    <div>
+      <a href="{{ route('admin.enquiries') }}" class="admin-nav-link {{ $messagesActive ? 'is-active' : '' }}" @if($messagesActive) aria-current="page" @endif>
+        <i class="bi bi-envelope"></i>
+        <span>Messages</span>
+      </a>
+    </div>
+  </details>
+
+  <details class="admin-nav-group" open>
+    <summary>
+      <span>Catalogue</span>
+      <i class="bi bi-chevron-down"></i>
+    </summary>
+    <div>
+      <a href="{{ route('admin.products.index') }}" class="admin-nav-link {{ $productsActive ? 'is-active' : '' }}" @if($productsActive) aria-current="page" @endif>
+        <i class="bi bi-box-seam"></i>
+        <span>Products</span>
+      </a>
+    </div>
+  </details>
+
+  <details class="admin-nav-group" open>
+    <summary>
+      <span>Content</span>
+      <i class="bi bi-chevron-down"></i>
+    </summary>
+    <div>
+      <a href="{{ route('admin.posts.index') }}" class="admin-nav-link {{ $postsActive ? 'is-active' : '' }}" @if($postsActive) aria-current="page" @endif>
+        <i class="bi bi-journal-text"></i>
+        <span>Journal</span>
+      </a>
+      <a href="{{ route('admin.post-categories.index') }}" class="admin-nav-link {{ $categoriesActive ? 'is-active' : '' }}" @if($categoriesActive) aria-current="page" @endif>
+        <i class="bi bi-tags"></i>
+        <span>Categories</span>
+      </a>
+      <a href="{{ route('admin.comments.index') }}" class="admin-nav-link {{ $commentsActive ? 'is-active' : '' }}" @if($commentsActive) aria-current="page" @endif>
+        <i class="bi bi-chat-left-text"></i>
+        <span>Comments</span>
+        @if(($pendingCommentCount ?? 0) > 0)
+          <span class="admin-count">{{ $pendingCommentCount > 99 ? '99+' : $pendingCommentCount }}</span>
+        @endif
+      </a>
+    </div>
+  </details>
+
+  <details class="admin-nav-group" open>
+    <summary>
+      <span>Customers</span>
+      <i class="bi bi-chevron-down"></i>
+    </summary>
+    <div>
+      <a href="{{ route('admin.newsletter') }}" class="admin-nav-link {{ $newsletterActive ? 'is-active' : '' }}" @if($newsletterActive) aria-current="page" @endif>
+        <i class="bi bi-envelope-paper"></i>
+        <span>Newsletter</span>
+      </a>
+    </div>
+  </details>
+
+  <details class="admin-nav-group" open>
+    <summary>
+      <span>System</span>
+      <i class="bi bi-chevron-down"></i>
+    </summary>
+    <div>
+      <a href="{{ route('admin.outreach.index') }}" class="admin-nav-link {{ $outreachActive ? 'is-active' : '' }}" @if($outreachActive) aria-current="page" @endif>
+        <i class="bi bi-send"></i>
+        <span>Outreach</span>
+      </a>
+    </div>
+  </details>
+</nav>

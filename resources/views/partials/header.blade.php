@@ -7,7 +7,7 @@
 </div>
 <header id="header" class="d-flex align-items-center">
   <div class="container d-flex justify-content-between align-items-center">
-    <a class="logo" href="{{ url('/') }}" aria-label="Royal Indian Stones home"><img src="{{ asset('assets/img/royal-indian-stones-logo.png') }}" alt="Royal Indian Stones" width="350" height="63"></a>
+    <a class="logo" href="{{ url('/') }}">Royal Indian Stones</a>
     <nav id="navbar" class="navbar" aria-label="Main navigation">
       <ul>
         <li><a href="{{ url('/') }}" @class(['active' => ($active ?? '') === 'home']) @if(($active ?? '') === 'home') aria-current="page" @endif>Home</a></li>

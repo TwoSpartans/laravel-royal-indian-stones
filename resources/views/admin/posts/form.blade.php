@@ -1,7 +1,10 @@
 @extends('admin.layout')
 
+@section('pageTitle')
+{{ $post->exists ? 'Edit article' : 'Add article' }}
+@endsection
+
 @section('content')
-<h2 class="text-uppercase mb-4">{{ $post->exists ? 'Edit article' : 'Add article' }}</h2>
 <form method="post" action="{{ $post->exists ? route('admin.posts.update', $post) : route('admin.posts.store') }}" class="card shadow-sm"><div class="card-body">
   @csrf
   @if($post->exists) @method('PUT') @endif

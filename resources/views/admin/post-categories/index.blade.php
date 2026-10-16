@@ -1,7 +1,9 @@
 @extends('admin.layout')
 
+@section('pageTitle', 'Categories')
+@section('pageDescription', 'Groups used by journal articles.')
+
 @section('content')
-<h2 class="text-uppercase text-center">Category</h2>
 <form method="post" action="{{ route('admin.post-categories.store') }}" class="row g-2 justify-content-end my-4">
   @csrf
   <div class="col-md-4"><input class="form-control" name="name" placeholder="New category name" required></div>

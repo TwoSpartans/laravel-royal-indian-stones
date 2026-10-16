@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CommentController as AdminCommentController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
@@ -24,7 +25,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', fn () => redirect()->route('admin.enquiries'));
+    Route::get('/', fn () => redirect()->route('admin.dashboard'));
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/enquiries', [AdminEnquiryController::class, 'index'])->name('enquiries');
     Route::delete('/enquiries/{enquiry}', [AdminEnquiryController::class, 'destroy'])->name('enquiries.destroy');
@@ -44,8 +46,11 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/comments/{comment}/approve', [AdminCommentController::class, 'approve'])->name('comments.approve');
     Route::delete('/comments/{comment}', [AdminCommentController::class, 'destroy'])->name('comments.destroy');
     Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
+    Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');
     Route::get('/products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
+    Route::post('/products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
     Route::get('/outreach', [OutreachController::class, 'index'])->name('outreach.index');
     Route::post('/outreach', [OutreachController::class, 'store'])->name('outreach.store');
     Route::delete('/outreach/{submission}', [OutreachController::class, 'destroy'])->name('outreach.destroy');

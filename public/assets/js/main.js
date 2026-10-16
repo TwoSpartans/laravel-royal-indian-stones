@@ -140,14 +140,90 @@
   /**
    * Hero carousel indicators
    */
-  let heroCarouselIndicators = select("#hero-carousel-indicators")
-  let heroCarouselItems = select('#heroCarousel .carousel-item', true)
+  const heroCarouselIndicators = select("#hero-carousel-indicators")
+  const heroCarouselItems = select('#heroCarousel .carousel-item', true)
+  const heroCarousel = select('#heroCarousel')
 
-  heroCarouselItems.forEach((item, index) => {
-    (index === 0) ?
-    heroCarouselIndicators.innerHTML += "<li data-bs-target='#heroCarousel' data-bs-slide-to='" + index + "' class='active'></li>":
-      heroCarouselIndicators.innerHTML += "<li data-bs-target='#heroCarousel' data-bs-slide-to='" + index + "'></li>"
-  });
+  if (heroCarousel && heroCarouselIndicators) {
+    heroCarouselItems.forEach((item, index) => {
+      const indicator = document.createElement('button')
+      indicator.type = 'button'
+      indicator.setAttribute('data-bs-target', '#heroCarousel')
+      indicator.setAttribute('data-bs-slide-to', String(index))
+      indicator.setAttribute('aria-label', 'Show slide ' + (index + 1))
+      if (index === 0) {
+        indicator.classList.add('active')
+        indicator.setAttribute('aria-current', 'true')
+      }
+      heroCarouselIndicators.append(indicator)
+    })
+
+    heroCarousel.addEventListener('slid.bs.carousel', () => {
+      heroCarouselIndicators.querySelectorAll('button').forEach((indicator) => {
+        if (indicator.classList.contains('active')) {
+          indicator.setAttribute('aria-current', 'true')
+        } else {
+          indicator.removeAttribute('aria-current')
+        }
+      })
+      if (heroCanAdvance()) {
+        restartHeroMotion()
+      }
+    })
+
+    const narrowQuery = window.matchMedia('(max-width: 767px)')
+    const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let slideChosen = false
+    const heroCarouselInstance = () => bootstrap.Carousel.getOrCreateInstance(heroCarousel)
+    const heroCanAdvance = () => false
+    const restartHeroMotion = () => {
+      heroCarousel.classList.remove('is-advancing')
+      void heroCarousel.offsetWidth
+      heroCarousel.classList.add('is-advancing')
+    }
+    const holdHero = () => {
+      heroCarousel.classList.add('is-held')
+      heroCarouselInstance().pause()
+    }
+    const releaseHero = () => {
+      if (!heroCanAdvance()) {
+        holdHero()
+        return
+      }
+      heroCarousel.classList.remove('is-held')
+      restartHeroMotion()
+      heroCarouselInstance().cycle()
+    }
+
+    heroCarousel.addEventListener('mouseenter', holdHero)
+    heroCarousel.addEventListener('mouseleave', releaseHero)
+    heroCarousel.addEventListener('focusin', holdHero)
+    heroCarousel.addEventListener('focusout', (event) => {
+      if (!heroCarousel.contains(event.relatedTarget)) {
+        releaseHero()
+      }
+    })
+    heroCarousel.addEventListener('click', (event) => {
+      if (event.target.closest('[data-bs-slide], [data-bs-slide-to]')) {
+        slideChosen = true
+        holdHero()
+      }
+    })
+    narrowQuery.addEventListener('change', releaseHero)
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (heroCanAdvance()) {
+        restartHeroMotion()
+      } else {
+        holdHero()
+      }
+    })
+    window.addEventListener('load', () => {
+      if (!heroCanAdvance()) {
+        holdHero()
+      }
+    })
+  }
 
   /**
    * Skills animation

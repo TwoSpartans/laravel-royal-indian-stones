@@ -1,10 +1,12 @@
 @extends('admin.layout')
 
+@section('pageTitle', 'Journal')
+@section('pageDescription', 'Articles published on the site.')
+@section('pageActions')
+  <a class="admin-primary-btn" href="{{ route('admin.posts.create') }}"><i class="bi bi-plus-lg"></i> Add article</a>
+@endsection
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="text-uppercase mb-0">Journal</h2>
-  <a class="btn btn-dark text-warning" href="{{ route('admin.posts.create') }}"><i class="bi bi-plus-square me-1"></i> Add article</a>
-</div>
 <div class="table-responsive shadow-sm rounded">
   <table class="table table-bordered table-striped align-middle">
     <thead class="table-dark"><tr><th>Title</th><th>Category</th><th>Date</th><th></th></tr></thead>

@@ -41,9 +41,13 @@
     }
   }
   const contact = document.getElementById('contact_form');
+  const homeEnquiry = document.getElementById('home_enquiry_form');
+  const bindEnquiry = (form, statusId) => {
+    form.addEventListener('submit', e => {e.preventDefault();postForm(form,document.getElementById(statusId),'enquiry');});
+    form.addEventListener('input', function started() {track('enquiry_start',{product_id:document.body.dataset.enquiryProduct || ''});form.removeEventListener('input',started);});
+  };
   if(contact) {
-    contact.addEventListener('submit', e => {e.preventDefault();postForm(contact,document.getElementById('contact_status'),'enquiry');});
-    contact.addEventListener('input', function started() {track('enquiry_start',{product_id:document.body.dataset.enquiryProduct || ''});contact.removeEventListener('input',started);});
+    bindEnquiry(contact,'contact_status');
     const params = new URLSearchParams(location.search), productId = params.get('product'), project = params.get('project');
     if(project && project.length <= 180) document.getElementById('subject').value='Project enquiry: '+project;
     if(productId && /^[a-z0-9-]+$/i.test(productId)) {
@@ -54,6 +58,7 @@
       }).catch(()=>{document.getElementById('contact_status').textContent='Please enter the stone name in your enquiry; product details could not be loaded.';});
     }
   }
+  if(homeEnquiry) bindEnquiry(homeEnquiry,'home_enquiry_status');
   const newsletter=document.getElementById('newsletter_form');
   if(newsletter) newsletter.addEventListener('submit', e=>{e.preventDefault();postForm(newsletter,document.getElementById('email_address_status'),'subscription');});
 })();

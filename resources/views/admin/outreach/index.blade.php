@@ -1,7 +1,9 @@
 @extends('admin.layout')
 
+@section('pageTitle', 'Outreach')
+@section('pageDescription', 'Directories and sites where the catalogue is listed.')
+
 @section('content')
-<h2 class="text-uppercase text-center mb-4">Outreach</h2>
 <form method="post" action="{{ route('admin.outreach.store') }}" class="card shadow-sm mb-4"><div class="card-body row g-3">
   @csrf
   <div class="col-md-3"><label class="form-label" for="type">Type</label>
