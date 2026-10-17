@@ -13,4 +13,14 @@ class Category extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function searchDescription(): string
+    {
+        $summary = trim((string) $this->description);
+        if ($summary !== '') {
+            return $summary;
+        }
+
+        return 'Browse the '.$this->name.' collection from Royal Indian Stones.';
+    }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -83,5 +83,69 @@ class Product extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('is_published', true);
+    }
+
+    public function searchTitle(): string
+    {
+        $stored = trim((string) $this->meta_title);
+        if ($stored !== ''
+            && mb_strlen($stored) <= 70
+            && mb_strtolower($stored) !== mb_strtolower($this->name)
+            && ! $this->titleRepeatsTradeWords($stored)) {
+            return $stored;
+        }
+
+        return $this->name.' | Royal Indian Stones';
+    }
+
+    public function searchDescription(): string
+    {
+        $stored = trim((string) $this->meta_description);
+        if ($stored !== '' && mb_strlen($stored) >= 50) {
+            return $stored;
+        }
+
+        $sentence = $this->name;
+        $material = trim((string) $this->category?->name);
+        if ($material !== '') {
+            $sentence .= ' is '.$this->indefiniteArticle($material).' '.mb_strtolower($material);
+        }
+        if (trim((string) $this->color) !== '') {
+            $sentence .= ' in '.$this->color;
+        }
+        $sentence .= ' from Royal Indian Stones';
+
+        $finish = $this->finishes[0] ?? null;
+        if (is_string($finish) && trim($finish) !== '') {
+            $sentence .= ', supplied with a '.mb_strtolower(trim($finish)).' finish';
+        }
+
+        $uses = array_values(array_filter(
+            $this->applications ?? [],
+            fn (mixed $use): bool => is_string($use) && trim($use) !== '',
+        ));
+        if ($uses !== []) {
+            $sentence .= ', for '.implode(', ', array_slice($uses, 0, 3));
+        }
+
+        return $sentence.'.';
+    }
+
+    private function titleRepeatsTradeWords(string $title): bool
+    {
+        $hits = 0;
+        $lower = mb_strtolower($title);
+        foreach (['manufacturer', 'supplier', 'exporter', 'wholesaler', 'trader'] as $word) {
+            if (str_contains($lower, $word)) {
+                $hits++;
+            }
+        }
+
+        return $hits >= 2;
+    }
+
+    private function indefiniteArticle(string $word): string
+    {
+        return in_array(mb_strtolower(mb_substr($word, 0, 1)), ['a', 'e', 'i', 'o', 'u'], true) ? 'an' : 'a';
     }
 }

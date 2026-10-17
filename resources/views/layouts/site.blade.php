@@ -8,9 +8,36 @@
 <meta name="description" content="{{ $description }}">
 @endif
 <link rel="canonical" href="{{ url()->current() }}">
+<meta property="og:title" content="{{ $title ?? 'Royal Indian Stones' }}">
+@if(!empty($description))
+<meta property="og:description" content="{{ $description }}">
+@endif
+<meta property="og:url" content="{{ url()->current() }}">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{{ $shareImage ?? asset('assets/img/slide/slide-1.jpg') }}">
+<meta property="og:site_name" content="Royal Indian Stones">
+@php
+    $organization = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => 'Royal Indian Stones',
+        'url' => url('/'),
+        'email' => 'info@royalindianstones.com',
+        'telephone' => '+91-876-987-3114',
+        'address' => [
+            '@type' => 'PostalAddress',
+            'streetAddress' => 'Rajpurohit Bhawan, Plot-17, Golf Course Road, Air Force',
+            'addressLocality' => 'Jodhpur',
+            'postalCode' => '342011',
+            'addressRegion' => 'Rajasthan',
+            'addressCountry' => 'IN',
+        ],
+    ];
+@endphp
+<script type="application/ld+json">{!! json_encode($organization, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
 <link href="{{ asset('assets/img/favicon.png') }}" rel="icon">
 <link href="{{ asset('assets/img/apple-touch-icon.png') }}" rel="apple-touch-icon">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="{{ asset('assets/vendor/animate.css/animate.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/aos/aos.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
@@ -19,7 +46,7 @@
 <link href="{{ asset('assets/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/css/style.css') }}?v=2" rel="stylesheet">
-<link href="{{ asset('assets/css/improvements.css') }}?v=26" rel="stylesheet">
+<link href="{{ asset('assets/css/improvements.css') }}?v=40" rel="stylesheet">
 @stack('head')
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-PX68BW5FMP"></script>
 <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-PX68BW5FMP');</script>
@@ -36,7 +63,7 @@
 <script src="{{ asset('assets/vendor/swiper/swiper-bundle.min.js') }}"></script>
 <script src="{{ asset('assets/vendor/waypoints/noframework.waypoints.js') }}"></script>
 <script src="{{ asset('assets/js/ajax_jquery.js') }}"></script>
-<script src="{{ asset('assets/js/main.js') }}?v=5"></script>
+<script src="{{ asset('assets/js/main.js') }}?v=7"></script>
 <script src="{{ asset('assets/js/site.js') }}?v=1" defer></script>
 @stack('scripts')
 </body>

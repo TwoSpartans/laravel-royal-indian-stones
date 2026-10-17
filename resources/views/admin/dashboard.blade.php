@@ -18,7 +18,7 @@
   <a class="admin-stat" href="{{ route('admin.posts.index') }}">
     <span class="admin-stat-icon is-orange"><i class="bi bi-journal-text"></i></span>
     <span class="admin-stat-value">{{ $postCount }}</span>
-    <span class="admin-stat-label">Journal posts</span>
+    <span class="admin-stat-label">Blog posts</span>
   </a>
   <a class="admin-stat" href="{{ route('admin.newsletter') }}">
     <span class="admin-stat-icon is-green"><i class="bi bi-envelope-paper"></i></span>
@@ -76,7 +76,7 @@
 
   <section class="admin-panel">
     <div class="admin-panel-head">
-      <h2>Journal</h2>
+      <h2>Blog</h2>
       <a href="{{ route('admin.posts.index') }}">View all</a>
     </div>
     <div class="admin-list">

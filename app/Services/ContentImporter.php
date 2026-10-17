@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Category;
 use App\Models\Faq;
 use App\Models\Page;
 use App\Models\Post;
@@ -59,15 +60,15 @@ class ContentImporter
     public function importCategoryIntroductions(string $source): int
     {
         $count = 0;
-        foreach (\App\Models\Category::query()->get() as $category) {
+        foreach (Category::query()->get() as $category) {
             $document = $this->document($source.DIRECTORY_SEPARATOR.$category->slug.'.html');
             if ($document === null) {
                 continue;
             }
             [, $xpath] = $document;
             $section = $this->first($xpath, "//*[contains(concat(' ', normalize-space(@class), ' '), ' section-title ')]");
-            $paragraph = $section instanceof \DOMElement ? $this->first($xpath, './/p', $section) : null;
-            $introduction = $paragraph instanceof \DOMElement ? $this->clean($paragraph->textContent) : '';
+            $paragraph = $section instanceof DOMElement ? $this->first($xpath, './/p', $section) : null;
+            $introduction = $paragraph instanceof DOMElement ? $this->clean($paragraph->textContent) : '';
             if ($introduction === '') {
                 continue;
             }
@@ -193,13 +194,13 @@ class ContentImporter
             if (! str_starts_with($file, 'blog-') || ! str_ends_with($file, '.html')) {
                 continue;
             }
-            $slug = substr($file, 0, -5);
+            $slug = str_replace(' ', '-', substr($file, 0, -5));
             $document = $this->document($source.DIRECTORY_SEPARATOR.$file);
             if ($document === null) {
                 continue;
             }
             [$dom, $xpath] = $document;
-            $article = $this->first($xpath, "//article");
+            $article = $this->first($xpath, '//article');
             $content = $this->first($xpath, "//*[contains(concat(' ', normalize-space(@class), ' '), ' entry-content ')]");
             if (! $content instanceof DOMElement) {
                 continue;
@@ -293,7 +294,7 @@ class ContentImporter
         if ($html === false || $html === '') {
             return null;
         }
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $previous = libxml_use_internal_errors(true);
         $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_NOERROR | LIBXML_NOWARNING);
         libxml_clear_errors();

@@ -64,11 +64,16 @@
       <div class="category-grid">
         @foreach($categories as $category)
           @if(! in_array($category->slug, ['stone-applications', 'stone-articles'], true))
-            <a class="category-card" href="{{ url('/'.$category->slug) }}">
+            <a class="catalogue-card" href="{{ url('/'.$category->slug) }}">
               @if($category->image)
-                <img src="{{ asset($category->image) }}" alt="{{ $category->name }} stone collection" width="480" height="320" loading="lazy" decoding="async">
+                <img src="{{ asset($category->image) }}" alt="{{ $category->name }} stone collection" width="640" height="480" loading="lazy" decoding="async">
               @endif
-              <div><h3>{{ $category->name }}</h3><span aria-hidden="true">→</span></div>
+              <div class="catalogue-card-body">
+                <div class="catalogue-card-title">
+                  <h3>{{ $category->name }}</h3>
+                  <span class="text-link">View collection →</span>
+                </div>
+              </div>
             </a>
           @endif
         @endforeach
@@ -83,14 +88,20 @@
       </div>
       <div class="featured-grid">
         @foreach($featured as $product)
-          <a class="featured-card" href="{{ url('/'.$product->slug) }}" data-track="product_view" data-product="{{ $product->slug }}">
+          <a class="catalogue-card" href="{{ url('/'.$product->slug) }}" data-track="product_view" data-product="{{ $product->slug }}">
             @if($image = $product->catalogueImage())
-              <img src="{{ asset($image->path) }}" alt="{{ $product->name }}" width="800" height="560" loading="lazy" decoding="async">
+              <img src="{{ asset($image->path) }}" alt="{{ $product->name }}" width="{{ $image->width ?: 800 }}" height="{{ $image->height ?: 600 }}" loading="lazy" decoding="async" @if($image->srcset) srcset="{{ $image->srcset }}" sizes="(max-width: 767px) 100vw, 33vw" @endif>
             @endif
-            <div>
+            <div class="catalogue-card-body">
               <p class="eyebrow">{{ $product->category?->name }}</p>
-              <h3>{{ $product->name }}</h3>
-              <span class="text-link">View specifications →</span>
+              <div class="catalogue-card-title">
+                <h3>{{ $product->name }}</h3>
+                <span class="text-link">View stone →</span>
+              </div>
+              @php $featuredDetail = collect([$product->color, ...($product->finishes ?? [])])->filter()->take(3)->implode(' · '); @endphp
+              @if($featuredDetail !== '')
+                <p class="catalogue-card-detail">{{ $featuredDetail }}</p>
+              @endif
             </div>
           </a>
         @endforeach
@@ -131,12 +142,17 @@
           ['name' => 'Stone Pier Cap', 'slug' => 'index-stone-pier-cap', 'image' => 'assets/img/optimized/26ed9ec6ab715a3f-800.webp'],
           ['name' => 'Stone Roof Tile', 'slug' => 'index-stone-roof-tile', 'image' => 'assets/img/optimized/9d56fc85bb11ee41-800.webp'],
           ['name' => 'Natural Monolith Stone', 'slug' => 'index-stone-monolith', 'image' => 'assets/img/products/index/monolith-stone/indian-slate-stone-natural-monoliths.jpg'],
-          ['name' => 'Natural Stone Veneer', 'slug' => 'index-stone-veneer', 'image' => 'assets/img/optimized/a94e2016d80aa6c8-800.webp', 'wide' => true],
-          ['name' => 'Natural Stone Mosaic', 'slug' => 'index-stone-mosaic', 'image' => 'assets/img/optimized/1b160e9473f1bb7e-800.webp', 'wide' => true],
+          ['name' => 'Natural Stone Veneer', 'slug' => 'index-stone-veneer', 'image' => 'assets/img/optimized/a94e2016d80aa6c8-800.webp'],
+          ['name' => 'Natural Stone Mosaic', 'slug' => 'index-stone-mosaic', 'image' => 'assets/img/optimized/1b160e9473f1bb7e-800.webp'],
         ] as $product)
-          <a class="category-card{{ !empty($product['wide']) ? ' is-wide' : '' }}" href="{{ url('/'.$product['slug']) }}">
-            <img src="{{ asset($product['image']) }}" alt="{{ $product['name'] }}" width="800" height="560" loading="lazy" decoding="async">
-            <div><h3>{{ $product['name'] }}</h3><span aria-hidden="true">→</span></div>
+          <a class="catalogue-card" href="{{ url('/'.$product['slug']) }}">
+            <img src="{{ asset($product['image']) }}" alt="{{ $product['name'] }}" width="800" height="600" loading="lazy" decoding="async">
+            <div class="catalogue-card-body">
+              <div class="catalogue-card-title">
+                <h3>{{ $product['name'] }}</h3>
+                <span class="text-link">View stone →</span>
+              </div>
+            </div>
           </a>
         @endforeach
       </div>

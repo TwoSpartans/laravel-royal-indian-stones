@@ -8,7 +8,7 @@
         <h2>{{ $post->title }}</h2>
         <ol>
           <li><a href="{{ url('/') }}">Home</a></li>
-          <li><a href="{{ url('/blog') }}">Journal</a></li>
+          <li><a href="{{ url('/blog') }}">Blog</a></li>
           <li>{{ $post->title }}</li>
         </ol>
       </div>

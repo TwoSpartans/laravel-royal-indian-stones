@@ -32,7 +32,7 @@ class PostController extends Controller
     {
         Post::query()->create($this->validated($request));
 
-        return redirect()->route('admin.posts.index')->with('status', 'Journal article saved.');
+        return redirect()->route('admin.posts.index')->with('status', 'Blog article saved.');
     }
 
     public function edit(Post $post): View
@@ -47,14 +47,14 @@ class PostController extends Controller
     {
         $post->update($this->validated($request, $post));
 
-        return redirect()->route('admin.posts.index')->with('status', 'Journal article updated.');
+        return redirect()->route('admin.posts.index')->with('status', 'Blog article updated.');
     }
 
     public function destroy(Post $post): RedirectResponse
     {
         $post->delete();
 
-        return redirect()->route('admin.posts.index')->with('status', 'Journal article deleted.');
+        return redirect()->route('admin.posts.index')->with('status', 'Blog article deleted.');
     }
 
     /**

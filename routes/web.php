@@ -17,14 +17,15 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SitemapXmlController;
+use App\Http\Middleware\NoindexAdminResponses;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
+Route::middleware([NoindexAdminResponses::class, 'guest'])->group(function () {
     Route::get('/admin/login', [LoginController::class, 'create'])->name('admin.login');
     Route::post('/admin/login', [LoginController::class, 'store'])->name('admin.login.store');
 });
 
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+Route::middleware([NoindexAdminResponses::class, 'auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('admin.dashboard'));
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
@@ -65,6 +66,13 @@ Route::get('/sitemap.xml', SitemapXmlController::class)->name('sitemap.xml');
 Route::post('/{slug}/comments', [CommentController::class, 'store'])->where('slug', '[A-Za-z0-9_-]+')->name('comments.store');
 
 Route::redirect('/index.html', '/', 301);
+Route::redirect('/index', '/', 301);
+Route::redirect('/about', '/aboutus', 301);
+Route::redirect(
+    '/blog-the-tranquil-beauty-and-creative-applications of-natural-pebbles-240204',
+    '/blog-the-tranquil-beauty-and-creative-applications-of-natural-pebbles-240204',
+    301,
+);
 Route::get('/{slug}.html', function (string $slug) {
     return redirect('/'.$slug, 301);
 })->where('slug', '[A-Za-z0-9_-]+');

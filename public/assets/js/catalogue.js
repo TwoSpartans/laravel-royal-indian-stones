@@ -12,7 +12,9 @@
     const material=document.createElement('p');material.className='eyebrow';material.textContent=product.category;
     const title=document.createElement('h2');title.textContent=product.name;
     const detail=document.createElement('p');detail.className='catalogue-card-detail';detail.textContent=[product.color,...product.finishes.slice(0,2)].filter(Boolean).join(' · ');
-    const cta=document.createElement('span');cta.className='text-link';cta.textContent='View stone →';body.append(material,title,detail,cta);link.append(body);return link;
+    const cta=document.createElement('span');cta.className='text-link';cta.textContent='View stone →';
+    const heading=document.createElement('div');heading.className='catalogue-card-title';heading.append(title,cta);
+    body.append(material,heading,detail);link.append(body);return link;
   }
   function paint() {
     results.replaceChildren(...matches.slice(0,limit).map(card));results.setAttribute('aria-busy','false');count.textContent=`${matches.length} ${matches.length===1?'product':'products'} found · showing ${Math.min(limit,matches.length)}`;empty.hidden=matches.length!==0;more.hidden=matches.length<=limit;

@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\CanonicalPublicUrl;
 use App\Models\Category;
 use App\Models\Enquiry;
 use App\Models\NewsletterSubscriber;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class PublicSiteTest extends TestCase
@@ -29,17 +31,90 @@ class PublicSiteTest extends TestCase
             'finishes' => ['Honed'],
             'applications' => ['Paving'],
             'summary' => 'A pink sandstone from Jodhpur.',
-            'detail' => 'Used for paving and wall cladding.',
+            'detail' => 'Used for paving and wall cladding. It is also cut for garden steps. The colour stays even across a large floor.',
             'application' => 'Flooring and paving.',
         ]);
         $product->specs()->create(['label' => 'Origin', 'value' => 'India', 'position' => 0]);
 
         $this->get('/products')->assertOk()->assertSee('Find the stone for your project');
         $this->get('/sandstone')->assertOk()->assertSee('Jodhpur Pink Sandstone');
-        $this->get('/sandstone-jodhpur-pink')->assertOk()->assertSee('Request a Quote for This Stone');
+        $this->get('/sandstone-jodhpur-pink')
+            ->assertOk()
+            ->assertSee('Request a Quote for This Stone')
+            ->assertSee('About this stone')
+            ->assertSee('Where it is used')
+            ->assertDontSee('Relevant Products');
         $this->get('/sandstone-jodhpur-pink.html')->assertRedirect('/sandstone-jodhpur-pink');
         $this->get('/contact?product=sandstone-jodhpur-pink')->assertOk()->assertSee('Quotation: Jodhpur Pink Sandstone');
         $this->get('/aboutus')->assertOk()->assertSee('A Jodhpur stone house for buildings and landscapes.');
+    }
+
+    public function test_public_addresses_canonicalize_and_search_text_stays_specific(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Sandstone',
+            'slug' => 'sandstone',
+            'description' => 'Indian sandstone for paving, cladding, and steps.',
+            'introduction' => 'The Royal Indian Stones company exports a very long sandstone introduction.',
+            'position' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Mint Sandstone',
+            'slug' => 'sandstone-mint',
+            'color' => 'Green',
+            'finishes' => ['Natural'],
+            'applications' => ['Paving', 'Cladding'],
+            'summary' => 'Mint sandstone.',
+            'meta_title' => 'Mint Sandstone, Manufacturer, Supplier, Exporter, Wholesaler from India',
+            'meta_description' => 'Mint Sandstone',
+            'is_published' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Raj Green Sandstone',
+            'slug' => 'sandstone-raj-green',
+            'color' => 'Green',
+            'finishes' => ['Natural'],
+            'applications' => ['Paving'],
+            'summary' => 'Raj green sandstone.',
+            'meta_title' => 'Raj Green Sandstone',
+            'meta_description' => 'A green sandstone used for paving and cladding around courtyards.',
+            'is_published' => true,
+        ]);
+
+        $trailingSlash = app(CanonicalPublicUrl::class)->handle(
+            Request::create('http://localhost/sandstone/', 'GET'),
+            fn () => response('ok'),
+        );
+        $this->assertSame(301, $trailingSlash->getStatusCode());
+        $this->assertSame(rtrim((string) config('app.url'), '/').'/sandstone', $trailingSlash->headers->get('Location'));
+        $this->get('/SANDSTONE')->assertStatus(301)->assertRedirect('/sandstone');
+        $this->get('/Sandstone-Mint')->assertStatus(301)->assertRedirect('/sandstone-mint');
+        $this->get('/FAQ')->assertStatus(301)->assertRedirect('/faq');
+        $this->get('/sandstone')
+            ->assertOk()
+            ->assertSee('<meta name="description" content="Indian sandstone for paving, cladding, and steps.">', false)
+            ->assertSee('The Royal Indian Stones company exports a very long sandstone introduction.');
+        $this->get('/sandstone-mint')
+            ->assertOk()
+            ->assertSee('<title>Mint Sandstone | Royal Indian Stones</title>', false)
+            ->assertSee('Mint Sandstone is a sandstone in Green from Royal Indian Stones', false)
+            ->assertDontSee('Wholesaler')
+            ->assertDontSee('"@type":"Product"', false);
+        $this->get('/sandstone-raj-green')
+            ->assertOk()
+            ->assertSee('<title>Raj Green Sandstone | Royal Indian Stones</title>', false);
+        $this->get('/')->assertOk()->assertSee('<title>Indian natural stone | Royal Indian Stones</title>', false);
+        $this->get('/contact')->assertOk()->assertSee('Let’s find your stone | Royal Indian Stones', false);
+        $this->get('/sitemap.xml')->assertOk()->assertSee('<lastmod>', false);
+        $this->get('/admin/login')->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
+        $this->get('/admin/dashboard')->assertRedirect('/admin/login')->assertHeader('X-Robots-Tag', 'noindex');
+
+        $robots = file_get_contents(public_path('robots.txt'));
+        $this->assertIsString($robots);
+        $this->assertStringNotContainsString('Disallow: /admin', $robots);
+        $this->assertStringContainsString('Sitemap: https://www.royalindianstones.com/sitemap.xml', $robots);
     }
 
     public function test_enquiry_is_stored_and_keeps_quote_fields(): void

@@ -9,42 +9,78 @@ use App\Models\Post;
 use App\Models\Product;
 use App\Models\Project;
 use App\Support\LaterPages;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class SiteController extends Controller
 {
-    public function show(string $slug): View
+    /**
+     * @var list<string>
+     */
+    private const RESERVED_SLUGS = [
+        'natural-stones-of-india',
+        'sitemap',
+        'project-gallery',
+        'faq',
+        'blog',
+        'aboutus',
+    ];
+
+    public function show(string $slug): View|RedirectResponse
     {
-        $product = Product::query()->published()->with(['category', 'specs', 'images'])->where('slug', $slug)->first();
-        if ($product) {
+        foreach (self::RESERVED_SLUGS as $canonical) {
+            if ($slug !== $canonical && strcasecmp($slug, $canonical) === 0) {
+                return redirect('/'.$canonical, 301);
+            }
+        }
+
+        $product = $this->findBySlug(
+            Product::query()->published()->with(['category', 'specs', 'images']),
+            $slug,
+        );
+        if ($product instanceof Product) {
+            if ($product->slug !== $slug) {
+                return redirect('/'.$product->slug, 301);
+            }
+
             $related = Product::query()
                 ->published()
                 ->with('images')
                 ->where('category_id', $product->category_id)
                 ->whereKeyNot($product->id)
                 ->orderBy('name')
-                ->limit(3)
+                ->limit(12)
                 ->get();
+            $image = $product->catalogueImage();
 
             return view('product', [
                 'product' => $product,
                 'related' => $related,
                 'active' => 'products',
                 'productId' => $product->slug,
-                'title' => $product->meta_title ?: $product->name.' | Royal Indian Stones',
-                'description' => $product->meta_description ?: $product->summary,
+                'title' => $product->searchTitle(),
+                'description' => $product->searchDescription(),
+                'shareImage' => $image ? asset($image->path) : null,
                 'productSchema' => $this->productSchema($product),
             ]);
         }
 
-        $category = Category::query()->where('slug', $slug)->first();
-        if ($category) {
+        $category = $this->findBySlug(Category::query(), $slug);
+        if ($category instanceof Category) {
+            if ($category->slug !== $slug) {
+                return redirect('/'.$category->slug, 301);
+            }
+
             return view('category', [
                 'category' => $category,
                 'products' => $category->products()->published()->with('images')->orderBy('name')->get(),
                 'active' => 'products',
                 'title' => $category->name.' | Royal Indian Stones',
-                'description' => $category->introduction ?: ($category->description ?: 'Browse the '.$category->name.' collection from Royal Indian Stones.'),
+                'description' => $category->searchDescription(),
+                'shareImage' => $category->image ? asset($category->image) : null,
             ]);
         }
 
@@ -58,10 +94,16 @@ class SiteController extends Controller
         }
 
         if ($slug === 'sitemap') {
+            $pages = Page::query()->orderBy('title')->get();
+            $pageGroups = $this->sitemapPageGroups($pages);
+            $featuredPages = $this->featuredSitemapPages();
+
             return view('sitemap', [
+                'featuredPages' => $featuredPages,
+                'pageGroups' => $pageGroups,
+                'pageCount' => count($featuredPages) + collect($pageGroups)->sum(fn (array $links): int => count($links)),
                 'categories' => Category::query()->orderBy('position')->get(),
-                'products' => Product::query()->published()->with('category')->orderBy('name')->get(),
-                'pages' => Page::query()->orderBy('title')->get(),
+                'productsByCategory' => Product::query()->published()->orderBy('name')->get()->groupBy('category_id'),
                 'posts' => Post::query()->orderByDesc('published_on')->orderBy('title')->get(),
                 'active' => '',
                 'title' => 'Sitemap | Royal Indian Stones',
@@ -92,7 +134,7 @@ class SiteController extends Controller
             return view('journal', [
                 'posts' => Post::query()->with('postCategory')->orderByDesc('published_on')->orderBy('title')->get(),
                 'active' => 'resources',
-                'title' => 'Journal | Royal Indian Stones',
+                'title' => 'Blog | Royal Indian Stones',
                 'description' => 'Notes on Indian sandstone, granite, marble, slate, and other natural stones.',
             ]);
         }
@@ -100,28 +142,41 @@ class SiteController extends Controller
         if ($slug === 'aboutus') {
             return view('about', [
                 'active' => 'about',
-                'title' => 'About Us | Royal Indian Stones',
+                'title' => 'A Jodhpur stone house for buildings and landscapes | Royal Indian Stones',
                 'description' => 'Royal Indian Stones supplies Indian sandstone, limestone, marble, and granite from Jodhpur for buildings and landscapes.',
+                'shareImage' => asset('assets/img/about.jpg'),
             ]);
         }
 
-        $page = Page::query()->where('slug', $slug)->first();
-        if ($page) {
+        $page = $this->findBySlug(Page::query(), $slug);
+        if ($page instanceof Page) {
+            if ($page->slug !== $slug) {
+                return redirect('/'.$page->slug, 301);
+            }
+
             return view('content', [
                 'page' => $page,
                 'active' => $page->nav_group,
-                'title' => $page->title.' | Royal Indian Stones',
+                'title' => $this->readablePageTitle($page->title).' | Royal Indian Stones',
                 'description' => $page->meta_description ?: $page->title.' from Royal Indian Stones.',
             ]);
         }
 
-        $post = Post::query()->with(['postCategory', 'comments' => fn ($query) => $query->where('approved', true)->latest()])->where('slug', $slug)->first();
-        if ($post) {
+        $post = $this->findBySlug(
+            Post::query()->with(['postCategory', 'comments' => fn ($query) => $query->where('approved', true)->latest()]),
+            $slug,
+        );
+        if ($post instanceof Post) {
+            if ($post->slug !== $slug) {
+                return redirect('/'.$post->slug, 301);
+            }
+
             return view('post', [
                 'post' => $post,
                 'active' => 'resources',
                 'title' => $post->title.' | Royal Indian Stones',
                 'description' => $post->meta_description ?: $post->summary,
+                'shareImage' => $post->image ? asset($post->image) : null,
                 'articleSchema' => $this->articleSchema($post),
             ]);
         }
@@ -138,11 +193,103 @@ class SiteController extends Controller
     }
 
     /**
+     * @param  Builder<Model>  $query
+     */
+    private function findBySlug(Builder $query, string $slug): ?Model
+    {
+        $match = (clone $query)->where('slug', $slug)->first();
+        if ($match instanceof Model || $slug === strtolower($slug)) {
+            return $match;
+        }
+
+        return (clone $query)->whereRaw('lower(slug) = ?', [strtolower($slug)])->first();
+    }
+
+    /**
+     * @return list<array{label: string, url: string}>
+     */
+    private function featuredSitemapPages(): array
+    {
+        return [
+            ['label' => 'Home', 'url' => url('/')],
+            ['label' => 'Find your stone', 'url' => url('/products')],
+            ['label' => 'Stone categories', 'url' => url('/natural-stones-of-india')],
+            ['label' => 'Request a quote', 'url' => route('contact')],
+            ['label' => 'About us', 'url' => url('/aboutus')],
+            ['label' => 'Project gallery', 'url' => url('/project-gallery')],
+            ['label' => 'FAQ', 'url' => url('/faq')],
+            ['label' => 'Blog', 'url' => url('/blog')],
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Page>  $pages
+     * @return array<string, list<array{label: string, url: string}>>
+     */
+    private function sitemapPageGroups(Collection $pages): array
+    {
+        $remaining = $pages->reject(fn (Page $page): bool => $page->slug === 'aboutus');
+        $definitions = [
+            'About' => fn (Page $page): bool => $page->nav_group === 'about',
+            'Care and quality' => fn (Page $page): bool => in_array($page->slug, ['quality-control', 'natural-stone-care', 'general-instruction'], true),
+            'Packaging' => fn (Page $page): bool => str_starts_with($page->slug, 'packaging-type'),
+            'Policies' => fn (Page $page): bool => in_array($page->slug, ['privacy-policy', 'disclaimer'], true),
+        ];
+        $groups = [];
+        $claimed = collect();
+
+        foreach ($definitions as $label => $matches) {
+            $matched = $remaining
+                ->filter($matches)
+                ->reject(fn (Page $page): bool => $claimed->contains($page->id))
+                ->values();
+            if ($matched->isEmpty()) {
+                continue;
+            }
+            $claimed = $claimed->merge($matched->pluck('id'));
+            $groups[$label] = $this->sitemapLinks($matched);
+        }
+
+        $leftover = $remaining->reject(fn (Page $page): bool => $claimed->contains($page->id))->values();
+        if ($leftover->isNotEmpty()) {
+            $groups['More pages'] = $this->sitemapLinks($leftover);
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @param  Collection<int, Page>  $pages
+     * @return list<array{label: string, url: string}>
+     */
+    private function sitemapLinks(Collection $pages): array
+    {
+        return $pages->map(fn (Page $page): array => [
+            'label' => $this->readablePageTitle($page->title),
+            'url' => url('/'.$page->slug),
+        ])->all();
+    }
+
+    private function readablePageTitle(string $title): string
+    {
+        if (mb_strtoupper($title, 'UTF-8') !== $title) {
+            return $title;
+        }
+
+        $lower = mb_strtolower($title, 'UTF-8');
+
+        return preg_replace_callback(
+            '/(?<=^|[\s\-\/])\p{L}/u',
+            fn (array $match): string => mb_strtoupper($match[0], 'UTF-8'),
+            $lower,
+        ) ?? $lower;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function productSchema(Product $product): array
     {
-        $image = $product->catalogueImage();
         $crumbs = [
             ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => url('/')],
         ];
@@ -153,16 +300,8 @@ class SiteController extends Controller
 
         return [
             '@context' => 'https://schema.org',
-            '@graph' => [
-                ['@type' => 'BreadcrumbList', 'itemListElement' => $crumbs],
-                [
-                    '@type' => 'Product',
-                    'name' => $product->name,
-                    'description' => $product->summary,
-                    'image' => $image ? asset($image->path) : null,
-                    'brand' => ['@type' => 'Brand', 'name' => 'Royal Indian Stones'],
-                ],
-            ],
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => $crumbs,
         ];
     }
 
@@ -178,7 +317,7 @@ class SiteController extends Controller
                     '@type' => 'BreadcrumbList',
                     'itemListElement' => [
                         ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => url('/')],
-                        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Journal', 'item' => url('/blog')],
+                        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Blog', 'item' => url('/blog')],
                         ['@type' => 'ListItem', 'position' => 3, 'name' => $post->title],
                     ],
                 ],

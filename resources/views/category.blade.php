@@ -25,9 +25,11 @@
             @endif
             <div class="catalogue-card-body">
               <p class="eyebrow">{{ $category->name }}</p>
-              <h2>{{ $product->name }}</h2>
+              <div class="catalogue-card-title">
+                <h2>{{ $product->name }}</h2>
+                <span class="text-link">View stone →</span>
+              </div>
               <p class="catalogue-card-detail">{{ collect([$product->color])->merge(array_slice($product->finishes ?? [], 0, 2))->filter()->implode(' · ') }}</p>
-              <span class="text-link">View stone →</span>
             </div>
           </a>
         @empty

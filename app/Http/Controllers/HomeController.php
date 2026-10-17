@@ -28,8 +28,9 @@ class HomeController extends Controller
             'categories' => Category::query()->orderBy('position')->get(),
             'featured' => $featured,
             'active' => 'home',
-            'title' => 'Royal Indian Stones | Indian Natural Stone Manufacturer & Exporter',
+            'title' => 'Indian natural stone | Royal Indian Stones',
             'description' => 'Discover sandstone, granite, marble and more for architecture, interiors and outdoor projects.',
+            'shareImage' => asset('assets/img/slide/slide-1.jpg'),
         ]);
     }
 }

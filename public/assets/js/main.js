@@ -283,19 +283,15 @@
   /**
    * Portfolio details slider
    */
-  new Swiper('.portfolio-details-slider', {
-    speed: 400,
-    loop: true,
-    autoplay: {
-      delay: 5000,
-      disableOnInteraction: false
-    },
-    pagination: {
-      el: '.swiper-pagination',
-      type: 'bullets',
-      clickable: true
-    }
-  });
+  const productSlider = document.querySelector('.portfolio-details-slider');
+  if (productSlider) {
+    const slideCount = productSlider.querySelectorAll('.swiper-slide').length;
+    new Swiper(productSlider, {
+      speed: 400,
+      loop: slideCount > 1,
+      watchOverflow: true
+    });
+  }
 
   /**
    * Animation on scroll

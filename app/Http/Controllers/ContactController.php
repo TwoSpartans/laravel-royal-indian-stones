@@ -32,7 +32,7 @@ class ContactController extends Controller
             'selected' => $selected,
             'subject' => $subject,
             'active' => 'contact',
-            'title' => 'Request a Quote | Royal Indian Stones',
+            'title' => 'Let’s find your stone | Royal Indian Stones',
             'description' => 'Send your stone requirements for a quotation. Share sizes, finish, quantity and destination.',
         ]);
     }

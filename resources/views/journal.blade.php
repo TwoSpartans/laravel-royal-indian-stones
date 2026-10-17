@@ -5,17 +5,17 @@
   <section id="breadcrumbs" class="breadcrumbs">
     <div class="container">
       <div class="d-flex justify-content-between align-items-center">
-        <h2>Journal</h2>
+        <h2>Blog</h2>
         <ol>
           <li><a href="{{ url('/') }}">Home</a></li>
-          <li>Journal</li>
+          <li>Blog</li>
         </ol>
       </div>
     </div>
   </section>
   <section id="blog" class="blog">
     <div class="container">
-      <div class="section-title"><h1>Journal</h1></div>
+      <div class="section-title"><h1>Blog</h1></div>
       <div class="row">
         @foreach($posts as $post)
           <div class="col-lg-6">

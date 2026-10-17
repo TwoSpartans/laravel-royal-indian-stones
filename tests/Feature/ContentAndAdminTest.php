@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Enquiry;
 use App\Models\Faq;
 use App\Models\NewsletterSubscriber;
 use App\Models\Page;
 use App\Models\Post;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,6 +61,81 @@ class ContentAndAdminTest extends TestCase
         $this->get('/faq')->assertOk()->assertSee('How to Order ?');
         $this->get('/blog')->assertOk()->assertSee('Indian Black Basalt');
         $this->get('/blog-indian-black-basalt-240122')->assertOk()->assertSee('Deccan Plateau');
+    }
+
+    public function test_legacy_addresses_redirect_to_the_current_pages(): void
+    {
+        Post::query()->create([
+            'slug' => 'blog-the-tranquil-beauty-and-creative-applications-of-natural-pebbles-240204',
+            'title' => 'Natural pebbles',
+            'summary' => 'A note on pebbles.',
+            'body' => '<p>Pebbles for paths.</p>',
+            'published_on' => '2024-02-04',
+        ]);
+
+        $this->get('/index')->assertStatus(301)->assertRedirect('/');
+        $this->get('/about')->assertStatus(301)->assertRedirect('/aboutus');
+        $this->get('/blog-the-tranquil-beauty-and-creative-applications of-natural-pebbles-240204')
+            ->assertStatus(301)
+            ->assertRedirect('/blog-the-tranquil-beauty-and-creative-applications-of-natural-pebbles-240204');
+        $this->get('/blog-the-tranquil-beauty-and-creative-applications-of-natural-pebbles-240204')
+            ->assertOk()
+            ->assertSee('Pebbles for paths.');
+    }
+
+    public function test_sitemap_groups_pages_posts_and_published_products(): void
+    {
+        Page::query()->create([
+            'slug' => 'directors-message',
+            'title' => 'DIRECTOR’S MESSAGE',
+            'body' => '<p>A note from the director.</p>',
+            'nav_group' => 'about',
+        ]);
+        Page::query()->create([
+            'slug' => 'packaging-type-tiles',
+            'title' => 'Tile packaging',
+            'body' => '<p>Tiles are packed in wooden crates.</p>',
+            'nav_group' => 'resources',
+        ]);
+        Post::query()->create([
+            'slug' => 'blog-indian-black-basalt-240122',
+            'title' => 'Indian Black Basalt',
+            'published_on' => '2024-01-22',
+            'summary' => 'A note on black basalt.',
+            'body' => '<p>Basalt from the Deccan Plateau.</p>',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Sandstone',
+            'slug' => 'sandstone',
+            'position' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Agra Red',
+            'slug' => 'sandstone-agra-red',
+            'finishes' => [],
+            'applications' => [],
+            'is_published' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Hidden stone',
+            'slug' => 'hidden-stone',
+            'finishes' => [],
+            'applications' => [],
+            'is_published' => false,
+        ]);
+
+        $this->get('/sitemap')
+            ->assertOk()
+            ->assertSee('Start here')
+            ->assertSee('About')
+            ->assertSee('Director’s Message')
+            ->assertSee('Packaging')
+            ->assertSee('Tile packaging')
+            ->assertSee('22 Jan 2024')
+            ->assertSee('Agra Red')
+            ->assertDontSee('Hidden stone');
     }
 
     public function test_admin_lists_and_deletes_an_enquiry(): void

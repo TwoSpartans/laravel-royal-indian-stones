@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @section('pageTitle', 'Categories')
-@section('pageDescription', 'Groups used by journal articles.')
+@section('pageDescription', 'Groups used by blog articles.')
 
 @section('content')
 <form method="post" action="{{ route('admin.post-categories.store') }}" class="row g-2 justify-content-end my-4">

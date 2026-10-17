@@ -50,7 +50,7 @@
     <div>
       <a href="{{ route('admin.posts.index') }}" class="admin-nav-link {{ $postsActive ? 'is-active' : '' }}" @if($postsActive) aria-current="page" @endif>
         <i class="bi bi-journal-text"></i>
-        <span>Journal</span>
+        <span>Blog</span>
       </a>
       <a href="{{ route('admin.post-categories.index') }}" class="admin-nav-link {{ $categoriesActive ? 'is-active' : '' }}" @if($categoriesActive) aria-current="page" @endif>
         <i class="bi bi-tags"></i>

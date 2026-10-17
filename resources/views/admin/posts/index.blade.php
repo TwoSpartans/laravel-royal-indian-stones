@@ -1,6 +1,6 @@
 @extends('admin.layout')
 
-@section('pageTitle', 'Journal')
+@section('pageTitle', 'Blog')
 @section('pageDescription', 'Articles published on the site.')
 @section('pageActions')
   <a class="admin-primary-btn" href="{{ route('admin.posts.create') }}"><i class="bi bi-plus-lg"></i> Add article</a>

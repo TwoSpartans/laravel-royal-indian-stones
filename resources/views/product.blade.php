@@ -1,116 +1,252 @@
 @extends('layouts.site')
 
+@php
+    $summary = trim((string) $product->summary);
+    $detailParagraphs = array_map(
+        fn (string $paragraph): string => trim(preg_replace('/\s+/u', ' ', $paragraph) ?? $paragraph),
+        $product->paragraphs($product->detail),
+    );
+    $lead = $summary;
+    if ($detailParagraphs !== []) {
+        preg_match_all('/.+?[.!?]+(?=\s|$)/u', $detailParagraphs[0], $sentences);
+        $opening = trim(implode(' ', array_slice($sentences[0] ?? [], 0, 2)));
+        if ($opening !== '') {
+            $lead = $opening;
+            $remainder = trim(mb_substr($detailParagraphs[0], mb_strlen($opening)));
+            if ($remainder === '') {
+                array_shift($detailParagraphs);
+            } else {
+                $detailParagraphs[0] = $remainder;
+            }
+        }
+    }
+    $applicationParagraphs = array_map(
+        fn (string $paragraph): string => trim(preg_replace('/\s+/u', ' ', $paragraph) ?? $paragraph),
+        $product->paragraphs($product->application),
+    );
+    $imageCount = $product->images->count();
+@endphp
+
 @section('content')
-<main id="main">
+<main id="main" class="product-page">
   <section id="breadcrumbs" class="breadcrumbs">
     <div class="container">
-      <div class="d-flex justify-content-between align-items-center">
-        <h2>{{ $product->name }}</h2>
+      <nav aria-label="Breadcrumb">
         <ol>
           <li><a href="{{ url('/') }}">Home</a></li>
           @if($product->category)
             <li><a href="{{ url('/'.$product->category->slug) }}">{{ $product->category->name }}</a></li>
           @endif
-          <li>{{ $product->name }}</li>
+          <li aria-current="page">{{ $product->name }}</li>
         </ol>
-      </div>
+      </nav>
     </div>
   </section>
-  <section id="portfolio-details" class="portfolio-details">
-    <div class="container">
-      <div class="row gy-4">
-        <div class="col-lg-8">
-          @if($product->images->isNotEmpty())
-            <div class="portfolio-details-slider swiper">
-              <div class="swiper-wrapper align-items-center">
-                @foreach($product->images as $image)
-                  <div class="swiper-slide">
-                    <img src="{{ asset($image->path) }}" alt="{{ $image->alt }}" @if($loop->first) loading="eager" @else loading="lazy" @endif decoding="async" @if($image->width) width="{{ $image->width }}" @endif @if($image->height) height="{{ $image->height }}" @endif @if($image->srcset) srcset="{{ $image->srcset }}" sizes="(max-width: 991px) 100vw, 66vw" @endif>
-                  </div>
-                @endforeach
-              </div>
-              <div class="swiper-pagination"></div>
-            </div>
-          @endif
-        </div>
-        <div class="col-lg-4 mt-3">
-          <div class="product-info">
-            <h1 class="text-center p-0">{{ $product->name }}</h1>
-            <div class="table-responsive">
-              <table class="table table-striped table-bordered">
-                <tbody>
-                  @foreach($product->specs as $spec)
-                    <tr>
-                      <th scope="row">{{ $spec->label }}</th>
-                      <td>
-                        @if($spec->label === 'Packaging')
-                          <a href="{{ url('/packaging-type') }}">View packaging options</a>; confirm with your quotation.
-                        @else
-                          {{ $spec->value }}
-                        @endif
-                      </td>
-                    </tr>
+
+  <section class="product-stage" aria-labelledby="product-title">
+    <div class="container product-stage-grid">
+      <div class="product-gallery">
+        @if($imageCount > 0)
+          <div class="product-frame">
+            @if($imageCount > 1)
+              <div class="portfolio-details-slider product-slider swiper">
+                <div class="swiper-wrapper">
+                  @foreach($product->images as $image)
+                    <div class="swiper-slide">
+                      <img src="{{ asset($image->path) }}" alt="{{ $image->alt ?: $product->name }}" @if($loop->first) loading="eager" @else loading="lazy" @endif decoding="async" @if($image->width) width="{{ $image->width }}" @endif @if($image->height) height="{{ $image->height }}" @endif @if($image->srcset) srcset="{{ $image->srcset }}" sizes="(max-width: 991px) 100vw, 58vw" @endif>
+                    </div>
                   @endforeach
-                </tbody>
-              </table>
-            </div>
-            <p class="product-order-note">Natural stone can vary in shade and texture. Confirm your selected finish, dimensions and order requirements with our team.</p>
+                </div>
+              </div>
+            @else
+              @php $image = $product->images->first(); @endphp
+              <img src="{{ asset($image->path) }}" alt="{{ $image->alt ?: $product->name }}" loading="eager" decoding="async" @if($image->width) width="{{ $image->width }}" @endif @if($image->height) height="{{ $image->height }}" @endif @if($image->srcset) srcset="{{ $image->srcset }}" sizes="(max-width: 991px) 100vw, 58vw" @endif>
+            @endif
           </div>
-          <hr>
-          <div class="row justify-content-center">
-            <a class="ris-button product-quote" href="{{ route('contact', ['product' => $product->slug]) }}" data-track="quote_click" data-product="{{ $product->slug }}">Request a Quote for This Stone</a>
-          </div>
-        </div>
-      </div>
-      @if($product->detail)
-        <hr>
-        <div class="product-description">
-          <h3>Product Detail</h3>
-          @foreach($product->paragraphs($product->detail) as $paragraph)
-            <p>{!! nl2br(e($paragraph)) !!}</p>
-          @endforeach
-        </div>
-      @endif
-      <hr>
-      <div class="row pb-4">
-        <div class="col-lg-8 col-md-6 my-1">
-          @if($product->application)
-            <div class="product-application my-2">
-              <h3 class="text-center">Application Areas</h3>
-              <hr>
-              @foreach($product->paragraphs($product->application) as $paragraph)
-                <p>{!! nl2br(e($paragraph)) !!}</p>
+          @if($imageCount > 1)
+            <div class="product-thumbs">
+              @foreach($product->images as $image)
+                <button type="button" class="product-thumb @if($loop->first) is-active @endif" data-slide="{{ $loop->index }}" aria-label="Show photograph {{ $loop->iteration }} of {{ $imageCount }}" @if($loop->first) aria-pressed="true" @else aria-pressed="false" @endif>
+                  <img src="{{ asset($image->path) }}" alt="" width="84" height="84" loading="lazy" decoding="async">
+                </button>
               @endforeach
             </div>
           @endif
-        </div>
-        <div class="product_sidebar col-lg-4 my-2">
-          <h4 class="product_sidebar-title text-center">Relevant Products</h4>
-          <hr>
-          <div class="product_sidebar_item recent-posts">
-            @foreach($related as $item)
-              <div class="post-item clearfix row">
-                <h4 class="text-center"><a href="{{ url('/'.$item->slug) }}"><u>{{ $item->name }}</u></a></h4>
-                @if($image = $item->images->first())
-                  <div class="col-lg-4 col-md-6 d-flex align-items-center justify-content-center">
-                    <a href="{{ url('/'.$item->slug) }}"><img src="{{ asset($image->path) }}" alt="{{ $item->name }}" width="400" height="300" loading="lazy" decoding="async"></a>
-                  </div>
-                @endif
-                <div class="col-lg-8 col-md-6">
-                  {{ $item->summary }}
-                  <a href="{{ url('/'.$item->slug) }}">Read More</a>
-                </div>
+        @else
+          <div class="product-frame product-frame-empty">
+            <p>Photograph coming soon</p>
+          </div>
+        @endif
+      </div>
+
+      <div class="product-panel">
+        @if($product->category)
+          <p class="eyebrow"><a href="{{ url('/'.$product->category->slug) }}">{{ $product->category->name }}</a></p>
+        @endif
+        <h1 id="product-title">{{ $product->name }}</h1>
+        @if($lead !== '')
+          <p class="product-lead">{{ $lead }}</p>
+        @endif
+        <a class="ris-button product-quote" href="{{ route('contact', ['product' => $product->slug]) }}" data-track="quote_click" data-product="{{ $product->slug }}">Request a Quote for This Stone <span aria-hidden="true">→</span></a>
+        <p class="product-order-note">Natural stone varies in shade and texture. Confirm the finish, dimensions and quantity with our team.</p>
+        @if($product->specs->isNotEmpty())
+          <p class="eyebrow product-specs-label">Specifications</p>
+          <dl class="product-specs">
+            @foreach($product->specs as $spec)
+              <div>
+                <dt>{{ $spec->label }}</dt>
+                <dd>
+                  @if($spec->label === 'Packaging')
+                    <a href="{{ url('/packaging-type') }}">View packaging options</a>; confirm with your quotation.
+                  @else
+                    {{ $spec->value }}
+                  @endif
+                </dd>
               </div>
-              @if(!$loop->last)<hr>@endif
+            @endforeach
+          </dl>
+        @endif
+      </div>
+    </div>
+  </section>
+
+  @if($detailParagraphs !== [] || $applicationParagraphs !== [])
+    <section class="product-copy">
+      <div class="container product-copy-grid @if($detailParagraphs === [] || $applicationParagraphs === []) is-single @endif">
+        @if($detailParagraphs !== [])
+          <article class="product-description">
+            <h2>About this stone</h2>
+            @foreach($detailParagraphs as $paragraph)
+              <p>{!! nl2br(e($paragraph)) !!}</p>
+            @endforeach
+          </article>
+        @endif
+        @if($applicationParagraphs !== [])
+          <article class="product-application">
+            <h2>Where it is used</h2>
+            @foreach($applicationParagraphs as $paragraph)
+              <p>{!! nl2br(e($paragraph)) !!}</p>
+            @endforeach
+          </article>
+        @endif
+      </div>
+    </section>
+  @endif
+
+  @if($related->isNotEmpty())
+    <section class="product-related-section" aria-labelledby="related-title">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">{{ $product->category?->name ?? 'The collection' }}</p>
+            <h2 id="related-title">Other stones to consider</h2>
+          </div>
+          <div class="related-controls">
+            <div class="related-nav">
+              <button type="button" class="related-prev" aria-label="Previous stones"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+              <button type="button" class="related-next" aria-label="Next stones"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+            </div>
+            @if($product->category)
+              <a class="text-link" href="{{ url('/'.$product->category->slug) }}">View all {{ $product->category->name }}</a>
+            @endif
+          </div>
+        </div>
+        <div class="related-slider swiper" aria-label="Other stones to consider">
+          <div class="swiper-wrapper">
+            @foreach($related as $item)
+              @php
+                $relatedImage = $item->images->first();
+                $relatedDetail = collect([$item->color, ...($item->finishes ?? [])])->filter()->take(3)->implode(' · ');
+              @endphp
+              <div class="swiper-slide">
+                <a class="catalogue-card" href="{{ url('/'.$item->slug) }}" data-track="product_view" data-product="{{ $item->slug }}">
+                  @if($relatedImage)
+                    <img src="{{ asset($relatedImage->path) }}" alt="{{ $item->name }}" width="{{ $relatedImage->width ?: 600 }}" height="{{ $relatedImage->height ?: 450 }}" loading="lazy" decoding="async" @if($relatedImage->srcset) srcset="{{ $relatedImage->srcset }}" sizes="(max-width: 767px) 86vw, 33vw" @endif>
+                  @endif
+                  <div class="catalogue-card-body">
+                    @if($product->category)
+                      <p class="eyebrow">{{ $product->category->name }}</p>
+                    @endif
+                    <div class="catalogue-card-title">
+                      <h2>{{ $item->name }}</h2>
+                      <span class="text-link">View stone →</span>
+                    </div>
+                    @if($relatedDetail !== '')
+                      <p class="catalogue-card-detail">{{ $relatedDetail }}</p>
+                    @endif
+                  </div>
+                </a>
+              </div>
             @endforeach
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  @endif
 </main>
 @endsection
 
 @push('head')
 <script type="application/ld+json">{!! json_encode($productSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
 @endpush
+
+@if($related->isNotEmpty())
+  @push('scripts')
+  <script>
+    (function () {
+      const root = document.querySelector('.related-slider');
+      if (!root || typeof Swiper === 'undefined') {
+        return;
+      }
+      new Swiper(root, {
+        speed: 450,
+        spaceBetween: 16,
+        slidesPerView: 1.15,
+        watchOverflow: true,
+        navigation: {
+          prevEl: '.related-prev',
+          nextEl: '.related-next'
+        },
+        breakpoints: {
+          768: { slidesPerView: 2, spaceBetween: 20 },
+          992: { slidesPerView: 3, spaceBetween: 24 }
+        }
+      });
+    })();
+  </script>
+  @endpush
+@endif
+
+@if($imageCount > 1)
+  @push('scripts')
+  <script>
+    (function () {
+      const slider = document.querySelector('.product-slider');
+      if (!slider || !slider.swiper) {
+        return;
+      }
+      const swiper = slider.swiper;
+      const thumbs = Array.from(document.querySelectorAll('.product-thumb'));
+      const mark = function () {
+        thumbs.forEach(function (thumb, index) {
+          const active = index === swiper.realIndex;
+          thumb.classList.toggle('is-active', active);
+          thumb.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+      };
+      thumbs.forEach(function (thumb) {
+        thumb.addEventListener('click', function () {
+          const index = Number(thumb.dataset.slide);
+          if (typeof swiper.slideToLoop === 'function' && swiper.params.loop) {
+            swiper.slideToLoop(index);
+          } else {
+            swiper.slideTo(index);
+          }
+        });
+      });
+      swiper.on('slideChange', mark);
+      mark();
+    })();
+  </script>
+  @endpush
+@endif
