@@ -29,7 +29,7 @@ class SitemapXmlController extends Controller
             ->merge($this->modelEntries(Page::query()->orderBy('slug')))
             ->merge($this->modelEntries(Category::query()->orderBy('position')))
             ->merge($this->modelEntries(Product::query()->published()->orderBy('slug')))
-            ->merge($this->modelEntries(Post::query()->orderBy('slug')))
+            ->merge($this->modelEntries(Post::query()->published()->orderBy('slug')))
             ->unique('loc')
             ->values();
 

@@ -10,7 +10,7 @@ class CommentController extends Controller
 {
     public function store(Request $request, string $slug): RedirectResponse
     {
-        $post = Post::query()->where('slug', $slug)->firstOrFail();
+        $post = Post::query()->published()->where('slug', $slug)->firstOrFail();
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:254'],

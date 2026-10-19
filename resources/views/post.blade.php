@@ -24,7 +24,13 @@
         @if($post->published_on)
           <div class="entry-meta"><time datetime="{{ $post->published_on->toDateString() }}">{{ $post->published_on->format('j F Y') }}</time></div>
         @endif
-        <div class="entry-content">{!! $post->body !!}</div>
+        <div class="entry-content rich-content">
+          @if($post->isStudio() && is_array($post->body_document))
+            {!! app(\App\Services\RichContent\RichContentRenderer::class)->render($post) !!}
+          @else
+            {!! $post->body !!}
+          @endif
+        </div>
         @if($post->comments->isNotEmpty())
           <h2>Comments</h2>
           @foreach($post->comments as $comment)
@@ -50,5 +56,8 @@
 @endsection
 
 @push('head')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">{!! json_encode($articleSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
 @endpush

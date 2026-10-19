@@ -104,7 +104,7 @@ class SiteController extends Controller
                 'pageCount' => count($featuredPages) + collect($pageGroups)->sum(fn (array $links): int => count($links)),
                 'categories' => Category::query()->orderBy('position')->get(),
                 'productsByCategory' => Product::query()->published()->orderBy('name')->get()->groupBy('category_id'),
-                'posts' => Post::query()->orderByDesc('published_on')->orderBy('title')->get(),
+                'posts' => Post::query()->published()->orderByDesc('published_on')->orderBy('title')->get(),
                 'active' => '',
                 'title' => 'Sitemap | Royal Indian Stones',
                 'description' => 'All public pages and stone products on Royal Indian Stones.',
@@ -132,7 +132,7 @@ class SiteController extends Controller
 
         if ($slug === 'blog') {
             return view('journal', [
-                'posts' => Post::query()->with('postCategory')->orderByDesc('published_on')->orderBy('title')->get(),
+                'posts' => Post::query()->published()->with('postCategory')->orderByDesc('published_on')->orderBy('title')->get(),
                 'active' => 'resources',
                 'title' => 'Blog | Royal Indian Stones',
                 'description' => 'Notes on Indian sandstone, granite, marble, slate, and other natural stones.',
@@ -163,7 +163,7 @@ class SiteController extends Controller
         }
 
         $post = $this->findBySlug(
-            Post::query()->with(['postCategory', 'comments' => fn ($query) => $query->where('approved', true)->latest()]),
+            Post::query()->published()->with(['postCategory', 'comments' => fn ($query) => $query->where('approved', true)->latest()]),
             $slug,
         );
         if ($post instanceof Post) {

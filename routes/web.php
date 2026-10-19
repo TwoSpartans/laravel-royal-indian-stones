@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BlogStudioController;
 use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware([NoindexAdminResponses::class, 'guest'])->group(function () {
     Route::get('/admin/login', [LoginController::class, 'create'])->name('admin.login');
-    Route::post('/admin/login', [LoginController::class, 'store'])->name('admin.login.store');
+    Route::post('/admin/login', [LoginController::class, 'store'])->middleware('throttle:admin-login')->name('admin.login.store');
 });
 
 Route::middleware([NoindexAdminResponses::class, 'auth'])->prefix('admin')->name('admin.')->group(function () {
@@ -34,8 +35,18 @@ Route::middleware([NoindexAdminResponses::class, 'auth'])->prefix('admin')->name
     Route::get('/newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter');
     Route::delete('/newsletter/{subscriber}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy');
     Route::get('/posts', [AdminPostController::class, 'index'])->name('posts.index');
+    Route::get('/posts/studio/create', [BlogStudioController::class, 'create'])->name('posts.studio.create');
+    Route::get('/posts/studio/products', [BlogStudioController::class, 'products'])->name('posts.studio.products');
     Route::get('/posts/create', [AdminPostController::class, 'create'])->name('posts.create');
     Route::post('/posts', [AdminPostController::class, 'store'])->name('posts.store');
+    Route::get('/posts/{post}/studio', [BlogStudioController::class, 'show'])->name('posts.studio');
+    Route::put('/posts/{post}/studio', [BlogStudioController::class, 'save'])->name('posts.studio.save');
+    Route::post('/posts/{post}/studio/preview', [BlogStudioController::class, 'preview'])->name('posts.studio.preview');
+    Route::post('/posts/{post}/studio/publish', [BlogStudioController::class, 'publish'])->name('posts.studio.publish');
+    Route::post('/posts/{post}/studio/schedule', [BlogStudioController::class, 'schedule'])->name('posts.studio.schedule');
+    Route::delete('/posts/{post}/studio/schedule', [BlogStudioController::class, 'cancelSchedule'])->name('posts.studio.schedule.cancel');
+    Route::post('/posts/{post}/studio/convert', [BlogStudioController::class, 'convert'])->name('posts.studio.convert');
+    Route::post('/posts/{post}/studio/media', [BlogStudioController::class, 'media'])->name('posts.studio.media');
     Route::get('/posts/{post}/edit', [AdminPostController::class, 'edit'])->name('posts.edit');
     Route::put('/posts/{post}', [AdminPostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{post}', [AdminPostController::class, 'destroy'])->name('posts.destroy');
@@ -63,7 +74,7 @@ Route::get('/contact', ContactController::class)->name('contact');
 Route::post('/contact', EnquiryController::class)->name('enquiry.store');
 Route::post('/newsletter', NewsletterController::class)->name('newsletter.store');
 Route::get('/sitemap.xml', SitemapXmlController::class)->name('sitemap.xml');
-Route::post('/{slug}/comments', [CommentController::class, 'store'])->where('slug', '[A-Za-z0-9_-]+')->name('comments.store');
+Route::post('/{slug}/comments', [CommentController::class, 'store'])->middleware('throttle:comments')->where('slug', '[A-Za-z0-9_-]+')->name('comments.store');
 
 Route::redirect('/index.html', '/', 301);
 Route::redirect('/index', '/', 301);

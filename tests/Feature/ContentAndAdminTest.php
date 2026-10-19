@@ -8,10 +8,12 @@ use App\Models\Faq;
 use App\Models\NewsletterSubscriber;
 use App\Models\Page;
 use App\Models\Post;
+use App\Models\PostCategory;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class ContentAndAdminTest extends TestCase
@@ -185,5 +187,115 @@ class ContentAndAdminTest extends TestCase
         $this->actingAs(User::factory()->create())->post('/admin/comments/'.$comment->id.'/approve');
         $this->get('/blog-note')->assertSee('This stone would suit a courtyard.');
         $this->get('/sitemap.xml')->assertOk()->assertSee('/blog-note', false);
+    }
+
+    public function test_guest_is_sent_to_the_admin_login_from_the_blog(): void
+    {
+        $this->get('/admin/posts')->assertRedirect('/admin/login');
+    }
+
+    public function test_admin_saves_a_shown_article_with_a_cover_and_formatted_text(): void
+    {
+        $admin = User::factory()->create();
+        $category = PostCategory::query()->create(['name' => 'Guides', 'slug' => 'guides']);
+
+        $this->actingAs($admin)->post('/admin/posts', [
+            'title' => 'Sandstone notes',
+            'summary' => 'A short note about sandstone.',
+            'meta_description' => 'Notes on Indian sandstone.',
+            'body' => '<p><strong>Warm stone</strong> for floors.</p>',
+            'post_category_id' => $category->id,
+            'is_published' => '1',
+            'published_on' => '2024-03-01',
+            'cover' => UploadedFile::fake()->image('cover.jpg', 80, 60),
+        ])->assertRedirect();
+
+        $post = Post::query()->where('title', 'Sandstone notes')->first();
+        $this->assertNotNull($post);
+        $this->assertTrue($post->is_published);
+        $this->assertSame($category->id, $post->post_category_id);
+        $this->assertStringContainsString('<strong>Warm stone</strong>', (string) $post->body);
+        $this->assertNotNull($post->image);
+        $this->assertFileExists(public_path((string) $post->image));
+
+        $this->get('/blog')->assertOk()->assertSee('Sandstone notes');
+        $this->get('/sandstone-notes')->assertOk()->assertSee('Warm stone');
+        $this->get('/admin/posts?q=Sandstone&category='.$category->id)
+            ->assertOk()
+            ->assertSee('Sandstone notes')
+            ->assertSee('Shown');
+        $this->get('/admin/post-categories')->assertOk()->assertSee('Guides')->assertSee('1');
+
+        unlink(public_path((string) $post->image));
+    }
+
+    public function test_hidden_article_stays_off_the_public_blog_and_sitemap(): void
+    {
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)->post('/admin/posts', [
+            'title' => 'Unpublished courtyard note',
+            'body' => '<p>Not ready for readers.</p>',
+            'is_published' => '0',
+        ])->assertRedirect();
+
+        $this->get('/blog')->assertOk()->assertDontSee('Unpublished courtyard note');
+        $this->get('/unpublished-courtyard-note')->assertNotFound();
+        $this->get('/sitemap.xml')->assertOk()->assertDontSee('/unpublished-courtyard-note', false);
+        $this->get('/sitemap')->assertOk()->assertDontSee('Unpublished courtyard note');
+    }
+
+    public function test_script_markup_is_rejected_and_the_saved_article_remains(): void
+    {
+        $admin = User::factory()->create();
+        $post = Post::query()->create([
+            'slug' => 'kept-article',
+            'title' => 'Kept article',
+            'summary' => 'Still here',
+            'body' => '<p>Kept</p>',
+            'is_published' => true,
+        ]);
+
+        $this->actingAs($admin)->put('/admin/posts/'.$post->id, [
+            'title' => 'Kept article',
+            'slug' => 'kept-article',
+            'body' => '<p>Kept</p><script>alert(1)</script>',
+            'is_published' => '1',
+        ])->assertSessionHasErrors('body');
+
+        $this->assertSame('<p>Kept</p>', $post->refresh()->body);
+    }
+
+    public function test_comment_screen_lists_pending_and_approved_comments(): void
+    {
+        $admin = User::factory()->create();
+        $post = Post::query()->create([
+            'slug' => 'commented-article',
+            'title' => 'Commented article',
+            'summary' => 'Notes',
+            'body' => '<p>Notes</p>',
+            'is_published' => true,
+        ]);
+        $post->comments()->create([
+            'name' => 'Ravi',
+            'email' => 'ravi@example.com',
+            'body' => 'Waiting for a decision.',
+            'approved' => false,
+        ]);
+        $post->comments()->create([
+            'name' => 'Asha',
+            'email' => 'asha@example.com',
+            'body' => 'Already approved.',
+            'approved' => true,
+        ]);
+
+        $this->actingAs($admin)->get('/admin/comments?status=pending')
+            ->assertOk()
+            ->assertSee('Waiting for a decision.')
+            ->assertDontSee('Already approved.');
+        $this->actingAs($admin)->get('/admin/comments?status=approved')
+            ->assertOk()
+            ->assertSee('Already approved.')
+            ->assertDontSee('Waiting for a decision.');
     }
 }

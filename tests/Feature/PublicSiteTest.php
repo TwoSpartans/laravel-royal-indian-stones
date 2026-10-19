@@ -6,6 +6,7 @@ use App\Http\Middleware\CanonicalPublicUrl;
 use App\Models\Category;
 use App\Models\Enquiry;
 use App\Models\NewsletterSubscriber;
+use App\Models\Page;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -14,6 +15,21 @@ use Tests\TestCase;
 class PublicSiteTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_a_care_page_drops_stretched_image_styles(): void
+    {
+        Page::query()->create([
+            'slug' => 'natural-stone-care',
+            'title' => 'Natural Stone Care',
+            'body' => '<img style="height: 100%!important;" sizes="33vw" alt="Cleaning a stone floor" src="/assets/img/stonecare/stonecare-1.jpg"><p>Marble needs a mild cleaner.</p>',
+        ]);
+
+        $this->get('/natural-stone-care')
+            ->assertOk()
+            ->assertSee('Marble needs a mild cleaner.')
+            ->assertDontSee('height: 100%', false)
+            ->assertDontSee('sizes=', false);
+    }
 
     public function test_catalogue_category_and_product_pages_use_existing_slugs(): void
     {
@@ -160,6 +176,13 @@ class PublicSiteTest extends TestCase
         ]);
 
         $this->assertSame(0, Enquiry::query()->count());
+    }
+
+    public function test_header_search_opens_the_catalogue(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('class="header-search" href="'.route('catalogue').'" aria-label="Search products"', false);
     }
 
     public function test_newsletter_subscription_is_stored(): void

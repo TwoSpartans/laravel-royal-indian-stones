@@ -13,6 +13,8 @@
       </div>
     </div>
   </section>
-  {!! $page->body !!}
+  <div class="page-body">
+    {!! preg_replace(['/\sstyle="[^"]*(?:height\s*:\s*100%|webkit-fill-available)[^"]*"/i', '/\ssizes="[^"]*"/i'], '', $page->body) !!}
+  </div>
 </main>
 @endsection

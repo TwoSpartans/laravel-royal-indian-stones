@@ -9,7 +9,9 @@ use App\Models\NewsletterSubscriber;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\AdminAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -89,5 +91,40 @@ class AdminDashboardTest extends TestCase
         ])->assertRedirect('/admin/dashboard');
 
         $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_repeated_sign_in_failures_are_limited(): void
+    {
+        User::factory()->create([
+            'email' => 'admin@example.com',
+            'password' => 'secret-pass',
+        ]);
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->post('/admin/login', [
+                'email' => 'admin@example.com',
+                'password' => 'wrong-password',
+            ])->assertRedirect();
+        }
+
+        $this->post('/admin/login', [
+            'email' => 'admin@example.com',
+            'password' => 'wrong-password',
+        ])->assertTooManyRequests();
+    }
+
+    public function test_admin_account_uses_configured_credentials(): void
+    {
+        config([
+            'admin.email' => 'owner@example.com',
+            'admin.password' => 'long-secret',
+        ]);
+
+        $this->assertTrue(AdminAccount::sync());
+
+        $this->assertTrue(Auth::attempt([
+            'email' => 'owner@example.com',
+            'password' => 'long-secret',
+        ]));
     }
 }

@@ -46,7 +46,7 @@
 <link href="{{ asset('assets/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/css/style.css') }}?v=2" rel="stylesheet">
-<link href="{{ asset('assets/css/improvements.css') }}?v=40" rel="stylesheet">
+<link href="{{ asset('assets/css/improvements.css') }}?v=49" rel="stylesheet">
 @stack('head')
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-PX68BW5FMP"></script>
 <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-PX68BW5FMP');</script>

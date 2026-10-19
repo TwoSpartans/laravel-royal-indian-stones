@@ -52,6 +52,7 @@
         </li>
         <li><a href="{{ route('contact') }}" @class(['nav-quote', 'active' => ($active ?? '') === 'contact']) @if(($active ?? '') === 'contact') aria-current="page" @endif data-track="quote_click">Request a Quote</a></li>
       </ul>
+      <a class="header-search" href="{{ route('catalogue') }}" aria-label="Search products"><i class="bi bi-search" aria-hidden="true"></i></a>
       <button class="mobile-nav-toggle bi bi-list" type="button" aria-label="Open navigation" aria-controls="navbar" aria-expanded="false"></button>
     </nav>
   </div>

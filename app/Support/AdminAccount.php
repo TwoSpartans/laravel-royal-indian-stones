@@ -8,8 +8,8 @@ class AdminAccount
 {
     public static function sync(): bool
     {
-        $email = env('ADMIN_EMAIL');
-        $password = env('ADMIN_PASSWORD');
+        $email = config('admin.email');
+        $password = config('admin.password');
         if (! is_string($email) || $email === '' || ! is_string($password) || $password === '') {
             return false;
         }
