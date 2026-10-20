@@ -19,7 +19,7 @@
     <div class="container">
       <article class="entry entry-single">
         @if($post->image)
-          <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->title }}" loading="eager" sizes="100vw" /></div>
+          <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->title }}" loading="eager" sizes="(max-width: 991px) calc(100vw - 32px), min(1200px, 100vw)" /></div>
         @endif
         <h1 class="entry-title">{{ $post->title }}</h1>
         @if($post->published_on)

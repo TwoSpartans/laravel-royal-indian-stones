@@ -27,7 +27,7 @@
     link.dataset.track = 'product_view';
     link.dataset.product = product.id;
     const picture = document.createElement('picture');
-    const sizes = '(max-width: 450px) 100vw, (max-width: 991px) 50vw, 33vw';
+    const sizes = '(max-width: 575px) calc(100vw - 40px), (max-width: 991px) calc(50vw - 24px), calc(33vw - 24px)';
     if (product.avifSrcset) {
       const source = document.createElement('source');
       source.type = 'image/avif';

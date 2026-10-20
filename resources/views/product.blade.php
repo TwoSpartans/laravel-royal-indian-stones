@@ -53,14 +53,14 @@
                 <div class="swiper-wrapper">
                   @foreach($product->images as $image)
                     <div class="swiper-slide">
-                      <x-picture src="{{ $image->path }}" alt="{{ $image->alt ?: $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" :loading="$loop->first ? 'eager' : 'lazy'" sizes="(max-width: 991px) 100vw, 58vw" />
+                      <x-picture src="{{ $image->path }}" alt="{{ $image->alt ?: $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" :loading="$loop->first ? 'eager' : 'lazy'" sizes="(max-width: 991px) calc(100vw - 32px), min(960px, 58vw)" />
                     </div>
                   @endforeach
                 </div>
               </div>
             @else
               @php $image = $product->images->first(); @endphp
-              <x-picture src="{{ $image->path }}" alt="{{ $image->alt ?: $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" loading="eager" sizes="(max-width: 991px) 100vw, 58vw" />
+              <x-picture src="{{ $image->path }}" alt="{{ $image->alt ?: $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" loading="eager" sizes="(max-width: 991px) calc(100vw - 32px), min(960px, 58vw)" />
             @endif
           </div>
           @if($imageCount > 1)
@@ -161,7 +161,7 @@
               <div class="swiper-slide">
                 <a class="catalogue-card" href="{{ url('/'.$item->slug) }}" data-track="product_view" data-product="{{ $item->slug }}">
                   @if($relatedImage)
-                    <x-picture src="{{ $relatedImage->path }}" alt="{{ $item->name }}" width="{{ $relatedImage->width ?: 600 }}" height="{{ $relatedImage->height ?: 450 }}" loading="lazy" sizes="(max-width: 767px) 86vw, 33vw" />
+                    <x-picture src="{{ $relatedImage->path }}" alt="{{ $item->name }}" width="{{ $relatedImage->width ?: 600 }}" height="{{ $relatedImage->height ?: 450 }}" loading="lazy" sizes="(max-width: 767px) 86vw, (max-width: 991px) 48vw, 32vw" />
                   @endif
                   <div class="catalogue-card-body">
                     @if($product->category)

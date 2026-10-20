@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
 class ResponsivePicture
 {
     /** @var list<int> */
-    public const WIDTHS = [480, 800];
+    public const WIDTHS = [160, 320, 480, 640, 720, 800, 1200];
 
     public const MAX_WIDTH = 1600;
 
@@ -309,7 +309,7 @@ class ResponsivePicture
             return $tag;
         }
 
-        $sizes = $this->attribute($tag, 'sizes');
+        $sizes = $this->layoutSizes($tag, $this->attribute($tag, 'sizes'));
         $picture = '<picture>';
         if ($set['avif'] !== null) {
             $picture .= '<source type="image/avif" srcset="'.$this->escape($set['avif']).'"'.$this->sizesAttribute($sizes).'>';
@@ -328,6 +328,21 @@ class ResponsivePicture
         $img .= '>';
 
         return $picture.$img.'</picture>';
+    }
+
+    private function layoutSizes(string $tag, ?string $sizes): string
+    {
+        if ($sizes !== null && $sizes !== '' && ! str_contains($sizes, '33vw')) {
+            return $sizes;
+        }
+
+        $width = (int) ($this->attribute($tag, 'width') ?? 0);
+        $class = $this->attribute($tag, 'class') ?? '';
+        if ($width >= 1000 && ! str_contains($class, 'img-thumbnail')) {
+            return '(max-width: 991px) calc(100vw - 32px), 100vw';
+        }
+
+        return '(max-width: 991px) calc(100vw - 32px), 720px';
     }
 
     private function sizesAttribute(?string $sizes): string

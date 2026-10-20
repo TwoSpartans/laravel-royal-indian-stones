@@ -21,13 +21,15 @@ class ImageFormatsTest extends TestCase
         try {
             $this->assertTrue(app(ResponsivePicture::class)->ensure($relative));
 
-            $html = Blade::render('<x-picture src="'.$relative.'" alt="Stone sample" width="200" height="140" />');
+            $html = Blade::render('<x-picture src="'.$relative.'" alt="Stone sample" width="200" height="140" sizes="84px" />');
             $avif = strpos($html, 'type="image/avif"');
             $webp = strpos($html, 'type="image/webp"');
 
             $this->assertNotFalse($avif);
             $this->assertNotFalse($webp);
             $this->assertLessThan($webp, $avif);
+            $this->assertStringContainsString('160w', $html);
+            $this->assertStringContainsString('sizes="84px"', $html);
             $this->assertMatchesRegularExpression('/<img[^>]*src="[^"]*picture-order-fixture\.jpg"/', $html);
         } finally {
             File::delete($absolute);

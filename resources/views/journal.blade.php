@@ -21,7 +21,7 @@
           <div class="col-lg-6">
             <article class="entry">
               @if($post->image)
-                <div class="entry-img"><a href="{{ url('/'.$post->slug) }}"><x-picture src="{{ $post->image }}" alt="{{ $post->title }}" loading="lazy" sizes="(max-width: 767px) 100vw, 50vw" /></a></div>
+                <div class="entry-img"><a href="{{ url('/'.$post->slug) }}"><x-picture src="{{ $post->image }}" alt="{{ $post->title }}" loading="lazy" sizes="(max-width: 991px) calc(100vw - 32px), calc(50vw - 24px)" /></a></div>
               @endif
               <h2 class="entry-title"><a href="{{ url('/'.$post->slug) }}">{{ $post->title }}</a></h2>
               @if($post->postCategory)

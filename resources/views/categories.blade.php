@@ -15,7 +15,7 @@
         @foreach($categories as $category)
           <a class="category-card" href="{{ url('/'.$category->slug) }}">
             @if($category->image)
-              <x-picture src="{{ $category->image }}" alt="{{ $category->name }} stone collection" loading="lazy" sizes="(max-width: 767px) 50vw, 25vw" />
+              <x-picture src="{{ $category->image }}" alt="{{ $category->name }} stone collection" loading="lazy" sizes="(max-width: 767px) calc(50vw - 24px), (max-width: 991px) calc(33vw - 16px), 340px" />
             @endif
             <div><h3>{{ $category->name }}</h3><span aria-hidden="true">↗</span></div>
           </a>

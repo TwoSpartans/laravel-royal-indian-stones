@@ -89,5 +89,5 @@
 
 @push('scripts')
 <script src="{{ asset('assets/js/catalogue-core.js') }}?v=1" defer></script>
-<script src="{{ asset('assets/js/catalogue.js') }}?v=5" defer></script>
+<script src="{{ asset('assets/js/catalogue.js') }}?v=6" defer></script>
 @endpush

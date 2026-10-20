@@ -28,7 +28,7 @@ class PublicSiteTest extends TestCase
             ->assertOk()
             ->assertSee('Marble needs a mild cleaner.')
             ->assertDontSee('height: 100%', false)
-            ->assertDontSee('sizes=', false);
+            ->assertDontSee('33vw', false);
     }
 
     public function test_catalogue_category_and_product_pages_use_existing_slugs(): void

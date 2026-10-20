@@ -27,7 +27,7 @@
   <section class="about-story" aria-labelledby="about-story-title">
     <div class="container about-story-grid">
       <figure>
-        <x-picture src="assets/img/about.jpg" alt="Sample slabs of Indian granite, marble, and sandstone on a showroom wall" width="1025" height="768" sizes="(max-width: 991px) 100vw, 50vw" />
+        <x-picture src="assets/img/about.jpg" alt="Sample slabs of Indian granite, marble, and sandstone on a showroom wall" width="1025" height="768" sizes="(max-width: 991px) calc(100vw - 32px), min(720px, 50vw)" />
         <figcaption>Sample stones, shown before an order is cut.</figcaption>
       </figure>
       <div class="about-story-copy">

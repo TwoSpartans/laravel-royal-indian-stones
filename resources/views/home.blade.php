@@ -74,7 +74,7 @@
           @if(! in_array($category->slug, ['stone-applications', 'stone-articles'], true))
             <a class="catalogue-card" href="{{ url('/'.$category->slug) }}">
               @if($category->image)
-                <x-picture src="{{ $category->image }}" alt="{{ $category->name }} stone collection" width="640" height="480" loading="lazy" sizes="(max-width: 767px) 50vw, 25vw" />
+                <x-picture src="{{ $category->image }}" alt="{{ $category->name }} stone collection" width="640" height="480" loading="lazy" sizes="(max-width: 575px) calc(100vw - 32px), (max-width: 991px) calc(50vw - 20px), 340px" />
               @endif
               <div class="catalogue-card-body">
                 <div class="catalogue-card-title">
@@ -98,7 +98,7 @@
         @foreach($featured as $product)
           <a class="catalogue-card" href="{{ url('/'.$product->slug) }}" data-track="product_view" data-product="{{ $product->slug }}">
             @if($image = $product->catalogueImage())
-              <x-picture src="{{ $image->path }}" alt="{{ $product->name }}" width="{{ $image->width ?: 800 }}" height="{{ $image->height ?: 600 }}" loading="lazy" sizes="(max-width: 767px) 100vw, 33vw" />
+              <x-picture src="{{ $image->path }}" alt="{{ $product->name }}" width="{{ $image->width ?: 800 }}" height="{{ $image->height ?: 600 }}" loading="lazy" sizes="(max-width: 767px) calc(100vw - 40px), 500px" />
             @endif
             <div class="catalogue-card-body">
               <p class="eyebrow">{{ $product->category?->name }}</p>
@@ -154,7 +154,7 @@
           ['name' => 'Natural Stone Mosaic', 'slug' => 'index-stone-mosaic', 'image' => 'assets/img/optimized/1b160e9473f1bb7e-800.webp'],
         ] as $product)
           <a class="catalogue-card" href="{{ url('/'.$product['slug']) }}">
-            <x-picture src="{{ $product['image'] }}" alt="{{ $product['name'] }}" width="800" height="600" loading="lazy" sizes="(max-width: 767px) 50vw, 25vw" />
+            <x-picture src="{{ $product['image'] }}" alt="{{ $product['name'] }}" width="800" height="600" loading="lazy" sizes="(max-width: 575px) calc(100vw - 32px), (max-width: 991px) calc(50vw - 20px), 340px" />
             <div class="catalogue-card-body">
               <div class="catalogue-card-title">
                 <h3>{{ $product['name'] }}</h3>
@@ -173,8 +173,8 @@
         <a class="text-link" href="{{ url('/project-gallery') }}" data-track="trust_click">View the gallery →</a>
       </div>
       <div class="project-grid">
-        <a href="{{ url('/project-gallery') }}#project-2" class="project-card"><x-picture src="assets/img/projects/dholpur-beige-sandstone-wall-cladding-building-project.jpg" alt="Beige sandstone on a building facade" width="1200" height="760" loading="lazy" sizes="(max-width: 767px) 100vw, 50vw" /><div><h3>Sandstone wall cladding</h3><p>Natural texture for architectural surfaces.</p></div></a>
-        <a href="{{ url('/project-gallery') }}#project-1" class="project-card"><x-picture src="assets/img/projects/black-granite-wall-cladding-slabs-design-cnc-work.jpg" alt="Carved black granite wall cladding" width="800" height="600" loading="lazy" sizes="(max-width: 767px) 100vw, 50vw" /><div><h3>Granite detailing</h3><p>Explore decorative stonework and finishes.</p></div></a>
+        <a href="{{ url('/project-gallery') }}#project-2" class="project-card"><x-picture src="assets/img/projects/dholpur-beige-sandstone-wall-cladding-building-project.jpg" alt="Beige sandstone on a building facade" width="1200" height="760" loading="lazy" sizes="(max-width: 767px) calc(100vw - 40px), calc(50vw - 24px)" /><div><h3>Sandstone wall cladding</h3><p>Natural texture for architectural surfaces.</p></div></a>
+        <a href="{{ url('/project-gallery') }}#project-1" class="project-card"><x-picture src="assets/img/projects/black-granite-wall-cladding-slabs-design-cnc-work.jpg" alt="Carved black granite wall cladding" width="800" height="600" loading="lazy" sizes="(max-width: 767px) calc(100vw - 40px), calc(50vw - 24px)" /><div><h3>Granite detailing</h3><p>Explore decorative stonework and finishes.</p></div></a>
       </div>
     </div>
   </section>
