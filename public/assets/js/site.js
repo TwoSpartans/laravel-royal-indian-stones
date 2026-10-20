@@ -9,11 +9,36 @@
     if (target) track(target.dataset.track, { product_id: target.dataset.product || document.body.dataset.productId || '' });
   });
   const toggle = document.querySelector('.mobile-nav-toggle'), nav = document.getElementById('navbar');
+  const closeMenu = () => {
+    if (!nav || !toggle) return;
+    nav.classList.remove('navbar-mobile');
+    nav.querySelectorAll('.dropdown-active').forEach((list) => list.classList.remove('dropdown-active'));
+    toggle.classList.add('bi-list');
+    toggle.classList.remove('bi-x');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Open navigation');
+  };
   if (toggle && nav) {
-    const update = () => { const open = nav.classList.contains('navbar-mobile'); toggle.setAttribute('aria-expanded', String(open)); toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation'); };
+    const update = () => {
+      const open = nav.classList.contains('navbar-mobile');
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+      if (open) {
+        const panel = document.getElementById('header-search-panel');
+        const search = document.querySelector('.header-search');
+        if (panel) panel.hidden = true;
+        if (search) search.setAttribute('aria-expanded', 'false');
+      }
+    };
     toggle.addEventListener('click', update);
-    document.addEventListener('keydown', e => {if(e.key === 'Escape') {nav.classList.remove('navbar-mobile');toggle.classList.add('bi-list');toggle.classList.remove('bi-x');update();}});
-    window.addEventListener('resize', () => {if(window.innerWidth > 1199){nav.classList.remove('navbar-mobile');toggle.classList.add('bi-list');toggle.classList.remove('bi-x');update();}});
+    nav.addEventListener('click', (event) => {
+      if (!nav.classList.contains('navbar-mobile')) return;
+      if (event.target === nav) closeMenu();
+      const link = event.target.closest('a');
+      if (link && !link.parentElement.classList.contains('dropdown')) closeMenu();
+    });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMenu(); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 1199) closeMenu(); });
   }
   const searchButton = document.querySelector('.header-search');
   const searchPanel = document.getElementById('header-search-panel');

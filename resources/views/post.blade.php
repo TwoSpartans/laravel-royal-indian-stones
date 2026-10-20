@@ -14,18 +14,26 @@
       </div>
     </div>
   </section>
+  <div class="page-body">
   <section id="blog" class="blog">
     <div class="container">
       <article class="entry entry-single">
         @if($post->image)
-          <div class="entry-img"><img src="{{ asset($post->image) }}" alt="{{ $post->title }}"></div>
+          <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->title }}" loading="eager" sizes="100vw" /></div>
         @endif
         <h1 class="entry-title">{{ $post->title }}</h1>
         @if($post->published_on)
           <div class="entry-meta"><time datetime="{{ $post->published_on->toDateString() }}">{{ $post->published_on->format('j F Y') }}</time></div>
         @endif
-        <div class="entry-content rich-content">
-          @if($post->isStudio() && is_array($post->body_document))
+        @php
+          $studioBlocks = is_array($post->body_document['content'] ?? null) ? $post->body_document['content'] : [];
+          $studioIsPlainText = $post->isStudio()
+            && $studioBlocks !== []
+            && collect($studioBlocks)->every(fn (mixed $block): bool => is_array($block) && in_array($block['type'] ?? '', ['paragraph', 'heading'], true));
+          $showStudio = $post->isStudio() && is_array($post->body_document) && ! ($studioIsPlainText && str_contains((string) $post->body, '<img'));
+        @endphp
+        <div @class(['entry-content', 'rich-content' => $showStudio])>
+          @if($showStudio)
             {!! app(\App\Services\RichContent\RichContentRenderer::class)->render($post) !!}
           @else
             {!! $post->body !!}
@@ -52,6 +60,7 @@
       </article>
     </div>
   </section>
+  </div>
 </main>
 @endsection
 

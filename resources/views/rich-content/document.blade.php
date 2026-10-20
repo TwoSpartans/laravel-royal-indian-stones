@@ -22,7 +22,7 @@
       @php $photo = $media->get((int) ($attrs['mediaId'] ?? 0)); @endphp
       @if($photo)
         <figure class="{{ $frame }}">
-          <img src="{{ asset($photo->path) }}" alt="{{ $attrs['decorative'] ?? false ? '' : ($attrs['alt'] ?? $photo->alt) }}">
+          <x-picture src="{{ $photo->path }}" alt="{{ $attrs['decorative'] ?? false ? '' : ($attrs['alt'] ?? $photo->alt) }}" loading="lazy" />
           @if(filled($attrs['caption'] ?? null))<figcaption>{{ $attrs['caption'] }}</figcaption>@endif
         </figure>
       @endif
@@ -32,7 +32,7 @@
         @foreach($attrs['items'] ?? [] as $item)
           @php $photo = is_array($item) ? $media->get((int) ($item['mediaId'] ?? 0)) : null; @endphp
           @if($photo)
-            <img src="{{ asset($photo->path) }}" alt="{{ ($item['decorative'] ?? false) ? '' : ($item['alt'] ?? '') }}">
+            <x-picture src="{{ $photo->path }}" alt="{{ ($item['decorative'] ?? false) ? '' : ($item['alt'] ?? '') }}" loading="lazy" />
           @endif
         @endforeach
       </div>
@@ -42,7 +42,7 @@
       @if($stone)
         <aside class="rich-stone {{ $frame }} is-{{ $attrs['presentation']['layout'] ?? 'image-left' }}">
           @if($stone->catalogueImage())
-            <img src="{{ asset($stone->catalogueImage()->path) }}" alt="{{ $stone->catalogueImage()->alt ?: $stone->name }}">
+            <x-picture src="{{ $stone->catalogueImage()->path }}" alt="{{ $stone->catalogueImage()->alt ?: $stone->name }}" loading="lazy" />
           @endif
           <div>
             <p class="eyebrow">{{ $attrs['editorial']['eyebrow'] ?? $stone->category?->name }}</p>
@@ -60,7 +60,7 @@
         @if(filled($attrs['body'] ?? null))<p>{{ $attrs['body'] }}</p>@endif
         @foreach($attrs['mediaIds'] ?? [] as $id)
           @php $photo = $media->get((int) $id); @endphp
-          @if($photo)<img src="{{ asset($photo->path) }}" alt="{{ $photo->alt }}">@endif
+          @if($photo)<x-picture src="{{ $photo->path }}" alt="{{ $photo->alt }}" loading="lazy" />@endif
         @endforeach
       </section>
       @break

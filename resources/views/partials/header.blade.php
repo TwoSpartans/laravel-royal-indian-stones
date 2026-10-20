@@ -22,7 +22,7 @@
         <li><a href="{{ url('/') }}" @class(['active' => ($active ?? '') === 'home']) @if(($active ?? '') === 'home') aria-current="page" @endif>Home</a></li>
         <li class="dropdown"><a href="{{ url('/products') }}" @class(['active' => ($active ?? '') === 'products']) @if(($active ?? '') === 'products') aria-current="page" @endif><span>Our Stones</span><i class="bi bi-chevron-down" aria-hidden="true"></i></a>
           <ul>
-            <li><a href="{{ url('/products') }}">Search all products</a></li>
+            <li class="nav-all-stones"><a href="{{ url('/products') }}">All stones</a></li>
             <li><a href="{{ url('/sandstone') }}">Sandstone</a></li>
             <li><a href="{{ url('/limestone') }}">Limestone</a></li>
             <li><a href="{{ url('/marble') }}">Marble</a></li>
@@ -52,8 +52,14 @@
         </li>
         <li><a href="{{ route('contact') }}" @class(['nav-quote', 'active' => ($active ?? '') === 'contact']) @if(($active ?? '') === 'contact') aria-current="page" @endif data-track="quote_click">Request a Quote</a></li>
       </ul>
-      <a class="header-search" href="{{ route('catalogue') }}" aria-label="Search products"><i class="bi bi-search" aria-hidden="true"></i></a>
+      <button type="button" class="header-search" aria-label="Search" aria-expanded="false" aria-controls="header-search-panel"><i class="bi bi-search" aria-hidden="true"></i></button>
       <button class="mobile-nav-toggle bi bi-list" type="button" aria-label="Open navigation" aria-controls="navbar" aria-expanded="false"></button>
     </nav>
+  </div>
+  <div id="header-search-panel" class="header-search-panel" hidden>
+    <form class="container" action="{{ route('catalogue') }}" method="get" role="search">
+      <input id="header-search-input" type="search" name="q" maxlength="120" placeholder="Try Raj Green, black granite or pebbles" aria-label="Search products" value="{{ request('q') }}">
+      <button type="submit">Search</button>
+    </form>
   </div>
 </header>

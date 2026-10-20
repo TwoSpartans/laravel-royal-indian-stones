@@ -21,7 +21,7 @@
         @forelse($products as $product)
           <a class="catalogue-card" href="{{ url('/'.$product->slug) }}" data-track="product_view" data-product="{{ $product->slug }}">
             @if($image = $product->images->first())
-              <img src="{{ asset($image->path) }}" alt="{{ $product->name }}" loading="lazy" decoding="async" @if($image->width) width="{{ $image->width }}" @endif @if($image->height) height="{{ $image->height }}" @endif>
+              <x-picture src="{{ $image->path }}" alt="{{ $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" loading="lazy" sizes="(max-width: 767px) 100vw, 33vw" />
             @endif
             <div class="catalogue-card-body">
               <p class="eyebrow">{{ $category->name }}</p>

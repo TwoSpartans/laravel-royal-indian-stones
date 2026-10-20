@@ -53,21 +53,21 @@
                 <div class="swiper-wrapper">
                   @foreach($product->images as $image)
                     <div class="swiper-slide">
-                      <img src="{{ asset($image->path) }}" alt="{{ $image->alt ?: $product->name }}" @if($loop->first) loading="eager" @else loading="lazy" @endif decoding="async" @if($image->width) width="{{ $image->width }}" @endif @if($image->height) height="{{ $image->height }}" @endif @if($image->srcset) srcset="{{ $image->srcset }}" sizes="(max-width: 991px) 100vw, 58vw" @endif>
+                      <x-picture src="{{ $image->path }}" alt="{{ $image->alt ?: $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" :loading="$loop->first ? 'eager' : 'lazy'" sizes="(max-width: 991px) 100vw, 58vw" />
                     </div>
                   @endforeach
                 </div>
               </div>
             @else
               @php $image = $product->images->first(); @endphp
-              <img src="{{ asset($image->path) }}" alt="{{ $image->alt ?: $product->name }}" loading="eager" decoding="async" @if($image->width) width="{{ $image->width }}" @endif @if($image->height) height="{{ $image->height }}" @endif @if($image->srcset) srcset="{{ $image->srcset }}" sizes="(max-width: 991px) 100vw, 58vw" @endif>
+              <x-picture src="{{ $image->path }}" alt="{{ $image->alt ?: $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" loading="eager" sizes="(max-width: 991px) 100vw, 58vw" />
             @endif
           </div>
           @if($imageCount > 1)
             <div class="product-thumbs">
               @foreach($product->images as $image)
                 <button type="button" class="product-thumb @if($loop->first) is-active @endif" data-slide="{{ $loop->index }}" aria-label="Show photograph {{ $loop->iteration }} of {{ $imageCount }}" @if($loop->first) aria-pressed="true" @else aria-pressed="false" @endif>
-                  <img src="{{ asset($image->path) }}" alt="" width="84" height="84" loading="lazy" decoding="async">
+                  <x-picture src="{{ $image->path }}" alt="" width="84" height="84" loading="lazy" sizes="84px" />
                 </button>
               @endforeach
             </div>
@@ -161,7 +161,7 @@
               <div class="swiper-slide">
                 <a class="catalogue-card" href="{{ url('/'.$item->slug) }}" data-track="product_view" data-product="{{ $item->slug }}">
                   @if($relatedImage)
-                    <img src="{{ asset($relatedImage->path) }}" alt="{{ $item->name }}" width="{{ $relatedImage->width ?: 600 }}" height="{{ $relatedImage->height ?: 450 }}" loading="lazy" decoding="async" @if($relatedImage->srcset) srcset="{{ $relatedImage->srcset }}" sizes="(max-width: 767px) 86vw, 33vw" @endif>
+                    <x-picture src="{{ $relatedImage->path }}" alt="{{ $item->name }}" width="{{ $relatedImage->width ?: 600 }}" height="{{ $relatedImage->height ?: 450 }}" loading="lazy" sizes="(max-width: 767px) 86vw, 33vw" />
                   @endif
                   <div class="catalogue-card-body">
                     @if($product->category)
@@ -193,7 +193,7 @@
 @if($related->isNotEmpty())
   @push('scripts')
   <script>
-    (function () {
+    document.addEventListener('DOMContentLoaded', function () {
       const root = document.querySelector('.related-slider');
       if (!root || typeof Swiper === 'undefined') {
         return;
@@ -212,7 +212,7 @@
           992: { slidesPerView: 3, spaceBetween: 24 }
         }
       });
-    })();
+    });
   </script>
   @endpush
 @endif
@@ -220,7 +220,7 @@
 @if($imageCount > 1)
   @push('scripts')
   <script>
-    (function () {
+    document.addEventListener('DOMContentLoaded', function () {
       const slider = document.querySelector('.product-slider');
       if (!slider || !slider.swiper) {
         return;
@@ -246,7 +246,7 @@
       });
       swiper.on('slideChange', mark);
       mark();
-    })();
+    });
   </script>
   @endpush
 @endif

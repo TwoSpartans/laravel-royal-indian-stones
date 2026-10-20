@@ -182,7 +182,9 @@ class PublicSiteTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('class="header-search" href="'.route('catalogue').'" aria-label="Search products"', false);
+            ->assertSee('aria-controls="header-search-panel"', false)
+            ->assertSee('action="'.route('catalogue').'" method="get"', false)
+            ->assertSee('name="q"', false);
     }
 
     public function test_newsletter_subscription_is_stored(): void

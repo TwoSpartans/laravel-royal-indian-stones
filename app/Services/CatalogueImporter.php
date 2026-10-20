@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSpec;
-use App\Services\CatalogueIndex;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -378,7 +377,7 @@ class CatalogueImporter
         if ($html === false || $html === '') {
             return null;
         }
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $previous = libxml_use_internal_errors(true);
         $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_NOERROR | LIBXML_NOWARNING);
         libxml_clear_errors();
@@ -468,9 +467,13 @@ class CatalogueImporter
                 $path = is_array($last) ? (string) ($last['src'] ?? $path) : $path;
                 $parts = [];
                 foreach ($variants as $variant) {
-                    if (is_array($variant) && isset($variant['src'], $variant['width'])) {
-                        $parts[] = $this->imageUrl((string) $variant['src']).' '.$variant['width'].'w';
+                    if (! is_array($variant) || ! isset($variant['src'], $variant['width'])) {
+                        continue;
                     }
+                    if (preg_match('/\.(avif|webp)$/i', (string) $variant['src']) !== 1) {
+                        continue;
+                    }
+                    $parts[] = $this->imageUrl((string) $variant['src']).' '.$variant['width'].'w';
                 }
                 $srcset = $parts !== [] ? implode(', ', $parts) : null;
             }

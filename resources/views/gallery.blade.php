@@ -23,7 +23,7 @@
         @foreach($projects as $project)
           <div class="col-lg-4 col-md-6 portfolio-item" id="project-{{ $project->position + 1 }}">
             <a href="{{ asset($project->lightbox ?: $project->image) }}" class="portfolio-lightbox" aria-label="View {{ $project->title }}">
-              <img src="{{ asset($project->image) }}" class="img-fluid" alt="{{ $project->alt }}" loading="lazy" decoding="async" @if($project->width) width="{{ $project->width }}" @endif @if($project->height) height="{{ $project->height }}" @endif @if($project->srcset) srcset="{{ $project->srcset }}" sizes="(max-width: 575px) 100vw, (max-width: 991px) 50vw, 33vw" @endif>
+              <x-picture src="{{ $project->image }}" class="img-fluid" alt="{{ $project->alt }}" :width="$project->width ? (string) $project->width : null" :height="$project->height ? (string) $project->height : null" loading="lazy" sizes="(max-width: 575px) 100vw, (max-width: 991px) 50vw, 33vw" />
             </a>
             <div class="portfolio-info">
               <h4>{{ $project->title }}</h4>

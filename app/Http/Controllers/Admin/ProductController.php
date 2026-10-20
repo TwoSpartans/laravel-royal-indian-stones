@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSpec;
 use App\Services\CatalogueIndex;
+use App\Support\ResponsivePicture;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -20,6 +21,8 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    public function __construct(private ResponsivePicture $pictures) {}
+
     public function index(Request $request): View
     {
         $search = trim($request->string('q')->toString());
@@ -345,6 +348,7 @@ class ProductController extends Controller
         $photo->move(public_path($relativeDirectory), $filename);
 
         $relativePath = $relativeDirectory.'/'.$filename;
+        $this->pictures->ensure($relativePath);
         $size = getimagesize(public_path($relativePath));
 
         $product->images()->create([

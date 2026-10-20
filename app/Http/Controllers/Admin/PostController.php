@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\PostCategory;
 use App\Support\JournalHtml;
+use App\Support\ResponsivePicture;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 
 class PostController extends Controller
 {
+    public function __construct(private ResponsivePicture $pictures) {}
+
     public function index(Request $request): View
     {
         $search = trim($request->string('q')->toString());
@@ -220,8 +223,10 @@ class PostController extends Controller
         File::ensureDirectoryExists(public_path($relativeDirectory));
         $filename = $prefix.'-'.Str::lower(Str::random(8)).'.'.$extension;
         $photo->move(public_path($relativeDirectory), $filename);
+        $relativePath = $relativeDirectory.'/'.$filename;
+        $this->pictures->ensure($relativePath);
 
-        return $relativeDirectory.'/'.$filename;
+        return $relativePath;
     }
 
     /**

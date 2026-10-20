@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ResponsivePicture;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -54,8 +55,14 @@ class Product extends Model
         if ($image?->height) {
             $record['imageHeight'] = $image->height;
         }
-        if ($image?->srcset) {
-            $record['imageSrcset'] = $image->srcset;
+        if ($image?->path) {
+            $sources = app(ResponsivePicture::class)->sources($image->path);
+            if ($sources['avif'] !== null) {
+                $record['avifSrcset'] = $sources['avif'];
+            }
+            if ($sources['webp'] !== null) {
+                $record['webpSrcset'] = $sources['webp'];
+            }
         }
 
         return $record;

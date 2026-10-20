@@ -15,6 +15,7 @@ use App\Services\RichContent\BlockRegistry;
 use App\Services\RichContent\DocumentValidator;
 use App\Services\RichContent\QualityChecker;
 use App\Services\RichContent\RichContentRenderer;
+use App\Support\ResponsivePicture;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class BlogStudioController extends Controller
         private BlockFrame $frames,
         private ArticleTemplates $templates,
         private RichContentRenderer $renderer,
+        private ResponsivePicture $pictures,
     ) {}
 
     public function create(): RedirectResponse
@@ -227,6 +229,7 @@ class BlogStudioController extends Controller
         $filename = 'photo-'.Str::lower(Str::random(8)).'.'.$extension;
         $file->move(public_path($directory), $filename);
         $path = $directory.'/'.$filename;
+        $this->pictures->ensure($path);
         $size = @getimagesize(public_path($path)) ?: [null, null];
         $media = JournalMedia::query()->create([
             'path' => $path,
