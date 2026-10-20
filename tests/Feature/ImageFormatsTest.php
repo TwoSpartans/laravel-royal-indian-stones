@@ -31,6 +31,13 @@ class ImageFormatsTest extends TestCase
             $this->assertStringContainsString('160w', $html);
             $this->assertStringContainsString('sizes="84px"', $html);
             $this->assertMatchesRegularExpression('/<img[^>]*src="[^"]*picture-order-fixture\.jpg"/', $html);
+            $this->assertMatchesRegularExpression('/width="200"/', $html);
+            $this->assertMatchesRegularExpression('/height="140"/', $html);
+
+            $corrected = Blade::render('<x-picture src="'.$relative.'" alt="Stone sample" width="1600" height="900" />');
+            $this->assertMatchesRegularExpression('/width="200"/', $corrected);
+            $this->assertMatchesRegularExpression('/height="140"/', $corrected);
+            $this->assertDoesNotMatchRegularExpression('/width="1600"/', $corrected);
         } finally {
             File::delete($absolute);
             foreach (glob(public_path('assets/img/optimized/'.substr(md5($relative), 0, 16).'-*')) ?: [] as $variant) {

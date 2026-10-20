@@ -30,6 +30,10 @@ class Picture extends Component
         $this->fallback = $sources['fallback'];
         $this->avif = $sources['avif'];
         $this->webp = $sources['webp'];
+        if ($sources['width'] !== null && $sources['height'] !== null) {
+            $this->width = (string) $sources['width'];
+            $this->height = (string) $sources['height'];
+        }
     }
 
     public function render(): View

@@ -18,18 +18,19 @@ class ResponsivePicture
     public const MAX_WIDTH = 1600;
 
     /**
-     * @return array{fallback: string, avif: string|null, webp: string|null}
+     * @return array{fallback: string, avif: string|null, webp: string|null, width: int|null, height: int|null}
      */
     public function sources(string $src): array
     {
+        $empty = ['fallback' => $this->fallbackUrl($src), 'avif' => null, 'webp' => null, 'width' => null, 'height' => null];
         $relative = $this->relative($src);
         if ($relative === null) {
-            return ['fallback' => $this->fallbackUrl($src), 'avif' => null, 'webp' => null];
+            return $empty;
         }
 
         $size = @getimagesize(public_path($relative));
         if ($size === false || $this->isIcon((int) $size[0], (int) $size[1])) {
-            return ['fallback' => asset($relative), 'avif' => null, 'webp' => null];
+            return ['fallback' => asset($relative), 'avif' => null, 'webp' => null, 'width' => null, 'height' => null];
         }
 
         $widths = $this->targetWidths((int) $size[0]);
@@ -38,6 +39,8 @@ class ResponsivePicture
             'fallback' => asset($relative),
             'avif' => $this->srcset($relative, $widths, 'avif'),
             'webp' => $this->srcset($relative, $widths, 'webp'),
+            'width' => (int) $size[0],
+            'height' => (int) $size[1],
         ];
     }
 
@@ -319,8 +322,12 @@ class ResponsivePicture
         }
 
         $img = '<img src="'.$this->escape($set['fallback']).'" alt="'.$this->escape($this->attribute($tag, 'alt') ?? '').'"';
+        $dimensions = [
+            'width' => $set['width'] !== null ? (string) $set['width'] : null,
+            'height' => $set['height'] !== null ? (string) $set['height'] : null,
+        ];
         foreach (['width', 'height', 'class', 'loading', 'decoding', 'fetchpriority'] as $name) {
-            $value = $this->attribute($tag, $name);
+            $value = $dimensions[$name] ?? $this->attribute($tag, $name);
             if ($value !== null && $value !== '') {
                 $img .= ' '.$name.'="'.$this->escape($value).'"';
             }
