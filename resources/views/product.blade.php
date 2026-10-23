@@ -62,14 +62,22 @@
               @php $image = $product->images->first(); @endphp
               <x-picture src="{{ $image->path }}" alt="{{ $image->alt ?: $product->name }}" :width="$image->width ? (string) $image->width : null" :height="$image->height ? (string) $image->height : null" loading="eager" sizes="(max-width: 991px) calc(100vw - 32px), min(960px, 58vw)" />
             @endif
+            @if($imageCount > 1)
+              <button type="button" class="product-nav product-prev" aria-label="Previous photograph"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+              <button type="button" class="product-nav product-next" aria-label="Next photograph"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+            @endif
           </div>
           @if($imageCount > 1)
-            <div class="product-thumbs">
-              @foreach($product->images as $image)
-                <button type="button" class="product-thumb @if($loop->first) is-active @endif" data-slide="{{ $loop->index }}" aria-label="Show photograph {{ $loop->iteration }} of {{ $imageCount }}" @if($loop->first) aria-pressed="true" @else aria-pressed="false" @endif>
-                  <x-picture src="{{ $image->path }}" alt="" width="84" height="84" loading="lazy" sizes="84px" />
-                </button>
-              @endforeach
+            <div class="product-thumb-row">
+              <button type="button" class="product-thumb-nav product-thumb-prev" aria-label="Previous photograph"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+              <div class="product-thumbs">
+                @foreach($product->images as $image)
+                  <button type="button" class="product-thumb @if($loop->first) is-active @endif" data-slide="{{ $loop->index }}" aria-label="Show photograph {{ $loop->iteration }} of {{ $imageCount }}" @if($loop->first) aria-pressed="true" @else aria-pressed="false" @endif>
+                    <x-picture src="{{ $image->path }}" alt="" width="84" height="84" loading="lazy" sizes="84px" />
+                  </button>
+                @endforeach
+              </div>
+              <button type="button" class="product-thumb-nav product-thumb-next" aria-label="Next photograph"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
             </div>
           @endif
         @else
@@ -98,6 +106,8 @@
                 <dd>
                   @if($spec->label === 'Packaging')
                     <a href="{{ url('/packaging-type') }}">View packaging options</a>; confirm with your quotation.
+                  @elseif($spec->label === 'Minimum Order' && $spec->value === 'Ask our team for this product.')
+                    One full container is the minimum we accept.
                   @else
                     {{ $spec->value }}
                   @endif
@@ -227,13 +237,36 @@
       }
       const swiper = slider.swiper;
       const thumbs = Array.from(document.querySelectorAll('.product-thumb'));
+      const strip = document.querySelector('.product-thumbs');
+      const reveal = function (thumb) {
+        if (!strip || !thumb) {
+          return;
+        }
+        const target = thumb.offsetLeft - ((strip.clientWidth - thumb.offsetWidth) / 2);
+        strip.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+      };
       const mark = function () {
+        let activeThumb = null;
         thumbs.forEach(function (thumb, index) {
           const active = index === swiper.realIndex;
           thumb.classList.toggle('is-active', active);
           thumb.setAttribute('aria-pressed', active ? 'true' : 'false');
+          if (active) {
+            activeThumb = thumb;
+          }
         });
+        reveal(activeThumb);
       };
+      document.querySelectorAll('.product-prev, .product-thumb-prev').forEach(function (previous) {
+        previous.addEventListener('click', function () {
+          swiper.slidePrev();
+        });
+      });
+      document.querySelectorAll('.product-next, .product-thumb-next').forEach(function (next) {
+        next.addEventListener('click', function () {
+          swiper.slideNext();
+        });
+      });
       thumbs.forEach(function (thumb) {
         thumb.addEventListener('click', function () {
           const index = Number(thumb.dataset.slide);

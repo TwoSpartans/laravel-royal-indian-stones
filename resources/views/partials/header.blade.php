@@ -35,14 +35,14 @@
             <li><a href="{{ url('/stone-basalt') }}">Basalt</a></li>
             <li><a href="{{ url('/stone-soap') }}">Soapstone</a></li>
             <li><a href="{{ url('/stone-travertine') }}">Travertine</a></li>
-            <li><a href="{{ url('/stone-articles') }}">Stone articles</a></li>
           </ul>
         </li>
-        <li><a href="{{ url('/project-gallery') }}" @class(['active' => ($active ?? '') === 'projects']) @if(($active ?? '') === 'projects') aria-current="page" @endif>Projects</a></li>
+        <li><a href="{{ url('/stone-articles') }}" @class(['active' => ($active ?? '') === 'articles']) @if(($active ?? '') === 'articles') aria-current="page" @endif>Stone Articles</a></li>
         <li><a href="{{ url('/aboutus') }}" @class(['active' => ($active ?? '') === 'about']) @if(($active ?? '') === 'about') aria-current="page" @endif>About Us</a></li>
         <li><a href="{{ url('/blog') }}" @class(['active' => ($active ?? '') === 'blog']) @if(($active ?? '') === 'blog') aria-current="page" @endif>Blog</a></li>
-        <li class="dropdown"><a href="{{ url('/general-instruction') }}" @class(['active' => ($active ?? '') === 'resources']) @if(($active ?? '') === 'resources') aria-current="page" @endif><span>Resources</span><i class="bi bi-chevron-down" aria-hidden="true"></i></a>
+        <li class="dropdown"><a href="{{ url('/general-instruction') }}" @class(['active' => in_array(($active ?? ''), ['resources', 'projects'], true)]) @if(($active ?? '') === 'resources') aria-current="page" @endif><span>Resources</span><i class="bi bi-chevron-down" aria-hidden="true"></i></a>
           <ul>
+            <li><a href="{{ url('/project-gallery') }}" @class(['active' => ($active ?? '') === 'projects']) @if(($active ?? '') === 'projects') aria-current="page" @endif>Projects</a></li>
             <li><a href="{{ url('/quality-control') }}">Quality control</a></li>
             <li><a href="{{ url('/packaging-type') }}">Packaging</a></li>
             <li><a href="{{ url('/natural-stone-care') }}">Stone care</a></li>

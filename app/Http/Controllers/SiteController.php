@@ -59,7 +59,7 @@ class SiteController extends Controller
             return view('product', [
                 'product' => $product,
                 'related' => $related,
-                'active' => 'products',
+                'active' => $product->category?->slug === 'stone-articles' ? 'articles' : 'products',
                 'productId' => $product->slug,
                 'title' => $product->searchTitle(),
                 'description' => $product->searchDescription(),
@@ -77,7 +77,7 @@ class SiteController extends Controller
             return view('category', [
                 'category' => $category,
                 'products' => $category->products()->published()->with('images')->orderBy('name')->get(),
-                'active' => 'products',
+                'active' => $category->slug === 'stone-articles' ? 'articles' : 'products',
                 'title' => $category->name.' | Royal Indian Stones',
                 'description' => $category->searchDescription(),
                 'shareImage' => $category->image ? asset($category->image) : null,

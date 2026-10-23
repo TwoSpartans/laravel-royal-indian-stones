@@ -70,7 +70,7 @@
       }
     }
     window.addEventListener('load', headerFixed)
-    onscroll(document, headerFixed)
+    window.addEventListener('scroll', headerFixed, { passive: true })
   }
 
   /**
@@ -79,14 +79,21 @@
   let backtotop = select('.back-to-top')
   if (backtotop) {
     const toggleBacktotop = () => {
-      if (window.scrollY > 100) {
+      if (window.scrollY > 300) {
         backtotop.classList.add('active')
       } else {
         backtotop.classList.remove('active')
       }
     }
     window.addEventListener('load', toggleBacktotop)
-    onscroll(document, toggleBacktotop)
+    window.addEventListener('scroll', toggleBacktotop, { passive: true })
+    backtotop.addEventListener('click', (event) => {
+      event.preventDefault()
+      backtotop.classList.add('is-bouncing')
+      window.setTimeout(() => backtotop.classList.remove('is-bouncing'), 700)
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
+    })
   }
 
   /**

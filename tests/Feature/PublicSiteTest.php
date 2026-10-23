@@ -52,6 +52,9 @@ class PublicSiteTest extends TestCase
             'application' => 'Flooring and paving.',
         ]);
         $product->specs()->create(['label' => 'Origin', 'value' => 'India', 'position' => 0]);
+        $product->specs()->create(['label' => 'Minimum Order', 'value' => 'Ask our team for this product.', 'position' => 1]);
+        $product->images()->create(['path' => 'assets/img/about.jpg', 'alt' => 'First face', 'position' => 0]);
+        $product->images()->create(['path' => 'assets/img/about.jpg', 'alt' => 'Second face', 'position' => 1]);
 
         $this->get('/products')->assertOk()->assertSee('Find the stone for your project');
         $this->get('/sandstone')->assertOk()->assertSee('Jodhpur Pink Sandstone');
@@ -60,6 +63,10 @@ class PublicSiteTest extends TestCase
             ->assertSee('Request a Quote for This Stone')
             ->assertSee('About this stone')
             ->assertSee('Where it is used')
+            ->assertSee('One full container is the minimum we accept.')
+            ->assertSee('aria-label="Previous photograph"', false)
+            ->assertSee('aria-label="Next photograph"', false)
+            ->assertSee('class="product-thumbs"', false)
             ->assertDontSee('Relevant Products');
         $this->get('/sandstone-jodhpur-pink.html')->assertRedirect('/sandstone-jodhpur-pink');
         $this->get('/contact?product=sandstone-jodhpur-pink')->assertOk()->assertSee('Quotation: Jodhpur Pink Sandstone');
@@ -213,6 +220,9 @@ class PublicSiteTest extends TestCase
         $this->assertLessThan($projects, $journal);
         $this->assertSame(1, substr_count($nav, '>Blog</a>'));
         $this->assertLessThan(strpos($nav, '>Resources<'), strpos($nav, '>Blog</a>'));
+        $this->assertSame(1, substr_count($nav, url('/stone-articles')));
+        $this->assertLessThan(strpos($nav, '>About Us</a>'), strpos($nav, '>Stone Articles</a>'));
+        $this->assertGreaterThan(strpos($nav, '>Resources<'), strpos($nav, url('/project-gallery')));
 
         $this->get('/blog')
             ->assertOk()
@@ -221,6 +231,20 @@ class PublicSiteTest extends TestCase
         $this->get('/sandstone-floors')
             ->assertOk()
             ->assertSee('href="'.url('/blog').'" class="active"', false);
+
+        Category::query()->create([
+            'name' => 'Stone Articles',
+            'slug' => 'stone-articles',
+            'position' => 0,
+        ]);
+
+        $this->get('/stone-articles')
+            ->assertOk()
+            ->assertSee('href="'.url('/stone-articles').'" class="active"', false);
+
+        $this->get('/project-gallery')
+            ->assertOk()
+            ->assertSee('href="'.url('/project-gallery').'" class="active"', false);
     }
 
     public function test_header_search_opens_the_catalogue(): void

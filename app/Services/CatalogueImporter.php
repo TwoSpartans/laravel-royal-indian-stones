@@ -9,6 +9,7 @@ use App\Models\ProductSpec;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class CatalogueImporter
@@ -60,12 +61,20 @@ class CatalogueImporter
             }
 
             $slug = substr($file, 0, -5);
-            if (isset($categories[$slug]) || isset($this->reservedSlugs()[$slug])) {
+            if (isset($this->reservedSlugs()[$slug])) {
                 continue;
             }
 
             $product = $this->extract($source.DIRECTORY_SEPARATOR.$file, $file);
             if ($product === null) {
+                continue;
+            }
+
+            if (isset($categories[$slug])) {
+                $slug = Str::slug($product['name']);
+            }
+
+            if ($slug === '' || isset($categories[$slug]) || isset($this->reservedSlugs()[$slug])) {
                 continue;
             }
 
@@ -207,11 +216,15 @@ class CatalogueImporter
             'Thickness' => 'Specify your required thickness in the enquiry.',
             'Packaging' => 'View packaging options; confirm with your quotation.',
             'Lead Time' => 'Confirmed with your quotation.',
-            'Minimum Order' => 'Ask our team for this product.',
+            'Minimum Order' => 'One full container is the minimum we accept.',
         ] as $label => $value) {
             if (! isset($specs[$label])) {
                 $specs[$label] = $value;
             }
+        }
+
+        if (($specs['Minimum Order'] ?? '') === 'Ask our team for this product.') {
+            $specs['Minimum Order'] = 'One full container is the minimum we accept.';
         }
 
         $applicationNode = $this->first($xpath, "//*[contains(concat(' ', normalize-space(@class), ' '), ' product-application ')]");
