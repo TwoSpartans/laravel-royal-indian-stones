@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Post;
 use App\Models\Product;
 use Illuminate\View\View;
 
@@ -27,6 +28,7 @@ class HomeController extends Controller
         return view('home', [
             'categories' => Category::query()->orderBy('position')->get(),
             'featured' => $featured,
+            'posts' => Post::query()->published()->with('postCategory')->orderByDesc('published_on')->orderBy('title')->limit(3)->get(),
             'active' => 'home',
             'title' => 'Indian natural stone | Royal Indian Stones',
             'description' => 'Discover sandstone, granite, marble and more for architecture, interiors and outdoor projects.',

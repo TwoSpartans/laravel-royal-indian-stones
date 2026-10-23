@@ -40,6 +40,7 @@
         </li>
         <li><a href="{{ url('/project-gallery') }}" @class(['active' => ($active ?? '') === 'projects']) @if(($active ?? '') === 'projects') aria-current="page" @endif>Projects</a></li>
         <li><a href="{{ url('/aboutus') }}" @class(['active' => ($active ?? '') === 'about']) @if(($active ?? '') === 'about') aria-current="page" @endif>About Us</a></li>
+        <li><a href="{{ url('/blog') }}" @class(['active' => ($active ?? '') === 'blog']) @if(($active ?? '') === 'blog') aria-current="page" @endif>Blog</a></li>
         <li class="dropdown"><a href="{{ url('/general-instruction') }}" @class(['active' => ($active ?? '') === 'resources']) @if(($active ?? '') === 'resources') aria-current="page" @endif><span>Resources</span><i class="bi bi-chevron-down" aria-hidden="true"></i></a>
           <ul>
             <li><a href="{{ url('/quality-control') }}">Quality control</a></li>
@@ -47,7 +48,6 @@
             <li><a href="{{ url('/natural-stone-care') }}">Stone care</a></li>
             <li><a href="{{ url('/general-instruction') }}">Installation guidance</a></li>
             <li><a href="{{ url('/faq') }}">FAQ</a></li>
-            <li><a href="{{ url('/blog') }}">Blog</a></li>
           </ul>
         </li>
         <li><a href="{{ route('contact') }}" @class(['nav-quote', 'active' => ($active ?? '') === 'contact']) @if(($active ?? '') === 'contact') aria-current="page" @endif data-track="quote_click">Request a Quote</a></li>

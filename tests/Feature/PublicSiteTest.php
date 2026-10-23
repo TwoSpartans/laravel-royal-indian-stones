@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Enquiry;
 use App\Models\NewsletterSubscriber;
 use App\Models\Page;
+use App\Models\Post;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -176,6 +177,50 @@ class PublicSiteTest extends TestCase
         ]);
 
         $this->assertSame(0, Enquiry::query()->count());
+    }
+
+    public function test_the_blog_is_in_the_menu_and_recent_notes_sit_above_the_gallery(): void
+    {
+        Post::query()->create([
+            'slug' => 'sandstone-floors',
+            'title' => 'Choosing sandstone for floors',
+            'summary' => 'A short note on colour and finish.',
+            'body' => '<p>Sandstone for courtyards.</p>',
+            'is_published' => true,
+            'published_on' => '2024-05-01',
+        ]);
+        Post::query()->create([
+            'slug' => 'hidden-note',
+            'title' => 'Unpublished quarry note',
+            'body' => '<p>Not ready.</p>',
+            'is_published' => false,
+        ]);
+
+        $home = $this->get('/');
+        $home->assertOk()
+            ->assertSee('Choosing sandstone for floors')
+            ->assertSee('Read the blog')
+            ->assertDontSee('Unpublished quarry note');
+
+        $html = $home->getContent();
+        $journal = strpos($html, 'id="journal-title"');
+        $projects = strpos($html, 'id="projects-title"');
+        $navStart = strpos($html, 'aria-label="Main navigation"');
+        $navEnd = strpos($html, '</nav>', $navStart);
+        $nav = substr($html, $navStart, $navEnd - $navStart);
+        $this->assertNotFalse($journal);
+        $this->assertNotFalse($projects);
+        $this->assertLessThan($projects, $journal);
+        $this->assertSame(1, substr_count($nav, '>Blog</a>'));
+        $this->assertLessThan(strpos($nav, '>Resources<'), strpos($nav, '>Blog</a>'));
+
+        $this->get('/blog')
+            ->assertOk()
+            ->assertSee('href="'.url('/blog').'" class="active"', false);
+
+        $this->get('/sandstone-floors')
+            ->assertOk()
+            ->assertSee('href="'.url('/blog').'" class="active"', false);
     }
 
     public function test_header_search_opens_the_catalogue(): void

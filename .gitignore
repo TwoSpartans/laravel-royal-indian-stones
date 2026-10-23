@@ -1,4 +1,7 @@
+# Secrets and local environment. .env.example stays tracked.
 *.log
+/error_log
+/public/error_log
 .DS_Store
 .env
 .env.backup
@@ -14,7 +17,8 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
+# Vite-generated production output. Deployment runs npm run build.
+/public/build/
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage

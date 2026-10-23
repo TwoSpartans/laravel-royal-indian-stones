@@ -133,7 +133,7 @@ class SiteController extends Controller
         if ($slug === 'blog') {
             return view('journal', [
                 'posts' => Post::query()->published()->with('postCategory')->orderByDesc('published_on')->orderBy('title')->get(),
-                'active' => 'resources',
+                'active' => 'blog',
                 'title' => 'Blog | Royal Indian Stones',
                 'description' => 'Notes on Indian sandstone, granite, marble, slate, and other natural stones.',
             ]);
@@ -173,7 +173,7 @@ class SiteController extends Controller
 
             return view('post', [
                 'post' => $post,
-                'active' => 'resources',
+                'active' => 'blog',
                 'title' => $post->title.' | Royal Indian Stones',
                 'description' => $post->meta_description ?: $post->summary,
                 'shareImage' => $post->image ? asset($post->image) : null,

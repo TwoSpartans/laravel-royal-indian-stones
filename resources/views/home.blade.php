@@ -166,6 +166,37 @@
       </div>
     </div>
   </section>
+  @if($posts->isNotEmpty())
+    <section class="home-journal" aria-labelledby="journal-title">
+      <div class="container">
+        <div class="section-heading">
+          <div><p class="eyebrow">From the journal</p><h2 id="journal-title">Notes on Indian stone</h2></div>
+          <a class="text-link" href="{{ url('/blog') }}">Read the blog →</a>
+        </div>
+        <div class="journal-grid">
+          @foreach($posts as $post)
+            <a class="catalogue-card" href="{{ url('/'.$post->slug) }}">
+              @if($post->image)
+                <x-picture src="{{ $post->image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" width="800" height="600" loading="lazy" sizes="(max-width: 767px) calc(100vw - 40px), 33vw" />
+              @endif
+              <div class="catalogue-card-body">
+                @if($post->postCategory)
+                  <p class="eyebrow">{{ $post->postCategory->name }}</p>
+                @endif
+                <div class="catalogue-card-title">
+                  <h3>{{ $post->title }}</h3>
+                  <span class="text-link">Read note →</span>
+                </div>
+                @if($post->published_on)
+                  <p class="catalogue-card-detail"><time datetime="{{ $post->published_on->toDateString() }}">{{ $post->published_on->format('j F Y') }}</time></p>
+                @endif
+              </div>
+            </a>
+          @endforeach
+        </div>
+      </div>
+    </section>
+  @endif
   <section class="home-projects soft-section" aria-labelledby="projects-title">
     <div class="container">
       <div class="section-heading">

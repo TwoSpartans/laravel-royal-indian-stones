@@ -26,6 +26,7 @@
         <div class="col-lg-2 col-md-6 footer-links">
           <h4>Useful Informations</h4>
           <ul>
+            <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ url('/blog') }}">Blog</a></li>
             <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ url('/natural-stone-care') }}">Natural Stone Care</a></li>
             <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ url('/general-instruction') }}">General Instruction</a></li>
             <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ url('/packaging-type') }}">Packaging Type</a></li>
