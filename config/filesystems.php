@@ -30,6 +30,13 @@ return [
 
     'disks' => [
 
+        'portal' => [
+            'driver' => 'local',
+            'root' => storage_path('app/portal'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

@@ -2,6 +2,7 @@
   $messagesActive = request()->routeIs('admin.enquiries', 'admin.enquiries.*');
   $productsActive = request()->routeIs('admin.products.*');
   $postsActive = request()->routeIs('admin.posts.*');
+  $journalActive = request()->routeIs('admin.journal.*');
   $categoriesActive = request()->routeIs('admin.post-categories.*');
   $commentsActive = request()->routeIs('admin.comments.*');
   $newsletterActive = request()->routeIs('admin.newsletter', 'admin.newsletter.*');
@@ -52,6 +53,10 @@
         <i class="bi bi-journal-text"></i>
         <span>Blog</span>
       </a>
+      <a href="{{ route('admin.journal.edit') }}" class="admin-nav-link {{ $journalActive ? 'is-active' : '' }}" @if($journalActive) aria-current="page" @endif>
+        <i class="bi bi-newspaper"></i>
+        <span>Journal page</span>
+      </a>
       <a href="{{ route('admin.post-categories.index') }}" class="admin-nav-link {{ $categoriesActive ? 'is-active' : '' }}" @if($categoriesActive) aria-current="page" @endif>
         <i class="bi bi-tags"></i>
         <span>Categories</span>
@@ -88,6 +93,10 @@
       <a href="{{ route('admin.outreach.index') }}" class="admin-nav-link {{ $outreachActive ? 'is-active' : '' }}" @if($outreachActive) aria-current="page" @endif>
         <i class="bi bi-send"></i>
         <span>Outreach</span>
+      </a>
+      <a href="{{ route('portal.login') }}" class="admin-nav-link">
+        <i class="bi bi-people"></i>
+        <span>Staff portal</span>
       </a>
     </div>
   </details>

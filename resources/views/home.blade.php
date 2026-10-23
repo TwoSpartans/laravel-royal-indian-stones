@@ -74,7 +74,7 @@
           @if(! in_array($category->slug, ['stone-applications', 'stone-articles'], true))
             <a class="catalogue-card" href="{{ url('/'.$category->slug) }}">
               @if($category->image)
-                <x-picture src="{{ $category->image }}" alt="{{ $category->name }} stone collection" width="640" height="480" loading="lazy" sizes="(max-width: 575px) calc(100vw - 32px), (max-width: 991px) calc(50vw - 20px), 340px" />
+                <x-picture src="{{ $category->image }}" alt="{{ $category->name }} stone collection" width="800" height="600" loading="lazy" sizes="(max-width: 575px) calc(100vw - 32px), (max-width: 991px) calc(50vw - 20px), 380px" />
               @endif
               <div class="catalogue-card-body">
                 <div class="catalogue-card-title">

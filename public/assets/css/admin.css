@@ -1470,3 +1470,19 @@ body {
     flex-direction: column;
   }
 }
+
+.journal-settings {
+  max-width: 760px;
+}
+
+.journal-settings h2 {
+  margin-bottom: 0.35rem;
+  font-size: 1.35rem;
+}
+
+.journal-settings-preview {
+  display: block;
+  width: 240px;
+  height: 160px;
+  object-fit: cover;
+}

@@ -70,7 +70,7 @@ class CanonicalPublicUrl
     {
         $first = explode('/', ltrim($path, '/'))[0] ?? '';
 
-        return in_array($first, ['admin', 'up', 'assets', 'storage', 'build'], true);
+        return in_array($first, ['admin', 'portal', 'up', 'assets', 'storage', 'build'], true);
     }
 
     private function productionOrigin(): ?string

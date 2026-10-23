@@ -38,6 +38,16 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->ip());
         });
 
+        RateLimiter::for('portal-login', function (Request $request): Limit {
+            $email = Str::lower($request->string('email')->toString());
+
+            return Limit::perMinute(5)->by($email.'|'.$request->ip());
+        });
+
+        RateLimiter::for('portal-clock', function (Request $request): Limit {
+            return Limit::perMinute(30)->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()));
+        });
+
         View::composer(['admin.layout', 'admin.dashboard'], AdminShellComposer::class);
     }
 

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSpec;
+use App\Support\CategoryCovers;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -122,6 +123,7 @@ class CatalogueImporter
         }
 
         $this->fillCategoryImages();
+        CategoryCovers::apply();
         $this->writeCatalogueJson();
 
         return $count;

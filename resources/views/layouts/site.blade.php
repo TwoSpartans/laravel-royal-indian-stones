@@ -7,12 +7,12 @@
 @if(!empty($description))
 <meta name="description" content="{{ $description }}">
 @endif
-<link rel="canonical" href="{{ url()->current() }}">
+<link rel="canonical" href="{{ $canonical ?? url()->current() }}">
 <meta property="og:title" content="{{ $title ?? 'Royal Indian Stones' }}">
 @if(!empty($description))
 <meta property="og:description" content="{{ $description }}">
 @endif
-<meta property="og:url" content="{{ url()->current() }}">
+<meta property="og:url" content="{{ $canonical ?? url()->current() }}">
 <meta property="og:type" content="website">
 <meta property="og:image" content="{{ $shareImage ?? asset('assets/img/slide/slide-1.jpg') }}">
 <meta property="og:site_name" content="Royal Indian Stones">
@@ -46,7 +46,7 @@
 <link href="{{ asset('assets/css/improvements.css') }}?v=67" rel="stylesheet">
 @php
     $deferredStyles = [
-        'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap',
+        'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap',
         asset('assets/vendor/animate.css/animate.min.css'),
         asset('assets/vendor/aos/aos.css'),
         asset('assets/vendor/glightbox/css/glightbox.min.css'),

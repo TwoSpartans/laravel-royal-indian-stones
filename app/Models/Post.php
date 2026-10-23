@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ReadingTime;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -42,9 +43,36 @@ class Post extends Model
         return $this->is_published && $this->status === 'published';
     }
 
+    public function readingMinutes(): int
+    {
+        if ($this->reading_minutes !== null) {
+            return max(1, (int) $this->reading_minutes);
+        }
+
+        return ReadingTime::minutesFor($this);
+    }
+
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('is_published', true);
+        return $query
+            ->where('is_published', true)
+            ->where(function (Builder $query): void {
+                $query->where('status', 'published')->orWhereNull('status');
+            })
+            ->where(function (Builder $query): void {
+                $query->whereNull('scheduled_for')->orWhere('scheduled_for', '<=', now());
+            });
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Post $post): void {
+            $affectsReading = $post->reading_minutes === null
+                || $post->isDirty(['body', 'summary', 'body_document', 'content_source']);
+            if ($affectsReading) {
+                $post->reading_minutes = ReadingTime::minutesFor($post);
+            }
+        });
     }
 
     protected function casts(): array
@@ -55,6 +83,7 @@ class Post extends Model
             'body_document' => 'array',
             'tags' => 'array',
             'scheduled_for' => 'datetime',
+            'reading_minutes' => 'integer',
         ];
     }
 }

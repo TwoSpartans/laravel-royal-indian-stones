@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BlogStudioController;
 use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
+use App\Http\Controllers\Admin\JournalSettingController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OutreachController;
@@ -26,7 +27,7 @@ Route::middleware([NoindexAdminResponses::class, 'guest'])->group(function () {
     Route::post('/admin/login', [LoginController::class, 'store'])->middleware('throttle:admin-login')->name('admin.login.store');
 });
 
-Route::middleware([NoindexAdminResponses::class, 'auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('admin.dashboard'));
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
@@ -57,6 +58,8 @@ Route::middleware([NoindexAdminResponses::class, 'auth'])->prefix('admin')->name
     Route::get('/comments', [AdminCommentController::class, 'index'])->name('comments.index');
     Route::post('/comments/{comment}/approve', [AdminCommentController::class, 'approve'])->name('comments.approve');
     Route::delete('/comments/{comment}', [AdminCommentController::class, 'destroy'])->name('comments.destroy');
+    Route::get('/journal', [JournalSettingController::class, 'edit'])->name('journal.edit');
+    Route::put('/journal', [JournalSettingController::class, 'update'])->name('journal.update');
     Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create');
     Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');
@@ -74,6 +77,11 @@ Route::get('/contact', ContactController::class)->name('contact');
 Route::post('/contact', EnquiryController::class)->name('enquiry.store');
 Route::post('/newsletter', NewsletterController::class)->name('newsletter.store');
 Route::get('/sitemap.xml', SitemapXmlController::class)->name('sitemap.xml');
+Route::get('/blogs', function () {
+    $query = request()->getQueryString();
+
+    return redirect('/blog'.($query ? '?'.$query : ''), 301);
+});
 Route::post('/{slug}/comments', [CommentController::class, 'store'])->middleware('throttle:comments')->where('slug', '[A-Za-z0-9_-]+')->name('comments.store');
 
 Route::redirect('/index.html', '/', 301);
@@ -87,6 +95,8 @@ Route::redirect(
 Route::get('/{slug}.html', function (string $slug) {
     return redirect('/'.$slug, 301);
 })->where('slug', '[A-Za-z0-9_-]+');
+
+require __DIR__.'/portal.php';
 
 Route::get('/{slug}', [SiteController::class, 'show'])
     ->where('slug', '[A-Za-z0-9_-]+')

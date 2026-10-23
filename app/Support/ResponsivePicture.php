@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Category;
 use App\Models\JournalMedia;
+use App\Models\JournalSetting;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\ProductImage;
@@ -139,6 +140,8 @@ class ResponsivePicture
     {
         $paths = [
             'assets/img/about.jpg',
+            'assets/img/journal/design/cover-heritage.png',
+            'assets/img/journal/design/maker-workshop.png',
             'assets/img/slide/slide-1.jpg',
             'assets/img/slide/slide-3.jpg',
             'assets/img/slide/slide-5.jpg',
@@ -175,6 +178,15 @@ class ResponsivePicture
         foreach ([ProductImage::class, Category::class, Project::class, Post::class, JournalMedia::class] as $model) {
             $column = $model === ProductImage::class || $model === JournalMedia::class ? 'path' : 'image';
             $paths = array_merge($paths, $model::query()->whereNotNull($column)->pluck($column)->all());
+        }
+
+        $journal = JournalSetting::query()->first();
+        if ($journal instanceof JournalSetting) {
+            foreach (['cover_image', 'maker_image'] as $column) {
+                if (is_string($journal->{$column}) && $journal->{$column} !== '') {
+                    $paths[] = $journal->{$column};
+                }
+            }
         }
 
         Page::query()->select(['id', 'body'])->orderBy('id')->chunk(40, function ($pages) use (&$paths): void {

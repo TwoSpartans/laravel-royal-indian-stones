@@ -8,6 +8,8 @@ use App\Models\Page;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\Project;
+use App\Services\BlogStudio\StudioDocumentService;
+use App\Services\JournalIndex;
 use App\Support\LaterPages;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -131,12 +133,7 @@ class SiteController extends Controller
         }
 
         if ($slug === 'blog') {
-            return view('journal', [
-                'posts' => Post::query()->published()->with('postCategory')->orderByDesc('published_on')->orderBy('title')->get(),
-                'active' => 'blog',
-                'title' => 'Blog | Royal Indian Stones',
-                'description' => 'Notes on Indian sandstone, granite, marble, slate, and other natural stones.',
-            ]);
+            return app(JournalIndex::class)->respond(request());
         }
 
         if ($slug === 'aboutus') {
@@ -161,6 +158,8 @@ class SiteController extends Controller
                 'description' => $page->meta_description ?: $page->title.' from Royal Indian Stones.',
             ]);
         }
+
+        app(StudioDocumentService::class)->publishDue();
 
         $post = $this->findBySlug(
             Post::query()->published()->with(['postCategory', 'comments' => fn ($query) => $query->where('approved', true)->latest()]),
@@ -310,6 +309,19 @@ class SiteController extends Controller
      */
     private function articleSchema(Post $post): array
     {
+        $posting = array_filter([
+            '@type' => 'BlogPosting',
+            'headline' => $post->title,
+            'datePublished' => $post->published_on?->toDateString(),
+            'dateModified' => $post->updated_at?->toDateString(),
+            'description' => $post->meta_description ?: $post->summary,
+            'image' => $post->image ? asset($post->image) : null,
+            'mainEntityOfPage' => url('/'.$post->slug),
+            'timeRequired' => 'PT'.$post->readingMinutes().'M',
+            'author' => ['@type' => 'Organization', 'name' => 'Royal Indian Stones'],
+            'publisher' => ['@type' => 'Organization', 'name' => 'Royal Indian Stones'],
+        ], fn (mixed $value): bool => $value !== null && $value !== '');
+
         return [
             '@context' => 'https://schema.org',
             '@graph' => [
@@ -321,14 +333,7 @@ class SiteController extends Controller
                         ['@type' => 'ListItem', 'position' => 3, 'name' => $post->title],
                     ],
                 ],
-                [
-                    '@type' => 'Article',
-                    'headline' => $post->title,
-                    'datePublished' => $post->published_on?->toDateString(),
-                    'description' => $post->summary,
-                    'image' => $post->image ? asset($post->image) : null,
-                    'author' => ['@type' => 'Organization', 'name' => 'Royal Indian Stones'],
-                ],
+                $posting,
             ],
         ];
     }

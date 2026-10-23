@@ -142,6 +142,7 @@ class PostController extends Controller
                 $image = null;
             }
 
+            $published = $request->boolean('is_published');
             $post->fill([
                 'title' => $data['title'],
                 'slug' => $data['slug'],
@@ -150,9 +151,15 @@ class PostController extends Controller
                 'meta_description' => $data['meta_description'] ?? null,
                 'body' => $body,
                 'post_category_id' => $data['post_category_id'] ?? null,
-                'is_published' => $request->boolean('is_published'),
+                'is_published' => $published,
                 'image' => $image,
             ]);
+            if ($published) {
+                $post->status = 'published';
+                $post->scheduled_for = null;
+            } elseif ($post->status === 'published' || $post->status === null || $post->status === '') {
+                $post->status = 'draft';
+            }
             $post->save();
         } catch (ValidationException $exception) {
             $this->deleteFiles($created);
