@@ -4,26 +4,13 @@
 <main id="main" class="journal">
   <section class="journal-intro-band" aria-labelledby="journal-title">
     <div class="container">
-      <nav class="journal-crumb" aria-label="Breadcrumb">
-        <ol>
-          <li><a href="{{ url('/') }}">Home</a></li>
-          @if($mode === 'landing' || $mode === 'empty')
-            <li><span aria-current="page">The Journal</span></li>
-          @else
-            <li><a href="{{ url('/blog') }}">The Journal</a></li>
-            @if($category)
-              <li><span aria-current="page">{{ $category->name }}</span></li>
-            @elseif($search !== '')
-              <li><span aria-current="page">Search</span></li>
-            @else
-              <li><span aria-current="page">Latest stories</span></li>
-            @endif
-          @endif
-        </ol>
-      </nav>
-      <p class="journal-eyebrow">{{ $copy['eyebrow'] }}</p>
-      <h1 id="journal-title">{{ $copy['heading_lead'] }} <em>{{ $copy['heading_emphasis'] }}</em></h1>
-      <p class="journal-lede">{{ $copy['introduction'] }}</p>
+      <div class="journal-intro">
+        <div class="journal-intro-title">
+          <p class="journal-eyebrow">{{ $copy['eyebrow'] }}</p>
+          <h1 id="journal-title">{{ $copy['heading_lead'] }} <em>{{ $copy['heading_emphasis'] }}</em></h1>
+        </div>
+        <p class="journal-lede">{{ $copy['introduction'] }}</p>
+      </div>
     </div>
   </section>
 
@@ -39,10 +26,10 @@
           <p class="journal-feature-kicker">Featured story @if($featured->postCategory)<span aria-hidden="true"> / </span>{{ $featured->postCategory->name }}@endif</p>
           <h2>{{ $featured->title }}</h2>
           @if(trim((string) $featured->summary) !== '')
-            <p>{{ $featured->summary }}</p>
+            <p class="journal-feature-summary">{{ $featured->summary }}</p>
           @endif
           <p class="journal-feature-meta">{{ $featured->readingMinutes() }} min read</p>
-          <span class="journal-button">Read the story <span aria-hidden="true">↗</span></span>
+          <span class="journal-button">Read the story<span class="journal-arrow" aria-hidden="true">↗</span></span>
         </div>
       </a>
     </article>
@@ -70,6 +57,12 @@
               Latest stories
             @endif
           </h2>
+          <nav class="journal-pills" aria-label="Topics">
+            <a href="{{ url('/blog') }}" @if($category === null && $search === '') aria-current="page" @endif>All stories</a>
+            @foreach($topics as $topic)
+              <a href="{{ url('/blog').'?'.http_build_query(['category' => $topic->slug]) }}" @if($category && $category->is($topic)) aria-current="page" @endif>{{ $topic->name }}</a>
+            @endforeach
+          </nav>
           <form class="journal-search" method="get" action="{{ url('/blog') }}" role="search">
             @if($category)
               <input type="hidden" name="category" value="{{ $category->slug }}">
@@ -82,13 +75,6 @@
             </div>
           </form>
         </div>
-
-        <nav class="journal-pills" aria-label="Topics">
-          <a href="{{ url('/blog') }}" @if($category === null && $search === '') aria-current="page" @endif>All stories</a>
-          @foreach($topics as $topic)
-            <a href="{{ url('/blog').'?'.http_build_query(['category' => $topic->slug]) }}" @if($category && $category->is($topic)) aria-current="page" @endif>{{ $topic->name }}</a>
-          @endforeach
-        </nav>
 
         @if($resetUrl && ($search !== '' || $category))
           <p class="journal-reset"><a href="{{ $resetUrl }}">{{ $resetLabel }}</a></p>
@@ -116,7 +102,7 @@
                 @endif
               @endforeach
               @if($posts->hasMorePages())
-                <a class="journal-pager-next" href="{{ $posts->nextPageUrl() }}" rel="next">Next <span aria-hidden="true">→</span></a>
+                <a class="journal-pager-next" href="{{ $posts->nextPageUrl() }}" rel="next">Next <span class="journal-arrow" aria-hidden="true">→</span></a>
               @endif
             </nav>
           @endif
@@ -141,7 +127,7 @@
 @endsection
 
 @push('head')
-<link href="{{ asset('assets/css/journal.css') }}?v=3" rel="stylesheet">
+<link href="{{ asset('assets/css/journal.css') }}?v=10" rel="stylesheet">
 @if($posts && $posts->previousPageUrl())
 <link rel="prev" href="{{ $posts->previousPageUrl() }}">
 @endif

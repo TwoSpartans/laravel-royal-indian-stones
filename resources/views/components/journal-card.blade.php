@@ -29,7 +29,7 @@
         <p class="journal-card-excerpt">{{ $summary }}</p>
       @endif
       <p class="journal-card-meta"><span>{{ $post->readingMinutes() }} min read</span></p>
-      <p class="journal-card-more">Read story <span aria-hidden="true">↗</span></p>
+      <p class="journal-card-more"><span class="journal-card-more-label">Read story</span><span class="journal-arrow" aria-hidden="true">↗</span></p>
     </div>
   </a>
 </article>
