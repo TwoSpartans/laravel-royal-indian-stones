@@ -23,8 +23,8 @@ class BootstrapPortalEmployer extends Command
         $password = config('portal.employer_password');
         $name = config('portal.employer_name');
 
-        if (! is_string($email) || $email === '' || ! is_string($password) || strlen($password) < 12 || ! is_string($name) || $name === '') {
-            $this->error('Set PORTAL_EMPLOYER_NAME, PORTAL_EMPLOYER_EMAIL, and a PORTAL_EMPLOYER_PASSWORD of at least 12 characters.');
+        if (! is_string($email) || $email === '' || ! is_string($password) || strlen($password) < 8 || ! is_string($name) || $name === '') {
+            $this->error('Set PORTAL_EMPLOYER_NAME, PORTAL_EMPLOYER_EMAIL, and a PORTAL_EMPLOYER_PASSWORD of at least 8 characters.');
 
             return self::FAILURE;
         }

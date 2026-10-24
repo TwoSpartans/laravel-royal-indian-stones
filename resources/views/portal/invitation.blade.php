@@ -9,7 +9,7 @@
   <div class="field">
     <label for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="new-password" required>
-    <p class="help">At least 12 characters, with upper and lower case letters and a number.</p>
+    <p class="help">At least 8 characters, with upper and lower case letters and a number.</p>
   </div>
   <div class="field">
     <label for="password_confirmation">Confirm password</label>

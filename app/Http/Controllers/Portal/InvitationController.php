@@ -30,7 +30,7 @@ class InvitationController extends Controller
     {
         $invitation = $this->invitation($token);
         $data = $request->validate([
-            'password' => ['required', 'confirmed', PasswordRule::min(12)->letters()->mixedCase()->numbers()],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->letters()->mixedCase()->numbers()],
             'acknowledge' => ['accepted'],
         ], [
             'acknowledge.accepted' => 'Read the data notice and confirm it before continuing.',

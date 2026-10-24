@@ -49,4 +49,26 @@ class PortalEmployerBootstrapTest extends TestCase
             'reason' => 'The employer does not apply.',
         ])->assertForbidden();
     }
+
+    public function test_the_employer_password_may_be_eight_characters(): void
+    {
+        config([
+            'portal.employer_name' => 'Employer',
+            'portal.employer_email' => 'admin@royalindianstones.com',
+            'portal.employer_password' => 'passwor',
+        ]);
+
+        $this->artisan('portal:bootstrap-employer', ['--with-site-admin' => true])
+            ->assertFailed();
+
+        config(['portal.employer_password' => 'password']);
+
+        $this->artisan('portal:bootstrap-employer', ['--with-site-admin' => true])
+            ->assertSuccessful();
+
+        $this->post('/portal/login', [
+            'email' => 'admin@royalindianstones.com',
+            'password' => 'password',
+        ])->assertRedirect(route('portal.home'));
+    }
 }

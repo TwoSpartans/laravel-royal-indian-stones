@@ -101,7 +101,7 @@ PORTAL_PAYROLL_REVIEW_CONFIRMED=false
 PORTAL_PAYMENT_PROVIDER=
 ```
 
-The password must be at least 12 characters. The command does not print it. The employer then signs in at `/portal/login` and enrolls an authenticator. Invite everyone else from People. They set a password from the one-time link.
+The password must be at least 8 characters. The command does not print it. The employer then signs in at `/portal/login` and enrolls an authenticator. Invite everyone else from People. They set a password from the one-time link.
 
 On production, set `SESSION_SECURE_COOKIE=true` and `SESSION_ENCRYPT=true` in `.env`, then rebuild the config cache. The current `.env` value is left as-is so existing studio sessions are not invalidated by this change.
 

@@ -36,7 +36,7 @@
       request()->routeIs('portal.notifications') => 'Decisions and requests land here. Open one to mark it read.',
       request()->routeIs('portal.login') => 'Sign in with the work email and password you were given. There is no public registration.',
       request()->routeIs('portal.password.*') => 'Use the work email. The reset link expires, and a deactivated account cannot set a new password.',
-      request()->routeIs('portal.invitation.*') => 'Set a password of at least 12 characters. The link works once.',
+      request()->routeIs('portal.invitation.*') => 'Set a password of at least 8 characters. The link works once.',
       request()->routeIs('portal.mfa.*') => 'Employer and Admin / HR confirm an authenticator code after the password. The employer who also runs the website skips this when single-admin mode is on.',
       request()->routeIs('portal.notice', 'portal.privacy') => 'Read the notice, then accept it. Attendance and the other work sections stay closed until you do.',
       default => 'Use the menu for attendance, leave, tasks, and expenses. On a phone, use the bar at the bottom.',
