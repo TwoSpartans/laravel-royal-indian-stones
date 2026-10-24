@@ -10,7 +10,10 @@ use App\Models\Shift;
 use App\Models\User;
 use App\Models\WorkLocation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 use Tests\Concerns\SignsInToPortal;
 use Tests\TestCase;
 
@@ -62,6 +65,22 @@ class PortalInvitationTest extends TestCase
         $this->signIn($hr)->post('/portal/people', $this->payload($manager, 'admin_hr', 'admin2@example.com'))
             ->assertRedirect();
         $this->assertNotNull(PortalInvitation::query()->where('email', 'admin2@example.com')->first());
+    }
+
+    public function test_a_mail_failure_still_keeps_the_invitation_link(): void
+    {
+        Event::listen(MessageSending::class, function (): void {
+            throw new RuntimeException('The mail transport refused the invitation.');
+        });
+        $employer = User::factory()->employer()->create();
+        $manager = User::factory()->manager()->create();
+
+        $this->signIn($employer)
+            ->post('/portal/people', $this->payload($manager, 'employee', 'kept.link@example.com'))
+            ->assertRedirect()
+            ->assertSessionHas('invitation_url');
+
+        $this->assertNotNull(PortalInvitation::query()->where('email', 'kept.link@example.com')->first());
     }
 
     public function test_the_employer_can_invite_and_revoke_admin_hr(): void

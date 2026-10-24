@@ -82,10 +82,13 @@ class DirectoryController extends PortalController
         abort_unless($this->access->canAssignRole($actor, $role), 403);
 
         $result = $provision->invite($actor, $data, $role, $request->ip());
+        $status = $result['mailed']
+            ? 'Invitation created and sent through the configured mailer.'
+            : 'Invitation created. The email could not be sent, so copy the link below.';
 
         return redirect()
             ->route('portal.people.show', $result['user'])
-            ->with('status', 'Invitation created and sent through the configured mailer.')
+            ->with('status', $status)
             ->with('invitation_url', $result['url']);
     }
 

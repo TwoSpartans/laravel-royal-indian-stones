@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Throwable;
 
 class ProvisionEmployee
 {
@@ -21,11 +22,11 @@ class ProvisionEmployee
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @return array{user: User, url: string}
+     * @return array{user: User, url: string, mailed: bool}
      */
     public function invite(User $actor, array $attributes, PortalRole $role, ?string $ip): array
     {
-        return DB::transaction(function () use ($actor, $attributes, $role, $ip): array {
+        $result = DB::transaction(function () use ($actor, $attributes, $role, $ip): array {
             $user = new User;
             $user->forceFill([
                 'name' => $attributes['name'],
@@ -52,16 +53,33 @@ class ProvisionEmployee
                 'invited_by' => $actor->id,
             ]);
 
-            $url = route('portal.invitation.show', ['token' => $plain]);
-            Mail::to($user->email)->send(new PortalInvitationMail($url, $user->name, $role->label()));
-
             $this->audit->write($actor, 'staff.invited', $user, [
                 'role' => $role->value,
                 'employee_code' => $profile->employee_code,
             ], $ip);
 
-            return ['user' => $user, 'url' => $url];
+            return [
+                'user' => $user,
+                'url' => route('portal.invitation.show', ['token' => $plain]),
+            ];
         });
+
+        $result['mailed'] = $this->deliverInvitation($result['user'], $result['url'], $role);
+
+        return $result;
+    }
+
+    private function deliverInvitation(User $user, string $url, PortalRole $role): bool
+    {
+        try {
+            Mail::to($user->email)->send(new PortalInvitationMail($url, $user->name, $role->label()));
+
+            return true;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return false;
+        }
     }
 
     /**
