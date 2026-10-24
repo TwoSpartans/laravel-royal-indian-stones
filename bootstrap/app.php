@@ -4,6 +4,7 @@ use App\Http\Middleware\CanonicalPublicUrl;
 use App\Http\Middleware\EnsureMfaSatisfied;
 use App\Http\Middleware\EnsureNoticeAcknowledged;
 use App\Http\Middleware\EnsurePortalAccount;
+use App\Http\Middleware\EnsurePortalSection;
 use App\Http\Middleware\EnsureSiteAdministrator;
 use App\Http\Middleware\NoindexAdminResponses;
 use Illuminate\Console\Scheduling\Schedule;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'portal.account' => EnsurePortalAccount::class,
             'portal.mfa' => EnsureMfaSatisfied::class,
             'portal.notice' => EnsureNoticeAcknowledged::class,
+            'portal.section' => EnsurePortalSection::class,
             'site.admin' => EnsureSiteAdministrator::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {

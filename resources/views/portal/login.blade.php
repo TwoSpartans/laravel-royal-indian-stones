@@ -1,8 +1,14 @@
-@extends('portal.guest')
+@extends('portal.auth')
 @section('title', 'Sign in')
 @section('content')
 <h1>Sign in</h1>
-<p class="muted">Private staff access for Royal Indian Stones. This page is not part of the public catalogue.</p>
+<p class="auth-lead">Use the work email issued for your staff account.</p>
+@if (session('status'))
+  <p class="auth-status" role="status">{{ session('status') }}</p>
+@endif
+@error('email')
+  <p class="auth-error" role="alert">{{ $message }}</p>
+@enderror
 <form method="post" action="{{ route('portal.login.store') }}">
   @csrf
   <div class="field">
@@ -13,9 +19,21 @@
     <label for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required>
   </div>
-  <button type="submit">Sign in</button>
+  <div class="auth-tools">
+    <label class="check" for="show-password">
+      <input id="show-password" type="checkbox">
+      <span>Show password</span>
+    </label>
+    <a href="{{ route('portal.password.request') }}">Forgot password</a>
+  </div>
+  <button class="auth-submit" type="submit">Sign in</button>
 </form>
-<p><a href="{{ route('portal.password.request') }}">Forgot password</a></p>
-@include('portal.partials.notice')
-<p class="help"><a href="{{ route('portal.privacy') }}">Read the full data notice</a>. Accounts are created by the employer or HR. There is no public registration.</p>
+<p class="auth-note">This page is not part of the public catalogue. <a href="{{ route('portal.privacy') }}">Read the full data notice</a>.</p>
+<script>
+document.getElementById('show-password').addEventListener('change', function () {
+  var password = document.getElementById('password');
+  password.type = this.checked ? 'text' : 'password';
+  password.focus();
+});
+</script>
 @endsection

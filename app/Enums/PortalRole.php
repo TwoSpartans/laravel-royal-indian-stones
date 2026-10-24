@@ -26,6 +26,6 @@ enum PortalRole: string
 
     public function canAdminister(): bool
     {
-        return $this === self::Employer || $this === self::AdminHr;
+        return $this === self::Employer || $this === self::AdminHr || $this === self::Manager;
     }
 }

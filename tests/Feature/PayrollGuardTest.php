@@ -53,7 +53,8 @@ class PayrollGuardTest extends TestCase
         ]);
         $payslip = Payslip::query()->firstOrFail();
 
-        $this->signIn($manager)->get(route('portal.payroll.show', $payslip))->assertNotFound();
-        $this->signIn($manager)->get('/portal/payroll')->assertForbidden();
+        $this->signIn($manager)->get('/portal/payroll')->assertOk();
+        $this->signIn($manager)->get(route('portal.payroll.show', $payslip))->assertOk();
+        $this->signIn($employee)->get('/portal/payroll')->assertForbidden();
     }
 }

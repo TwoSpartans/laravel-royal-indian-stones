@@ -42,7 +42,30 @@ class User extends Authenticatable
 
     public function requiresMfa(): bool
     {
-        return $this->portal_role?->requiresMfa() ?? false;
+        if (! ($this->portal_role?->requiresMfa() ?? false)) {
+            return false;
+        }
+
+        return ! ($this->is_site_admin && $this->portal_role === PortalRole::Employer && config('portal.single_admin'));
+    }
+
+    public function recordsOwnAttendance(): bool
+    {
+        return $this->portal_role !== PortalRole::Employer;
+    }
+
+    public function canOpenPortalSection(string $section): bool
+    {
+        if ($this->portal_role !== PortalRole::Employee) {
+            return true;
+        }
+
+        $allowed = $this->profile?->visible_sections;
+        if (! is_array($allowed)) {
+            $allowed = array_keys(config('portal.employee_sections'));
+        }
+
+        return in_array($section, $allowed, true);
     }
 
     public function profile(): HasOne

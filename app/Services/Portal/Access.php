@@ -33,15 +33,7 @@ class Access
 
     public function canAssignRole(User $actor, PortalRole $role): bool
     {
-        if (! $this->canAdminister($actor) || $role === PortalRole::Employer) {
-            return false;
-        }
-
-        if ($role === PortalRole::AdminHr) {
-            return $this->role($actor) === PortalRole::Employer;
-        }
-
-        return true;
+        return $this->canAdminister($actor) && $role !== PortalRole::Employer;
     }
 
     public function canDeactivate(User $actor, User $subject): bool
@@ -51,7 +43,7 @@ class Access
         }
 
         $subjectRole = $this->role($subject);
-        if (($subjectRole === PortalRole::Employer || $subjectRole === PortalRole::AdminHr) && $this->role($actor) !== PortalRole::Employer) {
+        if (in_array($subjectRole, [PortalRole::Employer, PortalRole::AdminHr, PortalRole::Manager], true) && $this->role($actor) !== PortalRole::Employer) {
             return false;
         }
 

@@ -33,7 +33,7 @@ class WorkplaceController extends PortalController
             'leaveTypes' => LeaveType::query()->orderBy('name')->get(),
             'devices' => RegisteredDevice::query()->with('user')->latest('last_seen_at')->limit(40)->get(),
             'grants' => RemoteWorkAuthorization::query()->with('user')->latest()->limit(40)->get(),
-            'events' => AccessEvent::query()->with('user')->latest('occurred_at')->limit(40)->get(),
+            'reviews' => AccessEvent::query()->with('user')->whereNull('reviewed_at')->whereIn('classification', ['outside_network', 'unable_to_verify'])->latest('occurred_at')->limit(12)->get(),
             'people' => User::query()->whereNotNull('portal_role')->orderBy('name')->get(),
         ]);
     }

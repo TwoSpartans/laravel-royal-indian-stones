@@ -29,45 +29,66 @@ class BootstrapPortalEmployer extends Command
             return self::FAILURE;
         }
 
-        if (User::query()->where('email', strtolower($email))->exists()) {
-            $this->error('That email already has an account. The command will not change an existing password.');
+        $email = strtolower($email);
+        $user = User::query()->where('email', $email)->first();
+
+        if ($user instanceof User && $user->portal_role !== null && $user->portal_role !== PortalRole::Employer) {
+            $this->error('That email already belongs to '.$user->portal_role->label().'. Choose a different PORTAL_EMPLOYER_EMAIL.');
 
             return self::FAILURE;
         }
 
-        $user = new User;
+        $created = ! $user instanceof User;
+        if (! $user instanceof User) {
+            $user = new User;
+        }
+
         $user->forceFill([
-            'name' => $name,
-            'email' => strtolower($email),
+            'name' => $created ? $name : ($user->name !== '' ? $user->name : $name),
+            'email' => $email,
             'password' => $password,
-            'is_site_admin' => (bool) $this->option('with-site-admin'),
+            'is_site_admin' => (bool) $this->option('with-site-admin') || (bool) $user->is_site_admin,
             'portal_role' => PortalRole::Employer,
             'password_set_at' => now(),
-            'email_verified_at' => now(),
-            'timezone' => 'Asia/Kolkata',
+            'email_verified_at' => $user->email_verified_at ?? now(),
+            'deactivated_at' => null,
+            'timezone' => $user->timezone ?: 'Asia/Kolkata',
         ])->save();
 
-        $location = WorkLocation::query()->where('name', 'Jodhpur Head Office')->first();
-        $department = Department::query()->where('name', 'Administration')->first();
-        $shift = Shift::query()->where('name', 'General')->first();
+        $this->ensureProfile($user, $provision);
 
-        $provision->profile($user, [
-            'job_title' => 'Employer',
-            'department_id' => $department?->id,
-            'work_location_id' => $location?->id,
-            'shift_id' => $shift?->id,
-            'joined_on' => now()->toDateString(),
-        ], EmploymentStatus::Active);
-        $user->profile?->forceFill([
-            'data_notice_acknowledged_at' => now(),
-            'data_notice_version' => config('portal.notice_version'),
-        ])->save();
-        $provision->balances($user);
-        $provision->checklist($user, 'onboarding', config('portal.onboarding_items'));
-
-        $this->info('Employer account created for '.$user->email.'. Sign in at /portal/login and set up an authenticator.');
-        $this->line('The password was not printed.');
+        $this->info(($created ? 'Employer account created for ' : 'Employer access enabled for ').$user->email.'. Sign in at /portal/login and set up an authenticator.');
+        $this->line('The password was taken from PORTAL_EMPLOYER_PASSWORD and was not printed.');
 
         return self::SUCCESS;
+    }
+
+    private function ensureProfile(User $user, ProvisionEmployee $provision): void
+    {
+        if ($user->profile === null) {
+            $location = WorkLocation::query()->where('name', 'Jodhpur Head Office')->first();
+            $department = Department::query()->where('name', 'Administration')->first();
+            $shift = Shift::query()->where('name', 'General')->first();
+
+            $provision->profile($user, [
+                'job_title' => 'Employer',
+                'department_id' => $department?->id,
+                'work_location_id' => $location?->id,
+                'shift_id' => $shift?->id,
+                'joined_on' => now()->toDateString(),
+            ], EmploymentStatus::Active);
+            $provision->balances($user);
+            $provision->checklist($user, 'onboarding', config('portal.onboarding_items'));
+            $user->unsetRelation('profile');
+        }
+
+        $user->load('profile');
+        $user->profile?->forceFill([
+            'employment_status' => $user->profile->employment_status === EmploymentStatus::Invited
+                ? EmploymentStatus::Active
+                : $user->profile->employment_status,
+            'data_notice_acknowledged_at' => $user->profile->data_notice_acknowledged_at ?? now(),
+            'data_notice_version' => $user->profile->data_notice_version ?: config('portal.notice_version'),
+        ])->save();
     }
 }

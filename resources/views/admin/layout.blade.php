@@ -7,7 +7,7 @@
 <title>{{ trim($__env->yieldContent('pageTitle')) ?: 'Admin' }} | Royal Indian Stones</title>
 <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-<link href="{{ asset('assets/css/admin.css') }}?v=3" rel="stylesheet">
+<link href="{{ asset('assets/css/admin.css') }}?v=4" rel="stylesheet">
 </head>
 <body class="admin-shell">
 <script>
@@ -50,6 +50,9 @@ if (window.matchMedia('(min-width: 992px)').matches) {
       </nav>
     </div>
     <div class="admin-topbar-user">
+      @if ($admin?->portal_role)
+        <a class="admin-switch" href="{{ route('portal.home') }}"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Staff portal</a>
+      @endif
       <a class="admin-icon-btn admin-alert" href="{{ route('admin.comments.index') }}" aria-label="Comments waiting for review">
         <i class="bi bi-bell"></i>
         @if(($pendingCommentCount ?? 0) > 0)

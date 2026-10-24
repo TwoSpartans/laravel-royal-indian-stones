@@ -25,23 +25,29 @@ class AttendanceController extends PortalController
     {
         $actor = $this->actor($request);
         $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString()) : now();
-        $people = $this->access->peopleQuery($actor)->with('profile.location', 'profile.shift')->orderBy('name')->get();
-        if (! $people->contains('id', $actor->id)) {
+        $people = $this->access->peopleQuery($actor)
+            ->with('profile.location', 'profile.shift')
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (User $user): bool => $user->recordsOwnAttendance())
+            ->values();
+        if ($actor->recordsOwnAttendance() && ! $people->contains('id', $actor->id)) {
             $actor->load('profile.location', 'profile.shift');
             $people->prepend($actor);
         }
 
-        $selectedId = $request->integer('user_id') ?: $actor->id;
-        $selected = $people->firstWhere('id', $selectedId) ?? $actor;
-        abort_unless($this->access->canViewUser($actor, $selected) || $selected->is($actor), 404);
+        $selected = $people->firstWhere('id', $request->integer('user_id')) ?? $people->first();
+        abort_if($selected instanceof User && ! ($this->access->canViewUser($actor, $selected) || $selected->is($actor)), 404);
 
-        $timezone = PortalTime::timezone($selected);
-        $punches = AttendancePunch::query()
-            ->where('user_id', $selected->id)
-            ->whereNull('superseded_at')
-            ->latest('punched_at')
-            ->limit(40)
-            ->get();
+        $timezone = $selected instanceof User ? PortalTime::timezone($selected) : PortalTime::timezone($actor);
+        $punches = $selected instanceof User
+            ? AttendancePunch::query()
+                ->where('user_id', $selected->id)
+                ->whereNull('superseded_at')
+                ->latest('punched_at')
+                ->limit(40)
+                ->get()
+            : collect();
 
         return view('portal.attendance.index', [
             'roster' => $board->roster($people, $day),
@@ -59,6 +65,7 @@ class AttendanceController extends PortalController
     public function clock(Request $request, AttendanceClock $clock): RedirectResponse
     {
         $actor = $this->actor($request);
+        abort_unless($actor->recordsOwnAttendance(), 403);
         $data = $request->validate([
             'punch_type' => ['required', Rule::in(['in', 'out', 'break_start', 'break_end'])],
         ]);
@@ -71,6 +78,7 @@ class AttendanceController extends PortalController
     public function correct(Request $request): RedirectResponse
     {
         $actor = $this->actor($request);
+        abort_unless($actor->recordsOwnAttendance(), 403);
         $data = $request->validate([
             'work_date' => ['required', 'date', 'before_or_equal:today'],
             'requested_in' => ['nullable', 'date_format:H:i', 'required_without:requested_out'],
@@ -121,6 +129,7 @@ class AttendanceController extends PortalController
     public function overtime(Request $request): RedirectResponse
     {
         $actor = $this->actor($request);
+        abort_unless($actor->recordsOwnAttendance(), 403);
         $data = $request->validate([
             'work_date' => ['required', 'date', 'before_or_equal:today'],
             'minutes' => ['required', 'integer', 'min:15', 'max:480'],

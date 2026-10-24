@@ -30,7 +30,7 @@
     </div>
     <div class="field"><label for="manager_id">Manager</label>
       <select id="manager_id" name="manager_id"><option value="">None</option>@foreach ($managers as $manager)<option value="{{ $manager->id }}" @selected(old('manager_id', $person?->profile?->manager_id ?? '') == $manager->id)>{{ $manager->name }}</option>@endforeach</select>
-      <p class="help">Required for employees. Managers only see their own team.</p>
+      <p class="help">Required for an employee. Manager and Admin / HR are the same management level and can open the full roster.</p>
     </div>
     <div class="field"><label for="joined_on">Joining date</label><input id="joined_on" name="joined_on" type="date" value="{{ old('joined_on', $person?->profile?->joined_on?->toDateString()) }}" required></div>
     <div class="field"><label for="probation_ends_on">Probation ends</label><input id="probation_ends_on" name="probation_ends_on" type="date" value="{{ old('probation_ends_on', $person?->profile?->probation_ends_on?->toDateString()) }}"></div>
@@ -43,6 +43,20 @@
       <div class="field"><label for="identity_document_label">Identity document</label><input id="identity_document_label" name="identity_document_label" value="{{ old('identity_document_label', $person?->profile?->identity_document_label) }}"></div>
       <div class="field"><label for="identity_document_number">Document number</label><input id="identity_document_number" name="identity_document_number" autocomplete="off" placeholder="Leave blank to keep the saved number"></div>
     @endif
+    <fieldset class="span-2">
+      <legend>Sections this employee can open</legend>
+      <input type="hidden" name="sections_chosen" value="1">
+      @php
+        $chosen = old('visible_sections', $person?->profile?->visible_sections ?? array_keys(config('portal.employee_sections')));
+      @endphp
+      @foreach (config('portal.employee_sections') as $key => $label)
+        <label class="check" for="section-{{ $key }}">
+          <input id="section-{{ $key }}" type="checkbox" name="visible_sections[]" value="{{ $key }}" @checked(in_array($key, $chosen, true))>
+          <span>{{ $label }}</span>
+        </label>
+      @endforeach
+      <p class="help">Checked sections appear for an employee. The employer, managers, and Admin / HR always see every section.</p>
+    </fieldset>
   </div>
   <button type="submit">{{ $person ? 'Save record' : 'Create invitation' }}</button>
 </form>

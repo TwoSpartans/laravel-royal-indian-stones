@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Enums\PortalRole;
 use App\Services\Portal\AuditWriter;
 use App\Services\Portal\ReportBuilder;
 use App\Services\Portal\SimplePdf;
@@ -39,10 +38,6 @@ class ReportController extends PortalController
         $to = Carbon::parse($data['to'])->startOfDay();
         if ($to->lt($from) || (($to->getTimestamp() - $from->getTimestamp()) / 86400) > 93) {
             return back()->withErrors(['to' => 'Choose an end date within 93 days of the start date.'])->withInput();
-        }
-
-        if ($actor->portal_role === PortalRole::Manager && $data['type'] === 'headcount') {
-            abort(403);
         }
 
         $built = $reports->build($actor, $data['type'], $from->toDateString(), $to->toDateString());

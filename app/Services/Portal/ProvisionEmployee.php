@@ -81,6 +81,7 @@ class ProvisionEmployee
             'joined_on' => $attributes['joined_on'] ?? null,
             'probation_ends_on' => $attributes['probation_ends_on'] ?? null,
             'phone' => $attributes['phone'] ?? null,
+            'visible_sections' => is_array($attributes['visible_sections'] ?? null) ? array_values($attributes['visible_sections']) : null,
         ]);
     }
 

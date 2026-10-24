@@ -19,6 +19,7 @@ class AttendanceBoard
      */
     public function roster(Collection $users, Carbon $day): Collection
     {
+        $users = $users->filter(fn (User $user): bool => $user->recordsOwnAttendance())->values();
         if ($users->isEmpty()) {
             return collect();
         }

@@ -42,12 +42,11 @@ class AttendanceCorrectionTest extends TestCase
         ])->assertForbidden();
         $this->signIn($other)->post(route('portal.attendance.corrections.decide', $correction), [
             'decision' => 'approved',
-        ])->assertNotFound();
-
-        $this->signIn($manager)->post(route('portal.attendance.corrections.decide', $correction), [
-            'decision' => 'approved',
             'decision_note' => 'Gate register checked.',
         ])->assertRedirect();
+        $this->signIn($manager)->post(route('portal.attendance.corrections.decide', $correction), [
+            'decision' => 'approved',
+        ])->assertForbidden();
 
         $correction->refresh();
         $this->assertSame('approved', $correction->status);

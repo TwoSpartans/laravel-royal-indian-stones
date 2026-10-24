@@ -93,6 +93,17 @@
   @endforelse
 </section>
 
+@if ($canEdit)
+  <section class="card" style="margin-top:0.9rem">
+    <h2>Recent sign-ins</h2>
+    @forelse ($logins as $login)
+      <p>{{ \App\Support\PortalTime::format($login->occurred_at, $person, $login->timezone) }} · {{ $login->ip_address ?: 'no address' }} · {{ $login->classification_label }}</p>
+    @empty
+      <div class="empty"><strong>No staff sign-in recorded yet</strong></div>
+    @endforelse
+  </section>
+@endif
+
 <section class="card" style="margin-top:0.9rem">
   <h2>Changes</h2>
   @forelse ($changes as $change)

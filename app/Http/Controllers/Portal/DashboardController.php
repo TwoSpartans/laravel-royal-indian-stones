@@ -37,7 +37,9 @@ class DashboardController extends PortalController
                 ]);
             })
             ->with('profile.location', 'profile.shift', 'profile.department')
-            ->get();
+            ->get()
+            ->filter(fn (User $user): bool => $user->recordsOwnAttendance())
+            ->values();
 
         $roster = $board->roster($people, $today);
         $counts = [

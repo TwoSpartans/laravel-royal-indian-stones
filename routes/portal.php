@@ -43,7 +43,7 @@ Route::middleware(NoindexAdminResponses::class)->prefix('portal')->name('portal.
             Route::get('notice', [NoticeController::class, 'show'])->name('notice');
             Route::post('notice', [NoticeController::class, 'acknowledge'])->name('notice.acknowledge');
 
-            Route::middleware('portal.notice')->group(function () {
+            Route::middleware(['portal.notice', 'portal.section'])->group(function () {
                 Route::get('/', DashboardController::class)->name('home');
                 Route::get('account', [AccountController::class, 'show'])->name('account');
                 Route::post('account/password', [PasswordController::class, 'change'])->name('account.password');

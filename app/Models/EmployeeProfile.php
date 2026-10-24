@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'offboarded_on',
     'data_notice_acknowledged_at',
     'data_notice_version',
+    'visible_sections',
 ])]
 class EmployeeProfile extends Model
 {
@@ -37,6 +38,7 @@ class EmployeeProfile extends Model
             'probation_ends_on' => 'date',
             'offboarded_on' => 'date',
             'data_notice_acknowledged_at' => 'datetime',
+            'visible_sections' => 'array',
             'address' => 'encrypted',
             'identity_document_number' => 'encrypted',
         ];

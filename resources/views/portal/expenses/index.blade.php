@@ -5,7 +5,17 @@
   <div><p class="eyebrow">Reimbursements</p><h1>Expenses</h1></div>
   <a class="btn" href="{{ route('portal.expenses.create') }}">New claim</a>
 </header>
-<form class="filters" method="get"><div class="field"><label for="status">Status</label><input id="status" name="status" value="{{ $status }}"></div><button type="submit">Filter</button></form>
+<form class="filters" method="get">
+  <div class="field"><label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="">All</option>
+      @foreach (['submitted' => 'Waiting for manager', 'pending_hr' => 'Waiting for HR', 'approved' => 'Approved', 'rejected' => 'Rejected'] as $value => $label)
+        <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+      @endforeach
+    </select>
+  </div>
+  <button type="submit">Filter</button>
+</form>
 <div class="table-wrap">
   @if ($claims->isEmpty())
     <div class="empty"><strong>No claims</strong><p>Submit a receipt for yard supplies, samples, travel, or export paperwork.</p></div>

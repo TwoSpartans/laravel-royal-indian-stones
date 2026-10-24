@@ -53,6 +53,7 @@ class LeaveController extends PortalController
     public function store(Request $request, LeaveDays $days): RedirectResponse
     {
         $actor = $this->actor($request);
+        abort_unless($actor->recordsOwnAttendance(), 403);
         $data = $request->validate([
             'leave_type_id' => ['required', 'integer', Rule::exists('leave_types', 'id')->where('is_active', true)],
             'starts_on' => ['required', 'date'],

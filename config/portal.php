@@ -10,6 +10,20 @@ return [
     'employer_password' => env('PORTAL_EMPLOYER_PASSWORD'),
 
     /*
+    | The one site admin uses the same email for the studio and the staff portal.
+    | That person signs in once. Other staff accounts are employees.
+    */
+    'single_admin' => (bool) env('PORTAL_SINGLE_ADMIN', true),
+
+    'employee_sections' => [
+        'attendance' => 'Attendance',
+        'leave' => 'Leave',
+        'tasks' => 'Tasks',
+        'expenses' => 'Expenses',
+        'payslips' => 'Payslips',
+    ],
+
+    /*
     | Explicit proxy addresses for staff IP checks. "*" is ignored.
     | Leave empty to use only the direct connection address.
     */

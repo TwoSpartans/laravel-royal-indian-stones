@@ -94,10 +94,12 @@
         <i class="bi bi-send"></i>
         <span>Outreach</span>
       </a>
-      <a href="{{ route('portal.login') }}" class="admin-nav-link">
-        <i class="bi bi-people"></i>
-        <span>Staff portal</span>
-      </a>
+      @if (auth()->user()?->portal_role)
+        <a href="{{ route('portal.home') }}" class="admin-nav-link">
+          <i class="bi bi-people"></i>
+          <span>Staff portal</span>
+        </a>
+      @endif
     </div>
   </details>
 </nav>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Enums\EmploymentStatus;
 use App\Enums\PortalRole;
+use App\Models\AccessEvent;
 use App\Models\Department;
 use App\Models\EmergencyContact;
 use App\Models\EmployeeDocument;
@@ -109,6 +110,9 @@ class DirectoryController extends PortalController
             'canEdit' => $this->access->canEditEmployment($actor, $person),
             'canSensitive' => $this->access->canViewSensitive($actor, $person),
             'canDeactivate' => $this->access->canDeactivate($actor, $person),
+            'logins' => $this->access->canAdminister($actor)
+                ? AccessEvent::query()->where('user_id', $person->id)->where('event_type', 'login')->latest('occurred_at')->limit(8)->get()
+                : collect(),
         ]);
     }
 
@@ -160,6 +164,7 @@ class DirectoryController extends PortalController
                 'joined_on' => $data['joined_on'] ?? null,
                 'probation_ends_on' => $data['probation_ends_on'] ?? null,
                 'phone' => $data['phone'] ?? null,
+                'visible_sections' => $role === PortalRole::Employee ? array_values($data['visible_sections'] ?? []) : null,
             ]);
 
             if ($this->access->canViewSensitive($actor, $person)) {
@@ -213,7 +218,7 @@ class DirectoryController extends PortalController
         $actor = $this->actor($request);
         $person = $this->person($actor, $member);
         abort_unless($this->access->canAdminister($actor), 403);
-        abort_if($person->portal_role === PortalRole::AdminHr && $actor->portal_role !== PortalRole::Employer, 403);
+        abort_if(in_array($person->portal_role, [PortalRole::AdminHr, PortalRole::Manager], true) && $actor->portal_role !== PortalRole::Employer, 403);
 
         $person->forceFill(['deactivated_at' => null])->save();
         $person->profile?->forceFill(['employment_status' => EmploymentStatus::Active])->save();
@@ -384,11 +389,7 @@ class DirectoryController extends PortalController
      */
     private function formData(Request $request, ?User $person): array
     {
-        $actor = $this->actor($request);
-        $roles = [PortalRole::Employee, PortalRole::Manager];
-        if ($actor->portal_role === PortalRole::Employer) {
-            $roles[] = PortalRole::AdminHr;
-        }
+        $roles = [PortalRole::Employee, PortalRole::Manager, PortalRole::AdminHr];
 
         return [
             'person' => $person,
@@ -396,7 +397,7 @@ class DirectoryController extends PortalController
             'departments' => Department::query()->orderBy('name')->get(),
             'locations' => WorkLocation::query()->orderBy('name')->get(),
             'shifts' => Shift::query()->orderBy('name')->get(),
-            'managers' => User::query()->where('portal_role', PortalRole::Manager->value)->whereNull('deactivated_at')->orderBy('name')->get(),
+            'managers' => User::query()->whereIn('portal_role', [PortalRole::Manager->value, PortalRole::AdminHr->value])->whereNull('deactivated_at')->orderBy('name')->get(),
             'statuses' => EmploymentStatus::cases(),
         ];
     }
@@ -406,11 +407,7 @@ class DirectoryController extends PortalController
      */
     private function validated(Request $request, ?User $person): array
     {
-        $actor = $this->actor($request);
-        $allowedRoles = ['employee', 'manager'];
-        if ($actor->portal_role === PortalRole::Employer) {
-            $allowedRoles[] = 'admin_hr';
-        }
+        $allowedRoles = ['employee', 'manager', 'admin_hr'];
         if ($person?->portal_role === PortalRole::Employer) {
             $allowedRoles[] = 'employer';
         }
@@ -427,7 +424,7 @@ class DirectoryController extends PortalController
                 Rule::requiredIf(fn () => $request->input('portal_role') === 'employee'),
                 'nullable',
                 'integer',
-                Rule::exists('users', 'id')->where(fn ($query) => $query->where('portal_role', PortalRole::Manager->value)->whereNull('deactivated_at')),
+                Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('portal_role', [PortalRole::Manager->value, PortalRole::AdminHr->value])->whereNull('deactivated_at')),
                 function (string $attribute, mixed $value, \Closure $fail) use ($person): void {
                     if ($person !== null && (int) $value === $person->id) {
                         $fail('A person cannot be their own manager.');
@@ -441,11 +438,16 @@ class DirectoryController extends PortalController
             'address' => ['nullable', 'string', 'max:500'],
             'identity_document_label' => ['nullable', 'string', 'max:80'],
             'identity_document_number' => ['nullable', 'string', 'max:80'],
+            'visible_sections' => ['nullable', 'array'],
+            'visible_sections.*' => ['string', Rule::in(array_keys(config('portal.employee_sections')))],
         ], [
             'email.unique' => 'A staff account with this email already exists.',
             'manager_id.required' => 'Choose the manager for this employee.',
         ]);
 
+        if ($request->boolean('sections_chosen')) {
+            $data['visible_sections'] = array_values($request->input('visible_sections', []));
+        }
         $data['email'] = strtolower($data['email']);
         $data['employment_status'] = $data['employment_status'] ?? EmploymentStatus::Invited->value;
 

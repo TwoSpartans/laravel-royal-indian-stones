@@ -13,16 +13,17 @@
   </div>
 </header>
 
-@if ($self)
+@if ($self && auth()->user()->recordsOwnAttendance() && auth()->user()->canOpenPortalSection('attendance'))
   <section class="card" style="margin-bottom:1rem">
     <h2>Your attendance</h2>
     <p>Status: <span class="badge">{{ $self['label'] }}</span></p>
+    @php $openPunch = $lastPunch?->punch_type; @endphp
     <form method="post" action="{{ route('portal.attendance.clock') }}" class="btn-row">
       @csrf
-      <button class="clock-btn" name="punch_type" value="in" type="submit">Clock in</button>
-      <button class="clock-btn btn-secondary" name="punch_type" value="break_start" type="submit">Start break</button>
-      <button class="clock-btn btn-secondary" name="punch_type" value="break_end" type="submit">End break</button>
-      <button class="clock-btn" name="punch_type" value="out" type="submit">Clock out</button>
+      <button class="clock-btn {{ $openPunch === 'in' ? 'btn-secondary' : '' }}" name="punch_type" value="in" type="submit" @disabled(in_array($openPunch, ['in', 'break_start', 'break_end'], true))>Clock in</button>
+      <button class="clock-btn btn-secondary" name="punch_type" value="break_start" type="submit" @disabled($openPunch !== 'in')>Start break</button>
+      <button class="clock-btn btn-secondary" name="punch_type" value="break_end" type="submit" @disabled($openPunch !== 'break_start')>End break</button>
+      <button class="clock-btn {{ $openPunch === 'in' ? '' : 'btn-secondary' }}" name="punch_type" value="out" type="submit" @disabled(! in_array($openPunch, ['in', 'break_end'], true))>Clock out</button>
     </form>
     <p class="help">Last punch: {{ $lastPunch ? \App\Support\PortalTime::format($lastPunch->punched_at, auth()->user(), $lastPunch->timezone).' · '.$lastPunch->punch_type : 'none yet today' }}</p>
   </section>
@@ -31,13 +32,13 @@
 @if ($oversight)
   <section class="grid stats">
     <article class="card stat"><strong>{{ $counts['workforce'] }}</strong><span>On the roster</span></article>
-    <article class="card stat"><strong>{{ $counts['present'] }}</strong><span>Present, including late</span></article>
-    <article class="card stat"><strong>{{ $counts['late'] }}</strong><span>Late</span></article>
-    <article class="card stat"><strong>{{ $counts['absent'] }}</strong><span>Absent</span></article>
+    <article class="card stat" data-tone="good"><strong>{{ $counts['present'] }}</strong><span>Present, including late</span></article>
+    <article class="card stat" data-tone="warn"><strong>{{ $counts['late'] }}</strong><span>Late</span></article>
+    <article class="card stat" data-tone="bad"><strong>{{ $counts['absent'] }}</strong><span>Absent</span></article>
     <article class="card stat"><strong>{{ $counts['not_in_yet'] }}</strong><span>Not in yet</span></article>
     <article class="card stat"><strong>{{ $counts['leave'] }}</strong><span>On leave</span></article>
-    <article class="card stat"><strong>{{ $counts['missed_punch'] }}</strong><span>Missed punch</span></article>
-    <article class="card stat"><strong>{{ array_sum($approvals) }}</strong><span>{{ $role === \App\Enums\PortalRole::Employee ? 'Waiting' : 'Needs a decision' }}</span></article>
+    <article class="card stat" data-tone="warn"><strong>{{ $counts['missed_punch'] }}</strong><span>Missed punch</span></article>
+    <article class="card stat"><strong>{{ array_sum($approvals) }}</strong><span>Needs a decision</span></article>
   </section>
   <div class="grid cards-2" style="margin-top:0.9rem">
     <section class="card">
@@ -73,16 +74,28 @@
           @endforeach
         </ul>
       @endif
-      <h2>Decisions</h2>
-      <ul>
-        <li>{{ $approvals['leave'] }} leave</li>
-        <li>{{ $approvals['expenses'] }} expenses</li>
-        <li>{{ $approvals['corrections'] }} attendance corrections</li>
-        <li>{{ $approvals['overtime'] }} overtime</li>
-        @if ($approvals['devices'] || $approvals['remote'] || $approvals['reviews'])
-          <li>{{ $approvals['devices'] }} devices, {{ $approvals['remote'] }} remote grants, {{ $approvals['reviews'] }} network reviews</li>
-        @endif
-      </ul>
+      <h2>Needs a decision</h2>
+      @if (array_sum($approvals) === 0)
+        <div class="empty"><strong>Nothing is waiting</strong><p>Leave, expenses, corrections, and network reviews show up here.</p></div>
+      @else
+        <ul class="queue">
+          @if ($approvals['leave'] > 0)
+            <li><a href="{{ route('portal.leave.index', ['status' => 'pending_manager']) }}">Leave <strong>{{ $approvals['leave'] }}</strong></a></li>
+          @endif
+          @if ($approvals['expenses'] > 0)
+            <li><a href="{{ route('portal.expenses.index', ['status' => 'submitted']) }}">Expenses <strong>{{ $approvals['expenses'] }}</strong></a></li>
+          @endif
+          @if ($approvals['corrections'] > 0)
+            <li><a href="{{ route('portal.attendance.index') }}#queue">Attendance corrections <strong>{{ $approvals['corrections'] }}</strong></a></li>
+          @endif
+          @if ($approvals['overtime'] > 0)
+            <li><a href="{{ route('portal.attendance.index') }}#queue">Overtime <strong>{{ $approvals['overtime'] }}</strong></a></li>
+          @endif
+          @if ($oversight && ($approvals['devices'] + $approvals['remote'] + $approvals['reviews']) > 0)
+            <li><a href="{{ route('portal.workplace.index') }}">Devices, remote work, network reviews <strong>{{ $approvals['devices'] + $approvals['remote'] + $approvals['reviews'] }}</strong></a></li>
+          @endif
+        </ul>
+      @endif
     </section>
   </div>
 @endif
@@ -106,6 +119,7 @@
   </section>
 </div>
 
+@if (auth()->user()->canOpenPortalSection('tasks'))
 <section class="card" style="margin-top:0.9rem">
   <h2>{{ $oversight ? 'Open stone work' : 'Your tasks' }}</h2>
   @forelse ($tasks as $task)
@@ -114,8 +128,10 @@
     <div class="empty"><strong>No open tasks</strong><p>Sales, sourcing, processing, inspection, packing, dispatch, and export work will show here.</p></div>
   @endforelse
 </section>
+@endif
 
 @unless ($oversight)
+  @if (auth()->user()->canOpenPortalSection('leave'))
   <section class="card" style="margin-top:0.9rem">
     <h2>Leave balance this year</h2>
     @forelse ($balances as $balance)
@@ -124,5 +140,6 @@
       <div class="empty"><strong>No balance yet</strong></div>
     @endforelse
   </section>
+  @endif
 @endunless
 @endsection

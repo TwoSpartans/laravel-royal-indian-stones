@@ -60,8 +60,8 @@ class PortalInvitationTest extends TestCase
         $this->assertDatabaseMissing('users', ['email' => 'other@example.com']);
 
         $this->signIn($hr)->post('/portal/people', $this->payload($manager, 'admin_hr', 'admin2@example.com'))
-            ->assertForbidden();
-        $this->assertNull(PortalInvitation::query()->where('email', 'admin2@example.com')->first());
+            ->assertRedirect();
+        $this->assertNotNull(PortalInvitation::query()->where('email', 'admin2@example.com')->first());
     }
 
     public function test_the_employer_can_invite_and_revoke_admin_hr(): void

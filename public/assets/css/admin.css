@@ -276,6 +276,27 @@ body {
   right: 0.05rem;
 }
 
+.admin-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid #9c3418;
+  border-radius: 999px;
+  background: #9c3418;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-switch:hover {
+  background: #6e2410;
+  color: #fff;
+}
+
 .admin-role {
   display: none;
   align-items: center;
