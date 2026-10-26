@@ -6,6 +6,7 @@ use App\Mail\PortalInvitationMail;
 use App\Models\AttendancePunch;
 use App\Models\Department;
 use App\Models\PortalInvitation;
+use App\Models\RegisteredDevice;
 use App\Models\Shift;
 use App\Models\User;
 use App\Models\WorkLocation;
@@ -81,6 +82,26 @@ class PortalInvitationTest extends TestCase
             ->assertSessionHas('invitation_url');
 
         $this->assertNotNull(PortalInvitation::query()->where('email', 'kept.link@example.com')->first());
+    }
+
+    public function test_approving_a_device_keeps_its_name_when_no_label_is_sent(): void
+    {
+        $employer = User::factory()->employer()->create();
+        $employee = User::factory()->employee()->create();
+        $device = RegisteredDevice::query()->create([
+            'user_id' => $employee->id,
+            'label' => 'Yard browser',
+            'secret_hash' => hash('sha256', 'device-secret'),
+            'status' => 'pending',
+        ]);
+
+        $this->signIn($employer)
+            ->post(route('portal.workplace.devices.update', $device), ['decision' => 'approved'])
+            ->assertRedirect();
+
+        $device->refresh();
+        $this->assertSame('approved', $device->status);
+        $this->assertSame('Yard browser', $device->label);
     }
 
     public function test_the_employer_can_invite_and_revoke_admin_hr(): void

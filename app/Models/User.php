@@ -46,12 +46,12 @@ class User extends Authenticatable
             return false;
         }
 
-        return ! ($this->is_site_admin && $this->portal_role === PortalRole::Employer && config('portal.single_admin'));
+        return ! ($this->is_site_admin && $this->portal_role?->isCompanyAdmin() === true && config('portal.single_admin'));
     }
 
     public function recordsOwnAttendance(): bool
     {
-        return $this->portal_role !== PortalRole::Employer;
+        return $this->portal_role?->isCompanyAdmin() !== true;
     }
 
     public function canOpenPortalSection(string $section): bool

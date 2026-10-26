@@ -20,7 +20,7 @@
 <p class="muted">This account runs the roster. It does not clock in, request corrections, or apply for leave.</p>
 @endif
 @if ($people->isEmpty())
-  <div class="empty"><strong>No one is on the attendance roster yet</strong><p>Employees, managers, and Admin / HR appear here after they join. The employer account stays off this list.</p></div>
+  <div class="empty"><strong>No one is on the attendance roster yet</strong><p>Employees and Manager / HR appear here after they join. The employer account stays off this list.</p></div>
 @else
 <form class="filters" method="get">
   <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" value="{{ $date }}"></div>

@@ -1,10 +1,8 @@
 @php
-  use App\Enums\PortalRole;
-
   $helpUser = auth()->user();
   $helpRole = $helpUser?->portal_role;
-  $helpEmployer = $helpRole === PortalRole::Employer;
-  $helpOversight = in_array($helpRole, [PortalRole::Employer, PortalRole::AdminHr, PortalRole::Manager], true);
+  $helpEmployer = $helpRole?->isCompanyAdmin() === true;
+  $helpOversight = $helpRole?->canAdminister() === true;
 
   $pageHelp = match (true) {
       request()->routeIs('portal.home') => $helpEmployer
@@ -27,17 +25,17 @@
           : 'Open a task assigned to you, update the status, and add a note or file.',
       request()->routeIs('portal.expenses.*') => $helpOversight
           ? 'Review a claim and its receipt. Marking it arranged outside this portal is not a bank confirmation.'
-          : 'Submit a claim with the receipt. It waits for a manager or Admin / HR.',
-      request()->routeIs('portal.people.*') => 'Invite a person, set Employee, Manager, or Admin / HR, and tick the sections an employee may open.',
+          : 'Submit a claim with the receipt. It waits for a manager.',
+      request()->routeIs('portal.people.*') => 'Invite a person as Employee or Manager / HR, and tick the sections an employee may open.',
       request()->routeIs('portal.reports.*') => 'Choose a report and a date range, then export. Attendance reports leave the employer off the roster.',
       request()->routeIs('portal.payroll.*') => 'Prepare records for review. Salary calculations stay off until a reviewer confirms them, and nothing here is marked paid.',
-      request()->routeIs('portal.workplace.*') => 'Save an office network, approve a browser, set holidays and leave types, and review sign-ins from outside the network. A matching address does not prove someone is on site.',
+      request()->routeIs('portal.workplace.*') => 'Save an office network, approve a browser, set holidays and the leave balance, and review sign-ins from outside the network. A matching address does not prove someone is on site.',
       request()->routeIs('portal.account') => 'Update the password for this account. Signing in still does not mark anyone present.',
       request()->routeIs('portal.notifications') => 'Decisions and requests land here. Open one to mark it read.',
       request()->routeIs('portal.login') => 'Sign in with the work email and password you were given. There is no public registration.',
       request()->routeIs('portal.password.*') => 'Use the work email. The reset link expires, and a deactivated account cannot set a new password.',
       request()->routeIs('portal.invitation.*') => 'Set a password of at least 8 characters. The link works once.',
-      request()->routeIs('portal.mfa.*') => 'Employer and Admin / HR confirm an authenticator code after the password. The employer who also runs the website skips this when single-admin mode is on.',
+      request()->routeIs('portal.mfa.*') => 'The employer and an HR account confirm an authenticator code after the password. A manager signs in with the password. The employer who also runs the website skips this when single-admin mode is on.',
       request()->routeIs('portal.notice', 'portal.privacy') => 'Read the notice, then accept it. Attendance and the other work sections stay closed until you do.',
       default => 'Use the menu for attendance, leave, tasks, and expenses. On a phone, use the bar at the bottom.',
   };
@@ -54,8 +52,8 @@
     @if ($helpUser === null)
       <h3>Who does what</h3>
       <ul>
-        <li>The employer manages the company and does not record attendance or leave.</li>
-        <li>Manager and Admin / HR are the same management level. They look after employees.</li>
+        <li>The employer is the company admin. That account manages the company and does not record attendance or leave.</li>
+        <li>Manager and HR are the same level. They look after employees.</li>
         <li>An employee sees only the sections opened for that account.</li>
         <li>Signing in never marks anyone present.</li>
       </ul>
@@ -63,7 +61,7 @@
       <h3>Your role</h3>
       <p>You are the employer. You run the roster, the workplace, and the website studio.</p>
       <ul>
-        <li>Invite people from People. Manager and Admin / HR can both manage the full roster.</li>
+        <li>Invite people from People. A manager and an HR account manage the full roster in the same way.</li>
         <li>For an employee, tick only the sections they should open.</li>
         <li>This account stays off attendance and leave. The people you manage record those.</li>
         <li>Content studio, in the header, opens the website editor with this same sign-in.</li>
@@ -71,13 +69,13 @@
       </ul>
     @elseif ($helpOversight)
       <h3>Your role</h3>
-      <p>Manager and Admin / HR manage employees at the same level.</p>
+      <p>Manager and HR are the same level.</p>
       <ul>
         <li>Open People, Reports, Payroll, and Workplace for the whole roster.</li>
         <li>Tick the sections each employee may open. They cannot reach the others.</li>
         <li>Approve leave, expenses, corrections, and overtime. You cannot approve your own request.</li>
         <li>Record your own attendance and leave. The employer does not.</li>
-        <li>Only the employer can deactivate a manager or an Admin / HR account.</li>
+        <li>Only the employer can deactivate a manager or an HR account.</li>
       </ul>
     @else
       <h3>Your role</h3>
@@ -86,7 +84,7 @@
         <li>If a section is missing, it was not opened on your account.</li>
         <li>Attendance is separate from sign-in. Record the shift there.</li>
         <li>Leave shows the balance for this year. Weekly offs and holidays are not counted.</li>
-        <li>A correction, overtime request, or expense waits for a manager or Admin / HR.</li>
+        <li>A correction, overtime request, or expense waits for a manager.</li>
       </ul>
     @endif
   </div>

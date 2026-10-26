@@ -13,10 +13,25 @@ enum PortalRole: string
     {
         return match ($this) {
             self::Employer => 'Employer',
-            self::AdminHr => 'Admin / HR',
-            self::Manager => 'Manager',
+            self::AdminHr, self::Manager => 'Manager / HR',
             self::Employee => 'Employee',
         };
+    }
+
+    /**
+     * The employer is the company admin. This is the only role that can revise or delete an agreed task.
+     */
+    public function isCompanyAdmin(): bool
+    {
+        return $this === self::Employer;
+    }
+
+    /**
+     * Manager and Admin / HR are the same management level.
+     */
+    public function isManagerLevel(): bool
+    {
+        return $this === self::Manager || $this === self::AdminHr;
     }
 
     public function requiresMfa(): bool
@@ -26,6 +41,6 @@ enum PortalRole: string
 
     public function canAdminister(): bool
     {
-        return $this === self::Employer || $this === self::AdminHr || $this === self::Manager;
+        return $this->isCompanyAdmin() || $this->isManagerLevel();
     }
 }

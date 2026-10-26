@@ -5,17 +5,9 @@
   <div>
     <p class="eyebrow">Payroll-ready records</p>
     <h1>Salary inputs</h1>
-    <p class="muted">{{ $calculationsEnabled ? 'A reviewer has allowed basic calculations. Statutory lines are still off.' : 'Calculations are withheld until a qualified reviewer enables them.' }} No salary is marked sent.</p>
+    <p class="muted">{{ $calculationsEnabled ? 'A reviewer has allowed basic calculations.' : 'Calculations are withheld until a qualified reviewer enables them.' }} No salary is marked sent.</p>
   </div>
 </header>
-<section class="card">
-  <h2>Statutory rules</h2>
-  <ul>
-    @foreach ($statutory as $name => $note)
-      <li><strong>{{ str_replace('_', ' ', $name) }}.</strong> {{ $note }}</li>
-    @endforeach
-  </ul>
-</section>
 @if (auth()->user()->portal_role?->canAdminister())
   <section class="card" style="margin-top:0.9rem">
     <h2>Salary structure</h2>
@@ -59,11 +51,11 @@
     <p>{{ $structure ? 'Structure from '.$structure->effective_on->format('d M Y') : 'No salary structure' }}</p>
     @forelse (($payslips[$person->id] ?? collect()) as $payslip)
       @if (auth()->user()->portal_role?->canAdminister() || $payslip->status === 'published')
-        <p><a href="{{ route('portal.payroll.show', $payslip) }}">{{ $payslip->period }}</a> · {{ str_replace('_', ' ', $payslip->status) }} · payment {{ str_replace('_', ' ', $payslip->payment_state) }}
+        <div class="record-line"><a href="{{ route('portal.payroll.show', $payslip) }}">{{ $payslip->period }}</a> · {{ str_replace('_', ' ', $payslip->status) }} · payment {{ str_replace('_', ' ', $payslip->payment_state) }}
           @if (auth()->user()->portal_role?->canAdminister() && $payslip->status !== 'published')
             <form method="post" action="{{ route('portal.payroll.publish', $payslip) }}">@csrf<button type="submit">Publish to employee</button></form>
           @endif
-        </p>
+        </div>
       @endif
     @empty
       <div class="empty"><strong>No payslip</strong></div>

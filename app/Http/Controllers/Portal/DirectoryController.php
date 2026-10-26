@@ -106,7 +106,7 @@ class DirectoryController extends PortalController
                 : collect(),
             'checklist' => OnboardingItem::query()->where('user_id', $person->id)->orderBy('id')->get(),
             'changes' => EmploymentChange::query()->with('actor')->where('user_id', $person->id)->latest()->limit(20)->get(),
-            'balances' => LeaveBalance::query()->with('type')->where('user_id', $person->id)->where('year', (int) now()->year)->get(),
+            'balance' => LeaveBalance::query()->with('type')->where('user_id', $person->id)->where('year', (int) now()->year)->whereHas('type', fn ($query) => $query->where('is_active', true))->first(),
             'salary' => $this->access->canViewSensitive($actor, $person)
                 ? SalaryStructure::query()->where('user_id', $person->id)->orderByDesc('effective_on')->first()
                 : null,
@@ -221,7 +221,7 @@ class DirectoryController extends PortalController
         $actor = $this->actor($request);
         $person = $this->person($actor, $member);
         abort_unless($this->access->canAdminister($actor), 403);
-        abort_if(in_array($person->portal_role, [PortalRole::AdminHr, PortalRole::Manager], true) && $actor->portal_role !== PortalRole::Employer, 403);
+        abort_if($person->portal_role?->isManagerLevel() === true && $actor->portal_role?->isCompanyAdmin() !== true, 403);
 
         $person->forceFill(['deactivated_at' => null])->save();
         $person->profile?->forceFill(['employment_status' => EmploymentStatus::Active])->save();
@@ -392,7 +392,7 @@ class DirectoryController extends PortalController
      */
     private function formData(Request $request, ?User $person): array
     {
-        $roles = [PortalRole::Employee, PortalRole::Manager, PortalRole::AdminHr];
+        $roles = [PortalRole::Employee, $person?->portal_role === PortalRole::AdminHr ? PortalRole::AdminHr : PortalRole::Manager];
 
         return [
             'person' => $person,

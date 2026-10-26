@@ -14,18 +14,20 @@ The public catalogue and the content studio stay where they are. Staff work live
 
 ## Accounts and permissions
 
-| Action | Employer | Admin / HR | Manager | Employee |
-| --- | --- | --- | --- | --- |
-| Create or revoke Admin / HR | Yes | No | No | No |
-| Invite employees and managers | Yes | Yes | No | No |
-| See the whole workforce | Yes | Yes | Own team only | Own record only |
-| Salary, identity numbers, workforce export | Yes | Yes | No | Own published payslip and own documents |
-| Approve a direct report’s leave, expense, correction, overtime | Yes | Yes | Own team, manager step | No |
-| Final HR leave or expense step, record an outside payment | Yes | Yes | No | No |
-| Office networks, devices, remote work, access review | Yes | Yes | No | No |
-| Self-registration or choosing a role | No | No | No | No |
+Manager and HR are the same level. The employer is the company admin. An employee is the person those accounts manage.
 
-Employer and Admin / HR must use a time-based authenticator after the password. Recovery codes are shown once. Employees and managers use a password. Every role can be deactivated. Deactivated people, and people who have not accepted an invitation, get the same sign-in error as a wrong password.
+| Action | Employer (admin) | Manager / HR | Employee |
+| --- | --- | --- | --- |
+| Deactivate a manager or HR account | Yes | No | No |
+| Invite people and open the full roster | Yes | Yes | Own record only |
+| Salary, identity numbers, workforce export | Yes | Yes | Own published payslip and own documents |
+| Edit or delete a saved task | Yes | No | No |
+| Assign a task | Anyone | Self or an employee | Self only |
+| Record own attendance and leave | No | Yes | Yes |
+| Approve leave, expenses, corrections, and overtime | Yes | Yes | No |
+| Office networks, devices, and access review | Yes | Yes | No |
+
+The employer uses an authenticator after the password, except the website admin while single-admin mode is on. An account stored as Admin / HR also uses an authenticator. A manager and an employee use a password. Deactivated people, and people who have not accepted an invitation, get the same sign-in error as a wrong password.
 
 A registered browser cookie and an approved IP are signals. Neither proves the person is physically on site. Remote or field work is labelled “approved remote or field work”, not “approved office network”.
 

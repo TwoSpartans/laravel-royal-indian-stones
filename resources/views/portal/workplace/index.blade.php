@@ -23,7 +23,7 @@
               <td data-label="Place">{{ $network->location?->name }}</td>
               <td data-label="Label">{{ $network->label }}</td>
               <td data-label="Range">{{ $network->cidr }}</td>
-              <td>
+              <td data-label="Action">
                 <form method="post" action="{{ route('portal.workplace.networks.destroy', $network) }}">@csrf @method('DELETE')<button class="btn-secondary" type="submit">Remove</button></form>
               </td>
             </tr>
@@ -72,7 +72,7 @@
             <td data-label="Person">{{ $device->user?->name }}</td>
             <td data-label="Device">{{ $device->label }}</td>
             <td data-label="Status"><span class="badge">{{ $device->status }}</span></td>
-            <td>
+            <td data-label="Decision">
               <div class="actions">
                 <form method="post" action="{{ route('portal.workplace.devices.update', $device) }}">@csrf<input type="hidden" name="decision" value="approved"><button type="submit">Approve</button></form>
                 <form method="post" action="{{ route('portal.workplace.devices.update', $device) }}">@csrf<input type="hidden" name="decision" value="revoked"><button class="btn-secondary" type="submit">Revoke</button></form>
@@ -104,17 +104,17 @@
     @foreach ($shifts as $shift)
       <p>{{ $shift->name }} · {{ substr((string) $shift->starts_at, 0, 5) }}–{{ substr((string) $shift->ends_at, 0, 5) }} · {{ $shift->grace_minutes }} min grace</p>
     @endforeach
-    <h2>Leave types</h2>
+    <h2>Leave balance</h2>
     @foreach ($leaveTypes as $type)
       <form method="post" action="{{ route('portal.workplace.leave-types.update', $type) }}" class="form-grid stacked-form">
         @csrf @method('PUT')
-        <div class="field"><label for="allowance{{ $type->id }}">{{ $type->name }} days</label><input id="allowance{{ $type->id }}" name="annual_allowance" value="{{ $type->annual_allowance }}"></div>
+        <div class="field"><label for="allowance{{ $type->id }}">Days each year</label><input id="allowance{{ $type->id }}" name="annual_allowance" value="{{ $type->allowanceForInput() }}"></div>
         <div class="field"><label for="threshold{{ $type->id }}">Second approval after</label><input id="threshold{{ $type->id }}" name="hr_threshold_days" value="{{ $type->hr_threshold_days }}"></div>
         <input type="hidden" name="is_active" value="0">
         <input type="hidden" name="needs_hr_approval" value="0">
         <label class="check" for="active{{ $type->id }}"><input id="active{{ $type->id }}" name="is_active" type="checkbox" value="1" @checked($type->is_active)><span>Active</span></label>
         <label class="check" for="hr{{ $type->id }}"><input id="hr{{ $type->id }}" name="needs_hr_approval" type="checkbox" value="1" @checked($type->needs_hr_approval)><span>Needs a second approval</span></label>
-        <button type="submit">Save {{ $type->name }}</button>
+        <button type="submit">Save leave balance</button>
       </form>
     @endforeach
   </section>

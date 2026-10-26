@@ -17,7 +17,9 @@ use App\Models\RemoteWorkAuthorization;
 use App\Models\User;
 use App\Models\WorkTask;
 use App\Services\Portal\AttendanceBoard;
+use App\Support\PortalTime;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class DashboardController extends PortalController
@@ -113,6 +115,23 @@ class DashboardController extends PortalController
             ->limit(6)
             ->get();
 
+        $workedHours = null;
+        if ($actor->portal_role === PortalRole::Employee || $actor->portal_role?->isManagerLevel()) {
+            $summary = $board->hourSummary($actor, now());
+            $workedHours = [
+                'today' => $this->formatWorked($summary['today']),
+                'month' => $this->formatWorked($summary['month']),
+                'unsettled_total' => $this->formatWorked(array_sum(array_column($summary['unsettled'], 'minutes'))),
+                'unsettled' => array_map(fn (array $day): array => [
+                    'date' => Carbon::parse($day['date'])->format('d M Y'),
+                    'started' => $day['started_at'] instanceof Carbon
+                        ? $day['started_at']->timezone(PortalTime::timezone($actor))->format('H:i')
+                        : '—',
+                    'hours' => $this->formatWorked($day['minutes']),
+                ], $summary['unsettled']),
+            ];
+        }
+
         return view('portal.dashboard', [
             'counts' => $counts,
             'locations' => $locations,
@@ -123,8 +142,14 @@ class DashboardController extends PortalController
             'approvals' => $approvals,
             'payslipCounts' => $payslips->countBy('status'),
             'tasks' => $tasks,
-            'balances' => $actor->profile ? LeaveBalance::query()->with('type')->where('user_id', $actor->id)->where('year', (int) $today->year)->get() : collect(),
+            'balance' => $actor->profile ? LeaveBalance::query()->with('type')->where('user_id', $actor->id)->where('year', (int) $today->year)->whereHas('type', fn ($query) => $query->where('is_active', true))->first() : null,
+            'workedHours' => $workedHours,
         ]);
+    }
+
+    private function formatWorked(int $minutes): string
+    {
+        return intdiv($minutes, 60).'h '.str_pad((string) ($minutes % 60), 2, '0', STR_PAD_LEFT).'m';
     }
 
     /**
@@ -136,7 +161,7 @@ class DashboardController extends PortalController
             return ['pending_manager', 'pending_hr'];
         }
 
-        if ($actor->portal_role === PortalRole::Manager) {
+        if ($actor->portal_role?->isManagerLevel()) {
             return ['pending_manager'];
         }
 
@@ -152,7 +177,7 @@ class DashboardController extends PortalController
             return ['submitted', 'pending_hr'];
         }
 
-        if ($actor->portal_role === PortalRole::Manager) {
+        if ($actor->portal_role?->isManagerLevel()) {
             return ['submitted'];
         }
 

@@ -47,24 +47,17 @@ class PortalFoundationSeeder extends Seeder
             ],
         );
 
-        foreach ([
-            ['Casual Leave', 'casual', true, 8, false, 0],
-            ['Sick Leave', 'sick', true, 8, false, 0],
-            ['Earned Leave', 'earned', true, 15, true, 3],
-            ['Unpaid Leave', 'unpaid', false, 0, false, 0],
-        ] as [$name, $code, $paid, $allowance, $needsHr, $threshold]) {
-            LeaveType::query()->firstOrCreate(
-                ['code' => $code],
-                [
-                    'name' => $name,
-                    'is_paid' => $paid,
-                    'annual_allowance' => $allowance,
-                    'needs_hr_approval' => $needsHr,
-                    'hr_threshold_days' => $threshold,
-                    'is_active' => true,
-                ],
-            );
-        }
+        LeaveType::query()->firstOrCreate(
+            ['code' => 'leave'],
+            [
+                'name' => 'Leave',
+                'is_paid' => true,
+                'annual_allowance' => 31,
+                'needs_hr_approval' => true,
+                'hr_threshold_days' => 3,
+                'is_active' => true,
+            ],
+        );
 
         foreach ([
             ['Republic Day', '2026-01-26'],

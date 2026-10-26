@@ -137,6 +137,141 @@ class AttendanceBoard
             ->first();
     }
 
+    public function workedMinutes(User $user, Carbon $from, Carbon $to): int
+    {
+        $end = $to->copy();
+        if ($end->greaterThan(now())) {
+            $end = now();
+        }
+        if ($end->lessThanOrEqualTo($from)) {
+            return 0;
+        }
+
+        $punches = AttendancePunch::query()
+            ->where('user_id', $user->id)
+            ->whereNull('superseded_at')
+            ->where('punched_at', '<=', $end)
+            ->orderBy('punched_at')
+            ->orderBy('id')
+            ->get();
+
+        $minutes = 0;
+        $openAt = null;
+        foreach ($punches as $punch) {
+            if (in_array($punch->punch_type, ['in', 'break_end'], true)) {
+                $openAt = $punch->punched_at->copy();
+
+                continue;
+            }
+            if ($openAt !== null && in_array($punch->punch_type, ['out', 'break_start'], true)) {
+                $minutes += $this->overlapMinutes($openAt, $punch->punched_at, $from, $end);
+                $openAt = null;
+            }
+        }
+
+        return $minutes;
+    }
+
+    /**
+     * @return array{today: int, month: int, unsettled: list<array{date: string, started_at: ?Carbon, minutes: int}>}
+     */
+    public function hourSummary(User $user, Carbon $now): array
+    {
+        $timezone = PortalTime::timezone($user);
+        $localNow = $now->copy()->timezone($timezone);
+        $monthStart = $localNow->copy()->startOfMonth();
+        $punches = AttendancePunch::query()
+            ->where('user_id', $user->id)
+            ->whereNull('superseded_at')
+            ->where('punched_at', '>=', $monthStart)
+            ->where('punched_at', '<=', $localNow)
+            ->orderBy('punched_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn (AttendancePunch $punch): string => $punch->punched_at->copy()->timezone($timezone)->toDateString());
+
+        $settledMonth = 0;
+        $settledToday = 0;
+        $unsettled = [];
+        for ($day = $monthStart->copy(); $day->lte($localNow); $day->addDay()) {
+            $key = $day->toDateString();
+            $dayPunches = $punches->get($key, collect());
+            if ($dayPunches->isEmpty()) {
+                continue;
+            }
+
+            $cap = $day->isSameDay($localNow) ? $localNow->copy() : $day->copy()->addDay()->startOfDay();
+            $worked = $this->dayMinutes($dayPunches, $day->copy()->startOfDay(), $cap);
+            if ($worked['closed']) {
+                $settledMonth += $worked['minutes'];
+                if ($day->isSameDay($localNow)) {
+                    $settledToday = $worked['minutes'];
+                }
+
+                continue;
+            }
+
+            $unsettled[] = [
+                'date' => $key,
+                'started_at' => $worked['started_at'],
+                'minutes' => $worked['minutes'],
+            ];
+        }
+
+        return [
+            'today' => $settledToday,
+            'month' => $settledMonth,
+            'unsettled' => $unsettled,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, AttendancePunch>  $punches
+     * @return array{minutes: int, closed: bool, started_at: ?Carbon}
+     */
+    private function dayMinutes(Collection $punches, Carbon $from, Carbon $cap): array
+    {
+        $minutes = 0;
+        $openAt = null;
+        $startedAt = null;
+        $lastType = null;
+        foreach ($punches as $punch) {
+            $lastType = $punch->punch_type;
+            if ($punch->punch_type === 'in' && $startedAt === null) {
+                $startedAt = $punch->punched_at->copy();
+            }
+            if (in_array($punch->punch_type, ['in', 'break_end'], true)) {
+                $openAt = $punch->punched_at->copy();
+
+                continue;
+            }
+            if ($openAt !== null && in_array($punch->punch_type, ['out', 'break_start'], true)) {
+                $minutes += $this->overlapMinutes($openAt, $punch->punched_at, $from, $cap);
+                $openAt = null;
+            }
+        }
+        if ($openAt !== null) {
+            $minutes += $this->overlapMinutes($openAt, $cap, $from, $cap);
+        }
+
+        return [
+            'minutes' => $minutes,
+            'closed' => $lastType === 'out',
+            'started_at' => $startedAt,
+        ];
+    }
+
+    private function overlapMinutes(Carbon $open, Carbon $close, Carbon $from, Carbon $to): int
+    {
+        $start = $open->greaterThan($from) ? $open : $from;
+        $finish = $close->lessThan($to) ? $close : $to;
+        if ($finish->lessThanOrEqualTo($start)) {
+            return 0;
+        }
+
+        return (int) floor(($finish->getTimestamp() - $start->getTimestamp()) / 60);
+    }
+
     /**
      * @param  Collection<int, Holiday>  $holidays
      */

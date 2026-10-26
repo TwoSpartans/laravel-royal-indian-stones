@@ -32,4 +32,21 @@ class LeaveBalance extends Model
     {
         return round((float) $this->allocated - (float) $this->used, 1);
     }
+
+    public function summary(): string
+    {
+        return $this->days($this->remaining()).' of '.$this->days((float) $this->allocated).' days left';
+    }
+
+    public function allocatedForInput(): string
+    {
+        return $this->days((float) $this->allocated);
+    }
+
+    private function days(float $value): string
+    {
+        $formatted = number_format($value, 1, '.', '');
+
+        return str_contains($formatted, '.0') ? (string) (int) $value : $formatted;
+    }
 }

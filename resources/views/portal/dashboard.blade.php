@@ -3,7 +3,7 @@
 @section('content')
 @php
   $role = auth()->user()->portal_role;
-  $oversight = in_array($role, [\App\Enums\PortalRole::Employer, \App\Enums\PortalRole::AdminHr, \App\Enums\PortalRole::Manager], true);
+  $oversight = $role?->canAdminister() === true;
 @endphp
 <header class="page-head">
   <div>
@@ -26,6 +26,29 @@
       <button class="clock-btn {{ $openPunch === 'in' ? '' : 'btn-secondary' }}" name="punch_type" value="out" type="submit" @disabled(! in_array($openPunch, ['in', 'break_end'], true))>Clock out</button>
     </form>
     <p class="help">Last punch: {{ $lastPunch ? \App\Support\PortalTime::format($lastPunch->punched_at, auth()->user(), $lastPunch->timezone).' · '.$lastPunch->punch_type : 'none yet today' }}</p>
+  </section>
+@endif
+
+@if ($workedHours)
+  <section class="hours-worked" style="margin-bottom:1rem">
+    <h2>Hours worked</h2>
+    <div class="grid stats">
+      <article class="card stat"><strong>{{ $workedHours['today'] }}</strong><span>Today</span></article>
+      <article class="card stat"><strong>{{ $workedHours['month'] }}</strong><span>This month</span></article>
+    </div>
+    <p class="help">Counted from clock-in to clock-out. Breaks are left out. A day without clock-out is listed as unsettled.</p>
+  </section>
+  <section class="card" style="margin-bottom:1rem">
+    <h2>Unsettled working hours</h2>
+    @if ($workedHours['unsettled'] === [])
+      <div class="empty"><strong>No open days</strong><p>Every recorded shift this month has a clock-out.</p></div>
+    @else
+      <p>Total <strong>{{ $workedHours['unsettled_total'] }}</strong></p>
+      @foreach ($workedHours['unsettled'] as $day)
+        <p>{{ $day['date'] }} · clocked in {{ $day['started'] }} · {{ $day['hours'] }} · Clock-out was not recorded</p>
+      @endforeach
+      <p class="help">These hours stay here until a clock-out, or an approved correction, closes the day. A past day is counted through the end of that day. Today is counted up to now.</p>
+    @endif
   </section>
 @endif
 
@@ -134,11 +157,11 @@
   @if (auth()->user()->canOpenPortalSection('leave'))
   <section class="card" style="margin-top:0.9rem">
     <h2>Leave balance this year</h2>
-    @forelse ($balances as $balance)
-      <p>{{ $balance->type?->name }}: {{ $balance->remaining() }} days left</p>
-    @empty
+    @if ($balance)
+      <p>{{ $balance->summary() }}</p>
+    @else
       <div class="empty"><strong>No balance yet</strong></div>
-    @endforelse
+    @endif
   </section>
   @endif
 @endunless

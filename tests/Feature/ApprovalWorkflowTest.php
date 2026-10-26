@@ -18,39 +18,45 @@ class ApprovalWorkflowTest extends TestCase
     use RefreshDatabase;
     use SignsInToPortal;
 
-    public function test_leave_moves_through_the_manager_and_hr_when_required(): void
+    public function test_leave_uses_one_balance_and_a_manager_can_approve_it(): void
     {
         $manager = User::factory()->manager()->create();
         $employee = User::factory()->employee($manager)->create();
         $hr = User::factory()->adminHr()->create();
-        $casual = LeaveType::query()->where('code', 'casual')->firstOrFail();
-        $earned = LeaveType::query()->where('code', 'earned')->firstOrFail();
+        $leave = LeaveType::query()->where('code', 'leave')->firstOrFail();
+
+        $this->signIn($employee)->get('/portal/leave')
+            ->assertOk()
+            ->assertSee('31 of 31 days left')
+            ->assertDontSee('Casual Leave')
+            ->assertDontSee('Sick Leave')
+            ->assertDontSee('Earned Leave');
 
         $this->signIn($employee)->post('/portal/leave', [
-            'leave_type_id' => $casual->id,
             'starts_on' => '2026-10-06',
             'ends_on' => '2026-10-06',
             'reason' => 'Family visit',
         ])->assertRedirect();
-        $casualRequest = LeaveRequest::query()->where('leave_type_id', $casual->id)->firstOrFail();
-        $this->assertSame('pending_manager', $casualRequest->status);
-        $this->signIn($employee)->post(route('portal.leave.decide', $casualRequest), ['decision' => 'approved'])->assertForbidden();
-        $this->signIn($manager)->post(route('portal.leave.decide', $casualRequest), ['decision' => 'approved'])->assertRedirect();
-        $this->assertSame('approved', $casualRequest->fresh()->status);
-        $this->assertSame(1.0, (float) LeaveBalance::query()->where('user_id', $employee->id)->where('leave_type_id', $casual->id)->value('used'));
+        $request = LeaveRequest::query()->where('leave_type_id', $leave->id)->firstOrFail();
+        $this->assertSame('pending_manager', $request->status);
+        $this->signIn($employee)->post(route('portal.leave.decide', $request), ['decision' => 'approved'])->assertForbidden();
+        $this->signIn($manager)->post(route('portal.leave.decide', $request), ['decision' => 'approved'])->assertRedirect();
+        $this->assertSame('approved', $request->fresh()->status);
+        $this->assertSame(1.0, (float) LeaveBalance::query()->where('user_id', $employee->id)->where('leave_type_id', $leave->id)->value('used'));
+        $this->signIn($employee)->get('/portal')->assertOk()->assertSee('30 of 31 days left');
 
         $this->signIn($employee)->post('/portal/leave', [
-            'leave_type_id' => $earned->id,
             'starts_on' => '2026-10-05',
             'ends_on' => '2026-10-08',
             'reason' => 'Travel after dispatch',
         ])->assertRedirect();
-        $earnedRequest = LeaveRequest::query()->where('leave_type_id', $earned->id)->firstOrFail();
-        $this->assertSame(4.0, (float) $earnedRequest->days);
-        $this->signIn($manager)->post(route('portal.leave.decide', $earnedRequest), ['decision' => 'approved'])->assertRedirect();
-        $this->assertSame('pending_hr', $earnedRequest->fresh()->status);
-        $this->signIn($hr)->post(route('portal.leave.decide', $earnedRequest), ['decision' => 'approved'])->assertRedirect();
-        $this->assertSame('approved', $earnedRequest->fresh()->status);
+        $longer = LeaveRequest::query()->where('reason', 'Travel after dispatch')->firstOrFail();
+        $this->assertSame(4.0, (float) $longer->days);
+        $this->signIn($manager)->post(route('portal.leave.decide', $longer), ['decision' => 'approved'])->assertRedirect();
+        $this->assertSame('pending_hr', $longer->fresh()->status);
+        $this->signIn($hr)->post(route('portal.leave.decide', $longer), ['decision' => 'approved'])->assertRedirect();
+        $this->assertSame('approved', $longer->fresh()->status);
+        $this->assertSame(5.0, (float) LeaveBalance::query()->where('user_id', $employee->id)->where('leave_type_id', $leave->id)->value('used'));
     }
 
     public function test_an_expense_is_approved_and_recorded_outside_the_portal(): void

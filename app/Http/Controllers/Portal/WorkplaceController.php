@@ -30,7 +30,7 @@ class WorkplaceController extends PortalController
             'networks' => OfficeNetwork::query()->with('location')->orderBy('label')->get(),
             'holidays' => Holiday::query()->with('location')->orderBy('holiday_on')->get(),
             'shifts' => Shift::query()->orderBy('name')->get(),
-            'leaveTypes' => LeaveType::query()->orderBy('name')->get(),
+            'leaveTypes' => LeaveType::query()->where('is_active', true)->orderBy('name')->get(),
             'devices' => RegisteredDevice::query()->with('user')->latest('last_seen_at')->limit(40)->get(),
             'grants' => RemoteWorkAuthorization::query()->with('user')->latest()->limit(40)->get(),
             'reviews' => AccessEvent::query()->with('user')->whereNull('reviewed_at')->whereIn('classification', ['outside_network', 'unable_to_verify'])->latest('occurred_at')->limit(12)->get(),
@@ -116,7 +116,7 @@ class WorkplaceController extends PortalController
 
         $device->forceFill([
             'status' => $data['decision'],
-            'label' => $data['label'] ?: $device->label,
+            'label' => $data['label'] ?? $device->label,
             'approved_by' => $data['decision'] === 'approved' ? $actor->id : $device->approved_by,
             'approved_at' => $data['decision'] === 'approved' ? now() : $device->approved_at,
             'revoked_at' => $data['decision'] === 'revoked' ? now() : null,

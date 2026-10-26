@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Enums\PortalRole;
 use App\Models\AttendanceCorrection;
 use App\Models\AttendancePunch;
 use App\Models\OvertimeRequest;
@@ -191,7 +190,7 @@ class AttendanceController extends PortalController
             return true;
         }
 
-        return $actor->portal_role === PortalRole::Manager
+        return ($actor->portal_role?->isManagerLevel() ?? false)
             && $subject->profile?->manager_id === $actor->id;
     }
 }

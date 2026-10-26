@@ -27,7 +27,6 @@ class PayrollController extends PortalController
             'structures' => SalaryStructure::query()->whereIn('user_id', $people->modelKeys())->orderByDesc('effective_on')->get()->groupBy('user_id'),
             'payslips' => Payslip::query()->whereIn('user_id', $people->modelKeys())->orderByDesc('period')->get()->groupBy('user_id'),
             'calculationsEnabled' => app(PayslipPreparer::class)->calculationsEnabled(),
-            'statutory' => config('portal.payroll.statutory'),
         ]);
     }
 

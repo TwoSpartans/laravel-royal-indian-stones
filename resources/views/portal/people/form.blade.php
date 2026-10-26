@@ -30,7 +30,7 @@
     </div>
     <div class="field"><label for="manager_id">Manager</label>
       <select id="manager_id" name="manager_id"><option value="">None</option>@foreach ($managers as $manager)<option value="{{ $manager->id }}" @selected(old('manager_id', $person?->profile?->manager_id ?? '') == $manager->id)>{{ $manager->name }}</option>@endforeach</select>
-      <p class="help">Required for an employee. Manager and Admin / HR are the same management level and can open the full roster.</p>
+      <p class="help">Required for an employee. Manager and HR are the same level and can open the full roster.</p>
     </div>
     <div class="field"><label for="joined_on">Joining date</label><input id="joined_on" name="joined_on" type="date" value="{{ old('joined_on', $person?->profile?->joined_on?->toDateString()) }}" required></div>
     <div class="field"><label for="probation_ends_on">Probation ends</label><input id="probation_ends_on" name="probation_ends_on" type="date" value="{{ old('probation_ends_on', $person?->profile?->probation_ends_on?->toDateString()) }}"></div>
@@ -55,7 +55,7 @@
           <span>{{ $label }}</span>
         </label>
       @endforeach
-      <p class="help">Checked sections appear for an employee. The employer, managers, and Admin / HR always see every section.</p>
+      <p class="help">Checked sections appear for an employee. The employer and every Manager / HR account always see every section.</p>
     </fieldset>
   </div>
   <button type="submit">{{ $person ? 'Save record' : 'Create invitation' }}</button>

@@ -28,7 +28,7 @@ class Access
 
     public function canBrowseDirectory(User $user): bool
     {
-        return $this->canAdminister($user) || $this->role($user) === PortalRole::Manager;
+        return $this->canAdminister($user);
     }
 
     public function canAssignRole(User $actor, PortalRole $role): bool
@@ -43,7 +43,7 @@ class Access
         }
 
         $subjectRole = $this->role($subject);
-        if (in_array($subjectRole, [PortalRole::Employer, PortalRole::AdminHr, PortalRole::Manager], true) && $this->role($actor) !== PortalRole::Employer) {
+        if (($subjectRole?->isCompanyAdmin() || $subjectRole?->isManagerLevel()) && $this->role($actor)?->isCompanyAdmin() !== true) {
             return false;
         }
 
@@ -69,7 +69,7 @@ class Access
             return $query;
         }
 
-        if ($this->role($actor) === PortalRole::Manager) {
+        if ($this->role($actor)?->isManagerLevel() === true) {
             return $query->whereHas('profile', fn (Builder $profile) => $profile->where('manager_id', $actor->id));
         }
 
@@ -110,7 +110,7 @@ class Access
         }
 
         return $leave->status === 'pending_manager'
-            && $this->role($actor) === PortalRole::Manager
+            && $this->role($actor)?->isManagerLevel() === true
             && $leave->user?->profile?->manager_id === $actor->id;
     }
 
@@ -122,7 +122,7 @@ class Access
 
         if ($claim->status === 'submitted') {
             return $this->canAdminister($actor)
-                || ($this->role($actor) === PortalRole::Manager && $claim->user?->profile?->manager_id === $actor->id);
+                || ($this->role($actor)?->isManagerLevel() === true && $claim->user?->profile?->manager_id === $actor->id);
         }
 
         return $claim->status === 'pending_hr' && $this->canAdminister($actor);
@@ -143,7 +143,7 @@ class Access
             return true;
         }
 
-        if ($this->role($actor) !== PortalRole::Manager) {
+        if ($this->role($actor)?->isManagerLevel() !== true) {
             return false;
         }
 
@@ -153,7 +153,18 @@ class Access
 
     public function canCreateTask(User $actor): bool
     {
-        return $this->isActive($actor) && $this->role($actor) !== PortalRole::Employee;
+        return $this->isActive($actor) && $this->role($actor) !== null;
+    }
+
+    public function canReviseTask(User $actor): bool
+    {
+        return $this->isActive($actor) && ($this->role($actor)?->isCompanyAdmin() ?? false);
+    }
+
+    public function canUpdateTaskStatus(User $actor, WorkTask $task): bool
+    {
+        return $this->canViewTask($actor, $task)
+            && ($this->canReviseTask($actor) || $task->owner_id === $actor->id || $task->assignee_id === $actor->id);
     }
 
     public function canExport(User $actor): bool
@@ -170,7 +181,7 @@ class Access
             return null;
         }
 
-        if ($this->role($actor) === PortalRole::Manager) {
+        if ($this->role($actor)?->isManagerLevel() === true) {
             return $this->peopleQuery($actor)->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 

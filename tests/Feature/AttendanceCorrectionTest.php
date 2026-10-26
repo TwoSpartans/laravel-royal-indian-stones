@@ -53,6 +53,42 @@ class AttendanceCorrectionTest extends TestCase
         $this->assertTrue(AttendancePunch::query()->where('correction_id', $correction->id)->where('is_correction', true)->exists());
     }
 
+    public function test_an_employee_sees_worked_hours_and_the_employer_does_not(): void
+    {
+        $employee = User::factory()->employee()->create();
+        $manager = User::factory()->manager()->create();
+        $hr = User::factory()->adminHr()->create();
+        $employer = User::factory()->employer()->create();
+        $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
+        $this->travelTo(Carbon::parse('2026-10-21 12:00:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_start'])->assertRedirect();
+        $this->travelTo(Carbon::parse('2026-10-21 12:30:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_end'])->assertRedirect();
+        $this->travelTo(Carbon::parse('2026-10-21 18:00:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'out'])->assertRedirect();
+
+        $this->signIn($employee)->get('/portal')->assertOk()->assertSee('Hours worked')->assertSee('8h 30m')->assertSee('No open days');
+        $this->signIn($manager)->get('/portal')->assertOk()->assertSee('Hours worked')->assertSee('0h 00m');
+        $this->signIn($hr)->get('/portal')->assertOk()->assertSee('Hours worked')->assertSee('0h 00m');
+        $this->signIn($employer)->get('/portal')->assertOk()->assertDontSee('Hours worked');
+    }
+
+    public function test_a_day_without_clock_out_is_listed_as_unsettled(): void
+    {
+        $employee = User::factory()->employee()->create();
+        $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
+        $this->travelTo(Carbon::parse('2026-10-21 12:00:00', 'Asia/Kolkata'));
+
+        $this->signIn($employee)->get('/portal')
+            ->assertOk()
+            ->assertSee('Unsettled working hours')
+            ->assertSee('3h 00m')
+            ->assertSee('Clock-out was not recorded')
+            ->assertSee('0h 00m');
+    }
+
     public function test_clock_in_is_blocked_until_the_data_notice_is_accepted(): void
     {
         $employee = User::factory()->employee()->withoutNotice()->create();

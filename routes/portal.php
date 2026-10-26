@@ -80,6 +80,9 @@ Route::middleware(NoindexAdminResponses::class)->prefix('portal')->name('portal.
                 Route::get('tasks/create', [TaskController::class, 'create'])->name('tasks.create');
                 Route::post('tasks', [TaskController::class, 'store'])->name('tasks.store');
                 Route::get('tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+                Route::get('tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+                Route::put('tasks/{task}', [TaskController::class, 'revise'])->name('tasks.update');
+                Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
                 Route::post('tasks/{task}/status', [TaskController::class, 'update'])->name('tasks.status');
                 Route::post('tasks/{task}/comments', [TaskController::class, 'comment'])->name('tasks.comments.store');
                 Route::post('tasks/{task}/attachments', [TaskController::class, 'attachment'])->name('tasks.attachments.store');

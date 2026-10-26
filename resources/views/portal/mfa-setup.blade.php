@@ -2,7 +2,7 @@
 @section('title', 'Authenticator')
 @section('content')
 <h1>Set up the authenticator</h1>
-<p>Employer and Admin / HR accounts need a second step. Add this key to an authenticator app, then enter the 6-digit code.</p>
+<p>The employer and an HR account need a second step. Add this key to an authenticator app, then enter the 6-digit code.</p>
 <p class="secret">{{ $secret }}</p>
 <p class="help">Or copy this setup link into the app: <span class="secret">{{ $uri }}</span></p>
 <form method="post" action="{{ route('portal.mfa.confirm') }}">

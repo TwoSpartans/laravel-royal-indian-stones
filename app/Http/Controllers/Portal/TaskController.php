@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Enums\PortalRole;
 use App\Models\TaskActivity;
 use App\Models\TaskAttachment;
 use App\Models\TaskComment;
@@ -82,11 +83,54 @@ class TaskController extends PortalController
         return view('portal.tasks.show', ['task' => $task]);
     }
 
+    public function edit(Request $request, WorkTask $task): View
+    {
+        $actor = $this->actor($request);
+        abort_unless($this->access->canViewTask($actor, $task), 404);
+        abort_unless($this->access->canReviseTask($actor), 403);
+
+        return view('portal.tasks.form', [
+            'task' => $task,
+            'assignees' => $this->assignees($actor),
+            'locations' => WorkLocation::query()->orderBy('name')->get(),
+        ]);
+    }
+
+    public function revise(Request $request, WorkTask $task): RedirectResponse
+    {
+        $actor = $this->actor($request);
+        abort_unless($this->access->canViewTask($actor, $task), 404);
+        abort_unless($this->access->canReviseTask($actor), 403);
+        $data = $this->validated($request, $actor);
+        $task->forceFill($data)->save();
+        TaskActivity::query()->create([
+            'work_task_id' => $task->id,
+            'user_id' => $actor->id,
+            'description' => 'Task revised',
+        ]);
+
+        return redirect()->route('portal.tasks.show', $task)->with('status', 'Task revised.');
+    }
+
+    public function destroy(Request $request, WorkTask $task): RedirectResponse
+    {
+        $actor = $this->actor($request);
+        abort_unless($this->access->canViewTask($actor, $task), 404);
+        abort_unless($this->access->canReviseTask($actor), 403);
+        $task->load('attachments');
+        foreach ($task->attachments as $attachment) {
+            Storage::disk('portal')->delete($attachment->path);
+        }
+        $task->delete();
+
+        return redirect()->route('portal.tasks.index')->with('status', 'Task deleted.');
+    }
+
     public function update(Request $request, WorkTask $task): RedirectResponse
     {
         $actor = $this->actor($request);
         abort_unless($this->access->canViewTask($actor, $task), 404);
-        abort_unless($this->access->canCreateTask($actor) || $task->assignee_id === $actor->id, 403);
+        abort_unless($this->access->canUpdateTaskStatus($actor, $task), 403);
         $data = $request->validate([
             'status' => ['required', Rule::in(['open', 'in_progress', 'blocked', 'done'])],
         ]);
@@ -162,14 +206,26 @@ class TaskController extends PortalController
     private function visible(User $actor): Builder
     {
         $query = WorkTask::query();
-        if ($this->access->canAdminister($actor)) {
+        if ($this->access->canReviseTask($actor)) {
             return $query;
         }
 
-        $ids = $this->access->peopleQuery($actor)->pluck('id')->push($actor->id)->unique()->all();
+        if ($actor->portal_role?->isManagerLevel()) {
+            $employeeIds = User::query()
+                ->where('portal_role', PortalRole::Employee->value)
+                ->whereNull('deactivated_at')
+                ->pluck('id');
 
-        return $query->where(function ($inner) use ($ids): void {
-            $inner->whereIn('assignee_id', $ids)->orWhereIn('owner_id', $ids);
+            return $query->where(function (Builder $inner) use ($actor, $employeeIds): void {
+                $inner->where('owner_id', $actor->id)
+                    ->orWhere('assignee_id', $actor->id)
+                    ->orWhereIn('assignee_id', $employeeIds)
+                    ->orWhereIn('owner_id', $employeeIds);
+            });
+        }
+
+        return $query->where(function (Builder $inner) use ($actor): void {
+            $inner->where('owner_id', $actor->id)->orWhere('assignee_id', $actor->id);
         });
     }
 
@@ -178,11 +234,22 @@ class TaskController extends PortalController
      */
     private function assignees(User $actor): Collection
     {
-        if ($this->access->canAdminister($actor)) {
-            return User::query()->whereNotNull('portal_role')->whereNull('deactivated_at')->orderBy('name')->get();
+        if ($actor->portal_role === PortalRole::Employee) {
+            return new Collection([$actor]);
         }
 
-        return $this->access->peopleQuery($actor)->whereNull('deactivated_at')->orderBy('name')->get()->push($actor);
+        if ($actor->portal_role?->isManagerLevel()) {
+            return User::query()
+                ->where('portal_role', PortalRole::Employee->value)
+                ->whereNull('deactivated_at')
+                ->orderBy('name')
+                ->get()
+                ->prepend($actor)
+                ->unique('id')
+                ->values();
+        }
+
+        return User::query()->whereNotNull('portal_role')->whereNull('deactivated_at')->orderBy('name')->get();
     }
 
     /**

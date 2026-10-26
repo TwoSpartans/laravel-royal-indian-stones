@@ -26,18 +26,16 @@
   </section>
   <section class="card">
     <h2>Leave this year</h2>
-    @forelse ($balances as $balance)
-      <p>{{ $balance->type?->name }}: {{ $balance->remaining() }} of {{ $balance->allocated }} left</p>
-    @empty
+    @if ($balance)
+      <p>{{ $balance->summary() }}</p>
+    @else
       <div class="empty"><strong>No balance</strong></div>
-    @endforelse
-    @if ($canEdit)
+    @endif
+    @if ($canEdit && $balance)
       <form method="post" action="{{ route('portal.people.balances.update', $person) }}">
         @csrf
-        <div class="field"><label for="leave_type_id">Adjust allocation</label>
-          <select id="leave_type_id" name="leave_type_id">@foreach ($balances as $balance)<option value="{{ $balance->leave_type_id }}">{{ $balance->type?->name }}</option>@endforeach</select>
-        </div>
-        <div class="field"><label for="allocated">Days</label><input id="allocated" name="allocated" inputmode="decimal" required></div>
+        <input type="hidden" name="leave_type_id" value="{{ $balance->leave_type_id }}">
+        <div class="field"><label for="allocated">Days in the balance</label><input id="allocated" name="allocated" inputmode="decimal" value="{{ $balance->allocatedForInput() }}" required></div>
         <button type="submit">Save balance</button>
       </form>
     @endif

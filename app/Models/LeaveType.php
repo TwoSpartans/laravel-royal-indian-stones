@@ -20,6 +20,13 @@ class LeaveType extends Model
         ];
     }
 
+    public function allowanceForInput(): string
+    {
+        $formatted = number_format((float) $this->annual_allowance, 1, '.', '');
+
+        return str_contains($formatted, '.0') ? (string) (int) $this->annual_allowance : $formatted;
+    }
+
     public function balances(): HasMany
     {
         return $this->hasMany(LeaveBalance::class);

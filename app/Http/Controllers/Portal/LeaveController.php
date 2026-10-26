@@ -42,8 +42,7 @@ class LeaveController extends PortalController
 
         return view('portal.leave.index', [
             'requests' => $requests,
-            'types' => LeaveType::query()->where('is_active', true)->orderBy('name')->get(),
-            'balances' => LeaveBalance::query()->with('type')->where('user_id', $actor->id)->where('year', (int) now()->year)->get(),
+            'balance' => LeaveBalance::query()->with('type')->where('user_id', $actor->id)->where('year', (int) now()->year)->whereHas('type', fn ($query) => $query->where('is_active', true))->first(),
             'calendar' => $calendar,
             'month' => $month,
             'status' => $status,
@@ -55,13 +54,13 @@ class LeaveController extends PortalController
         $actor = $this->actor($request);
         abort_unless($actor->recordsOwnAttendance(), 403);
         $data = $request->validate([
-            'leave_type_id' => ['required', 'integer', Rule::exists('leave_types', 'id')->where('is_active', true)],
             'starts_on' => ['required', 'date'],
             'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
-        $type = LeaveType::query()->findOrFail($data['leave_type_id']);
+        $type = LeaveType::query()->where('is_active', true)->where('code', 'leave')->first();
+        abort_unless($type instanceof LeaveType, 404);
         $count = $days->count($actor, $data['starts_on'], $data['ends_on']);
         if ($count < 1) {
             return back()->withErrors(['ends_on' => 'That range has no working days after weekly offs and holidays.'])->withInput();
@@ -74,7 +73,7 @@ class LeaveController extends PortalController
                 ->where('year', (int) Carbon::parse($data['starts_on'])->year)
                 ->first();
             if ($balance === null || $balance->remaining() < $count) {
-                return back()->withErrors(['leave_type_id' => 'The available balance is not enough for this request.'])->withInput();
+                return back()->withErrors(['ends_on' => 'The available balance is not enough for this request.'])->withInput();
             }
         }
 
@@ -93,7 +92,7 @@ class LeaveController extends PortalController
         $recipient = $status === 'pending_manager' ? $actor->profile?->manager : null;
         $recipient?->notify(new PortalStatusNotification(
             'Leave request waiting',
-            $actor->name.' requested '.$count.' day(s) of '.$type->name.'.',
+            $actor->name.' requested '.$count.' day(s) of leave.',
             route('portal.leave.index'),
         ));
 
