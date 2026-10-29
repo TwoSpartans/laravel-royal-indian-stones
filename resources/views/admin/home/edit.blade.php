@@ -167,6 +167,16 @@ document.documentElement.classList.add('home-editor-enhanced');
           'group' => $group,
           'openSection' => $openSection,
       ])
+    @elseif($group['key'] === 'explore')
+      @include('admin.home.explore-collection', [
+          'group' => $group,
+          'openSection' => $openSection,
+      ])
+    @elseif($group['key'] === 'stones')
+      @include('admin.home.stone-applications', [
+          'group' => $group,
+          'openSection' => $openSection,
+      ])
     @else
       <form id="home-panel-{{ $group['key'] }}" class="home-editor-form home-panel{{ $openSection === $group['key'] ? ' is-open' : '' }}" method="post" enctype="multipart/form-data" action="{{ route('admin.home.update', $group['key']) }}" data-home-panel="{{ $group['key'] }}"@if($openSection === $group['key']) data-open="1"@endif role="tabpanel" aria-labelledby="home-tab-{{ $group['key'] }}">
         @csrf
@@ -249,5 +259,5 @@ document.documentElement.classList.add('home-editor-enhanced');
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/home-editor.js') }}?v=2"></script>
+<script src="{{ asset('assets/js/home-editor.js') }}?v=5"></script>
 @endpush

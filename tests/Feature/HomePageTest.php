@@ -210,6 +210,188 @@ class HomePageTest extends TestCase
         $this->assertSame([], glob(public_path('assets/img/home/explore/*')) ?: []);
     }
 
+    public function test_explore_editor_shows_catalogue_cards_in_catalogue_order(): void
+    {
+        $catalogue = [
+            ['Sandstone', 'sandstone'],
+            ['Limestone', 'limestone'],
+            ['Marble', 'marble'],
+            ['Granite', 'granite'],
+            ['Slate', 'slate'],
+            ['Quartzite', 'quartzite'],
+            ['Pebbles', 'stone-pebbles'],
+            ['Cobbles', 'stone-cobbles'],
+            ['Stone chips', 'stone-chips'],
+            ['Basalt', 'stone-basalt'],
+            ['Soapstone', 'stone-soap'],
+            ['Travertine', 'stone-travertine'],
+        ];
+        foreach ($catalogue as $position => [$name, $slug]) {
+            Category::query()->create([
+                'name' => $name,
+                'slug' => $slug,
+                'image' => 'assets/img/catalogue/'.$slug.'.jpg',
+                'position' => $position,
+            ]);
+        }
+        Category::query()->create([
+            'name' => 'Stone articles',
+            'slug' => 'stone-articles',
+            'position' => 20,
+        ]);
+        Category::query()->create([
+            'name' => 'Stone applications',
+            'slug' => 'stone-applications',
+            'position' => 21,
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('admin.home.edit'))
+            ->assertOk()
+            ->assertSee('Explore collection')
+            ->assertSee('value="Explore the collection"', false)
+            ->assertSee('Sandstone, limestone, marble, granite, slate and the other stones we cut in India, chosen for floors, walls, roofs and gardens.')
+            ->assertSee('name="copy[explore][heading]"', false)
+            ->assertSee('name="copy[explore][body]"', false)
+            ->assertSee('12 category cards')
+            ->assertSee('12 total')
+            ->assertSee('Category cards')
+            ->assertSee('Homepage description')
+            ->assertSee('Catalogue destination')
+            ->assertSee('name="alt[explore][stone-soap]"', false)
+            ->assertSee('name="photo[explore][stone-soap]"', false)
+            ->assertSeeInOrder([
+                'data-edit-card="sandstone"',
+                'data-edit-card="limestone"',
+                'data-edit-card="marble"',
+                'data-edit-card="granite"',
+                'data-edit-card="slate"',
+                'data-edit-card="quartzite"',
+                'data-edit-card="stone-pebbles"',
+                'data-edit-card="stone-cobbles"',
+                'data-edit-card="stone-chips"',
+                'data-edit-card="stone-basalt"',
+                'data-edit-card="stone-soap"',
+                'data-edit-card="stone-travertine"',
+            ], false)
+            ->assertDontSee('data-edit-card="stone-articles"', false)
+            ->assertDontSee('data-edit-card="stone-applications"', false)
+            ->assertDontSee('name="title[explore]', false)
+            ->assertDontSee('name="link[explore]', false)
+            ->assertDontSee('Add card')
+            ->assertDontSee('Reorder cards')
+            ->assertDontSee('Bulk image replace');
+    }
+
+    public function test_replacing_an_explore_photograph_leaves_the_catalogue_record_unchanged(): void
+    {
+        $this->sandstone();
+        $limestoneImage = 'assets/img/products/limestone/n-green/n-green-limestone-natural-finish-decorative-wall-tiles.jpg';
+        Category::query()->create([
+            'name' => 'Limestone',
+            'slug' => 'limestone',
+            'image' => $limestoneImage,
+            'position' => 1,
+        ]);
+        $admin = User::factory()->create();
+        $catalogueImage = 'assets/img/products/sandstone/agra-red/agra-red-sandstone-natural-mosaic-tiles.jpg';
+        $path = null;
+
+        try {
+            $this->actingAs($admin)->put(route('admin.home.update', 'explore'), [
+                'copy' => [
+                    'explore' => [
+                        'heading' => 'Stones for the courtyard',
+                        'body' => 'Cut in India for floors and walls.',
+                    ],
+                ],
+                'alt' => [
+                    'explore' => [
+                        'sandstone' => 'Warm Agra sandstone',
+                    ],
+                ],
+                'photo' => [
+                    'explore' => [
+                        'sandstone' => UploadedFile::fake()->image('cover.jpg', 800, 500),
+                    ],
+                ],
+            ])->assertRedirect(route('admin.home.edit'))->assertSessionHas('home_section', 'explore');
+
+            $path = HomeImage::query()->where('section', 'explore')->where('slot', 'sandstone')->value('path');
+            $this->assertIsString($path);
+            $this->assertStringStartsWith('assets/img/home/explore/', $path);
+            $this->assertNotSame($catalogueImage, $path);
+            $this->assertFileExists(public_path($path));
+            $this->assertSame($catalogueImage, Category::query()->where('slug', 'sandstone')->value('image'));
+            $this->assertSame('Sandstone', Category::query()->where('slug', 'sandstone')->value('name'));
+            $this->assertSame($limestoneImage, Category::query()->where('slug', 'limestone')->value('image'));
+            $this->assertSame('Limestone', Category::query()->where('slug', 'limestone')->value('name'));
+            $this->assertNull(HomeImage::query()->where('section', 'explore')->where('slot', 'limestone')->first());
+
+            $this->get('/')
+                ->assertOk()
+                ->assertSee('Stones for the courtyard')
+                ->assertSee('Cut in India for floors and walls.')
+                ->assertSee('Warm Agra sandstone')
+                ->assertSee($path, false)
+                ->assertDontSee($catalogueImage, false);
+
+            $this->actingAs($admin)
+                ->get(route('admin.home.edit'))
+                ->assertOk()
+                ->assertSee('value="Stones for the courtyard"', false)
+                ->assertSee('Warm Agra sandstone')
+                ->assertSee('Homepage photograph')
+                ->assertSee($path, false)
+                ->assertSee($catalogueImage, false)
+                ->assertSee('Use the original photograph')
+                ->assertSee('/sandstone', false);
+        } finally {
+            $this->deleteUploaded(is_string($path) ? $path : null);
+        }
+    }
+
+    public function test_a_rejected_explore_photograph_returns_to_that_category(): void
+    {
+        $this->sandstone();
+        $catalogueImage = 'assets/img/products/sandstone/agra-red/agra-red-sandstone-natural-mosaic-tiles.jpg';
+
+        $this->actingAs(User::factory()->create())
+            ->from(route('admin.home.edit'))
+            ->followingRedirects()
+            ->put(route('admin.home.update', 'explore'), [
+                'copy' => [
+                    'explore' => [
+                        'heading' => 'Stones for the courtyard',
+                        'body' => 'Cut in India for floors and walls.',
+                    ],
+                ],
+                'alt' => [
+                    'explore' => [
+                        'sandstone' => 'Warm Agra sandstone',
+                    ],
+                ],
+                'photo' => [
+                    'explore' => [
+                        'sandstone' => UploadedFile::fake()->create('notes.txt', 20, 'text/plain'),
+                    ],
+                ],
+            ])
+            ->assertOk()
+            ->assertSee('Use a JPG, PNG, or WebP image.')
+            ->assertSee('data-open-slot="sandstone"', false)
+            ->assertSee('data-home-panel="explore" data-open="1"', false)
+            ->assertSee('value="Stones for the courtyard"', false)
+            ->assertSee('Cut in India for floors and walls.')
+            ->assertSee('Warm Agra sandstone')
+            ->assertSee('class="home-file-input is-invalid" id="photo-explore-sandstone"', false)
+            ->assertDontSee('data-home-panel="hero" data-open="1"', false);
+
+        $this->assertDatabaseCount('home_images', 0);
+        $this->assertDatabaseCount('home_sections', 0);
+        $this->assertSame($catalogueImage, Category::query()->where('slug', 'sandstone')->value('image'));
+    }
+
     public function test_an_unknown_home_section_is_not_found(): void
     {
         $this->actingAs(User::factory()->create())
@@ -289,8 +471,8 @@ class HomePageTest extends TestCase
             ->assertSee('name="copy[supplier][body]"', false)
             ->assertSee('name="copy[supplier][button_label]"', false)
             ->assertSee('Quote page <span>/contact</span>', false)
-            ->assertSee('Save collection')
-            ->assertSee('Save stone cards')
+            ->assertSee('name="copy[explore][heading]"', false)
+            ->assertSee('name="title[stones][index-stone-wall-panel]"', false)
             ->assertSee('Save journal')
             ->assertSee('Save closing band')
             ->assertDontSee('name="photo[supplier]', false)
@@ -385,7 +567,7 @@ class HomePageTest extends TestCase
             ->assertSee(route('admin.home.update', 'hero'), false)
             ->assertSee('name="copy[supplier][heading]"', false)
             ->assertSee('Live section preview')
-            ->assertSee('Save collection')
+            ->assertSee('name="copy[explore][heading]"', false)
             ->assertSee(route('admin.home.update', 'supplier'), false)
             ->assertDontSee('name="photo[supplier]', false)
             ->assertDontSee('data-home-panel="supplier" data-open="1"', false)
@@ -476,6 +658,104 @@ class HomePageTest extends TestCase
         ])->assertSessionHasErrors([
             'link.hero.sandstone' => 'Choose a page that already exists on the site.',
         ]);
+    }
+
+    public function test_stone_editor_lists_application_cards_in_definition_order(): void
+    {
+        $response = $this->actingAs(User::factory()->create())
+            ->get(route('admin.home.edit'));
+
+        $response->assertOk()
+            ->assertSee('Stone application cards')
+            ->assertSee('14 total')
+            ->assertSee('Search by name or page')
+            ->assertSee('name="copy[stones][heading]"', false)
+            ->assertSee('name="copy[stones][body]"', false)
+            ->assertSee('name="title[stones][index-stone-wall-panel]"', false)
+            ->assertSee('name="link[stones][index-stone-wall-panel]"', false)
+            ->assertSee('name="alt[stones][index-stone-mosaic]"', false)
+            ->assertSee('name="photo[stones][index-stone-wall-panel]"', false)
+            ->assertSee('kandla-grey-sandstone-wall-panels.jpg', false)
+            ->assertSee('The destination page must already exist before assigning this card.')
+            ->assertSee('Shaped over millions of years, natural Indian stone brings distinct textures to walls, pathways, roofs and architectural details.', false)
+            ->assertDontSee('Add item')
+            ->assertDontSee('Grid view');
+
+        $content = $response->getContent();
+        $panel = strpos($content, 'data-stone-row="index-stone-wall-panel"');
+        $cladding = strpos($content, 'data-stone-row="index-stone-wall-cladding"');
+        $mosaic = strpos($content, 'data-stone-row="index-stone-mosaic"');
+        $this->assertNotFalse($panel);
+        $this->assertNotFalse($cladding);
+        $this->assertNotFalse($mosaic);
+        $this->assertLessThan($cladding, $panel);
+        $this->assertLessThan($mosaic, $cladding);
+    }
+
+    public function test_a_missing_stone_page_is_rejected_and_the_card_stays_open(): void
+    {
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->from(route('admin.home.edit'))
+            ->followingRedirects()
+            ->put(route('admin.home.update', 'stones'), [
+                'title' => ['stones' => ['index-stone-kerb' => 'Garden kerb']],
+                'link' => ['stones' => ['index-stone-kerb' => '/not-a-real-page']],
+            ])
+            ->assertOk()
+            ->assertSee('Choose a page that already exists on the site.')
+            ->assertSee('data-home-panel="stones" data-open="1" data-open-slot="index-stone-kerb"', false)
+            ->assertSee('value="Garden kerb"', false)
+            ->assertSee('value="/not-a-real-page"', false)
+            ->assertSee('id="link-stones-index-stone-kerb"', false)
+            ->assertSee('is-invalid', false);
+
+        $this->assertSame(0, HomeImage::query()->where('section', 'stones')->count());
+        $this->assertSame(0, HomeSection::query()->where('key', 'stones')->count());
+    }
+
+    public function test_replacing_a_stone_photograph_leaves_the_original_file_in_place(): void
+    {
+        $admin = User::factory()->create();
+        $original = 'assets/img/products/index/wall-panel/kandla-grey-sandstone-wall-panels.jpg';
+        $this->assertFileExists(public_path($original));
+        $path = null;
+
+        try {
+            $this->actingAs($admin)->put(route('admin.home.update', 'stones'), [
+                'photo' => [
+                    'stones' => [
+                        'index-stone-wall-panel' => UploadedFile::fake()->image('panel.jpg', 800, 500),
+                    ],
+                ],
+                'alt' => ['stones' => ['index-stone-wall-panel' => 'Grey wall panels']],
+            ])->assertRedirect(route('admin.home.edit'));
+
+            $path = HomeImage::query()->where('section', 'stones')->where('slot', 'index-stone-wall-panel')->value('path');
+            $this->assertIsString($path);
+            $this->assertStringStartsWith('assets/img/home/stones/', $path);
+            $this->assertNotSame($original, $path);
+            $this->assertFileExists(public_path($path));
+            $this->assertFileExists(public_path($original));
+            $this->assertSame(1, HomeImage::query()->where('section', 'stones')->count());
+
+            $this->get('/')
+                ->assertOk()
+                ->assertSee('Grey wall panels')
+                ->assertSee($path, false)
+                ->assertSee('Stone Wall Cladding');
+
+            $this->actingAs($admin)
+                ->get(route('admin.home.edit'))
+                ->assertOk()
+                ->assertSee('Homepage photograph')
+                ->assertSee($path, false)
+                ->assertSee('Use the original photograph')
+                ->assertSee('value="Grey wall panels"', false);
+        } finally {
+            $this->deleteUploaded(is_string($path) ? $path : null);
+        }
     }
 
     public function test_a_stone_card_name_can_be_changed(): void

@@ -58,6 +58,19 @@
     supplierData = null;
   }
   var supplierDiscard = supplierForm ? supplierForm.querySelector('[data-discard]') : null;
+  var exploreForm = document.getElementById('home-panel-explore');
+  var exploreDrawer = exploreForm ? exploreForm.querySelector('[data-explore-drawer]') : null;
+  var exploreDiscard = exploreForm ? exploreForm.querySelector('[data-discard]') : null;
+  var exploreReturnFocus = null;
+  var exploreSnapshot = null;
+  var exploreObjectUrls = {};
+  var exploreClosing = false;
+  var stonesForm = document.getElementById('home-panel-stones');
+  var stonesDiscard = stonesForm ? stonesForm.querySelector('[data-discard]') : null;
+  var stonesObjectUrls = {};
+  var stonesPage = 1;
+  var stonesPageSize = 6;
+  var stonesQuery = '';
 
   function pad(number) {
     return String(number).padStart(2, '0');
@@ -412,6 +425,9 @@
     if (!known) {
       return;
     }
+    if (key !== currentSection) {
+      parkExploreDrawer(false);
+    }
     currentSection = key;
     document.documentElement.dataset.homeSection = key;
     root.querySelectorAll('[data-home-panel]').forEach(function (panel) {
@@ -553,7 +569,7 @@
       return isSupplierDirty();
     }
     return Array.prototype.some.call(form.querySelectorAll('input, textarea, select'), function (input) {
-      if (input.type === 'hidden' || input.name === '_token' || input.name === '_method') {
+      if (input.type === 'hidden' || input.name === '_token' || input.name === '_method' || input.hasAttribute('data-stone-search')) {
         return false;
       }
       if (input.type === 'file') {
@@ -593,6 +609,12 @@
     }
     if (supplierDiscard) {
       supplierDiscard.disabled = submitting || !isSupplierDirty();
+    }
+    if (exploreDiscard) {
+      exploreDiscard.disabled = submitting || (!isFormDirty(exploreForm) && !exploreHasFileError());
+    }
+    if (stonesDiscard) {
+      stonesDiscard.disabled = submitting || (!isFormDirty(stonesForm) && !stonesHasFileError());
     }
     if (submitting) {
       setSaveMode('saving');
@@ -871,6 +893,1098 @@
     renderSupplier();
   }
 
+  function exploreFields(slot) {
+    return exploreForm ? exploreForm.querySelector('[data-explore-slot="' + cssEscape(slot) + '"]') : null;
+  }
+
+  function exploreCard(slot) {
+    return exploreForm ? exploreForm.querySelector('[data-explore-card="' + cssEscape(slot) + '"]') : null;
+  }
+
+  function fileKey(input) {
+    if (!input || !input.files || !input.files[0]) {
+      return '';
+    }
+    return input.files[0].name + ':' + input.files[0].size + ':' + input.files[0].lastModified;
+  }
+
+  function revokeExplore(slot) {
+    if (!exploreObjectUrls[slot]) {
+      return;
+    }
+    URL.revokeObjectURL(exploreObjectUrls[slot]);
+    delete exploreObjectUrls[slot];
+  }
+
+  function setExploreFiles(input, files) {
+    if (!input) {
+      return;
+    }
+    if (!files.length) {
+      input.value = '';
+      return;
+    }
+    try {
+      var transfer = new DataTransfer();
+      files.forEach(function (file) { transfer.items.add(file); });
+      input.files = transfer.files;
+    } catch (error) {
+      input.value = '';
+    }
+  }
+
+  function exploreHasFileError() {
+    if (!exploreForm) {
+      return false;
+    }
+    var nodes = exploreForm.querySelectorAll('[data-file-error]');
+    for (var index = 0; index < nodes.length; index += 1) {
+      if (!nodes[index].hidden && nodes[index].textContent.trim() !== '') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function snapshotExplore(slot) {
+    var panel = exploreFields(slot);
+    if (!panel) {
+      return null;
+    }
+    var alt = panel.querySelector('[data-field="alt"]');
+    var restore = panel.querySelector('[data-field="restore"]');
+    var photo = panel.querySelector('[data-field="photo"]');
+    return {
+      alt: alt ? alt.value : '',
+      restore: Boolean(restore && restore.checked),
+      fileKey: fileKey(photo),
+      files: photo && photo.files ? Array.prototype.slice.call(photo.files) : []
+    };
+  }
+
+  function applyExploreSnapshot(slot, snapshot) {
+    var panel = exploreFields(slot);
+    if (!panel || !snapshot) {
+      return;
+    }
+    var alt = panel.querySelector('[data-field="alt"]');
+    if (alt) {
+      alt.value = snapshot.alt;
+      clearFieldError(alt);
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore) {
+      restore.checked = snapshot.restore;
+    }
+    var photo = panel.querySelector('[data-field="photo"]');
+    if (photo) {
+      setExploreFiles(photo, snapshot.files);
+      photo.classList.remove('is-invalid');
+      photo.removeAttribute('aria-invalid');
+    }
+    revokeExplore(slot);
+    if (snapshot.files.length) {
+      exploreObjectUrls[slot] = URL.createObjectURL(snapshot.files[0]);
+    }
+    showFileError(panel, '');
+  }
+
+  function exploreDrawerDirty() {
+    if (!exploreForm || !exploreSnapshot || !exploreForm.dataset.activeSlot) {
+      return false;
+    }
+    var panel = exploreFields(exploreForm.dataset.activeSlot);
+    if (!panel) {
+      return false;
+    }
+    var alt = panel.querySelector('[data-field="alt"]');
+    var restore = panel.querySelector('[data-field="restore"]');
+    var photo = panel.querySelector('[data-field="photo"]');
+    if (alt && alt.value !== exploreSnapshot.alt) {
+      return true;
+    }
+    if (Boolean(restore && restore.checked) !== exploreSnapshot.restore) {
+      return true;
+    }
+    return fileKey(photo) !== exploreSnapshot.fileKey;
+  }
+
+  function exploreSource(panel) {
+    var slot = panel.dataset.exploreSlot;
+    if (exploreObjectUrls[slot]) {
+      return exploreObjectUrls[slot];
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore && restore.checked) {
+      return panel.dataset.fallback || '';
+    }
+    return panel.dataset.image || panel.dataset.fallback || '';
+  }
+
+  function exploreState(panel) {
+    var photo = panel.querySelector('[data-field="photo"]');
+    if (photo && photo.files && photo.files.length > 0) {
+      return 'New photograph selected';
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore && restore.checked) {
+      return 'Catalogue photograph';
+    }
+    if (panel.dataset.custom === '1') {
+      return 'Homepage photograph';
+    }
+    if (!(panel.dataset.image || panel.dataset.fallback)) {
+      return 'No photograph';
+    }
+    return 'Catalogue photograph';
+  }
+
+  function renderExplore(slot) {
+    var panel = exploreFields(slot);
+    var card = exploreCard(slot);
+    if (!panel) {
+      return;
+    }
+    var src = exploreSource(panel);
+    var state = exploreState(panel);
+    if (card) {
+      var thumb = card.querySelector('[data-card-thumb]');
+      var missing = card.querySelector('[data-card-missing]');
+      if (thumb) {
+        if (src) {
+          thumb.src = src;
+          thumb.hidden = false;
+        } else {
+          thumb.removeAttribute('src');
+          thumb.hidden = true;
+        }
+      }
+      if (missing) {
+        missing.hidden = Boolean(src);
+      }
+      var label = card.querySelector('[data-card-state]');
+      if (label) {
+        label.textContent = state;
+      }
+    }
+    var frame = panel.querySelector('[data-photo-preview]');
+    var frameMissing = panel.querySelector('[data-photo-missing]');
+    var caption = panel.querySelector('[data-photo-caption]');
+    var alt = panel.querySelector('[data-field="alt"]');
+    if (frame) {
+      if (src) {
+        frame.src = src;
+        frame.hidden = false;
+      } else {
+        frame.removeAttribute('src');
+        frame.hidden = true;
+      }
+      frame.alt = alt && alt.value.trim() !== '' ? alt.value.trim() : (panel.dataset.name || '');
+    }
+    if (frameMissing) {
+      frameMissing.hidden = Boolean(src);
+    }
+    if (caption) {
+      caption.textContent = state;
+    }
+    var photo = panel.querySelector('[data-field="photo"]');
+    var chosen = Boolean(photo && photo.files && photo.files.length > 0);
+    var name = panel.querySelector('[data-file-name]');
+    var clear = panel.querySelector('[data-clear-photo]');
+    var errorNode = panel.querySelector('[data-file-error]');
+    var errorOn = Boolean(errorNode && !errorNode.hidden && errorNode.textContent.trim() !== '');
+    if (name) {
+      name.hidden = !chosen;
+      name.textContent = chosen ? photo.files[0].name : '';
+    }
+    if (clear) {
+      clear.hidden = !chosen && !errorOn;
+      clear.textContent = chosen ? 'Remove selected photograph' : 'Dismiss';
+    }
+  }
+
+  function exploreCardDirty(slot) {
+    var panel = exploreFields(slot);
+    if (!panel) {
+      return false;
+    }
+    if (panel.dataset.mustSubmit === '1') {
+      return true;
+    }
+    var alt = panel.querySelector('[data-field="alt"]');
+    if (alt && alt.value !== alt.defaultValue) {
+      return true;
+    }
+    var photo = panel.querySelector('[data-field="photo"]');
+    if (photo && photo.files && photo.files.length > 0) {
+      return true;
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore && restore.checked !== restore.defaultChecked) {
+      return true;
+    }
+    return false;
+  }
+
+  function setExploreCardEnabled(slot, enabled) {
+    var panel = exploreFields(slot);
+    if (!panel) {
+      return;
+    }
+    panel.querySelectorAll('[data-field]').forEach(function (input) {
+      input.disabled = !enabled;
+    });
+  }
+
+  function releaseCleanExploreCards() {
+    if (!exploreForm) {
+      return;
+    }
+    exploreForm.querySelectorAll('[data-explore-slot]').forEach(function (panel) {
+      var slot = panel.dataset.exploreSlot;
+      var open = Boolean(exploreDrawer && exploreDrawer.open && exploreForm.dataset.activeSlot === slot);
+      setExploreCardEnabled(slot, open || exploreCardDirty(slot));
+    });
+  }
+
+  function prepareExploreSubmit() {
+    if (!exploreForm) {
+      return;
+    }
+    ['heading', 'body'].forEach(function (name) {
+      var input = exploreForm.querySelector('[data-field="' + name + '"]');
+      if (!input || input.closest('[data-explore-slot]')) {
+        return;
+      }
+      var invalid = input.classList.contains('is-invalid') || input.getAttribute('aria-invalid') === 'true';
+      input.disabled = !invalid && input.value === input.defaultValue;
+    });
+    exploreForm.querySelectorAll('[data-explore-slot]').forEach(function (panel) {
+      setExploreCardEnabled(panel.dataset.exploreSlot, exploreCardDirty(panel.dataset.exploreSlot));
+    });
+  }
+
+  function restoreExploreEditing() {
+    if (!exploreForm) {
+      return;
+    }
+    ['heading', 'body'].forEach(function (name) {
+      var input = exploreForm.querySelector('[data-field="' + name + '"]');
+      if (input && !input.closest('[data-explore-slot]')) {
+        input.disabled = false;
+      }
+    });
+    releaseCleanExploreCards();
+  }
+
+  function renderAllExplore() {
+    if (!exploreForm) {
+      return;
+    }
+    exploreForm.querySelectorAll('[data-explore-slot]').forEach(function (panel) {
+      renderExplore(panel.dataset.exploreSlot);
+    });
+  }
+
+  function parkExploreDrawer(restoreFocus) {
+    if (!exploreForm || !exploreDrawer || !exploreDrawer.open) {
+      return;
+    }
+    var mount = exploreForm.querySelector('[data-drawer-mount]');
+    var store = exploreForm.querySelector('[data-explore-store]');
+    if (mount && store) {
+      while (mount.firstElementChild) {
+        store.appendChild(mount.firstElementChild);
+      }
+    }
+    exploreForm.querySelectorAll('[data-edit-card][aria-expanded="true"]').forEach(function (button) {
+      button.setAttribute('aria-expanded', 'false');
+    });
+    var focus = restoreFocus ? exploreReturnFocus : null;
+    exploreForm.dataset.activeSlot = '';
+    exploreSnapshot = null;
+    exploreClosing = true;
+    exploreDrawer.close();
+    exploreClosing = false;
+    releaseCleanExploreCards();
+    if (focus) {
+      focus.focus();
+    }
+  }
+
+  function openExploreDrawer(slot, trigger) {
+    var panel = exploreFields(slot);
+    var mount = exploreForm ? exploreForm.querySelector('[data-drawer-mount]') : null;
+    if (!panel || !mount || !exploreDrawer) {
+      return;
+    }
+    if (exploreDrawer.open && exploreForm.dataset.activeSlot === slot) {
+      return;
+    }
+    if (exploreDrawer.open) {
+      parkExploreDrawer(false);
+    }
+    mount.appendChild(panel);
+    setExploreCardEnabled(slot, true);
+    var title = exploreForm.querySelector('[data-drawer-title]');
+    if (title) {
+      title.textContent = panel.dataset.name || 'Category';
+    }
+    exploreForm.dataset.activeSlot = slot;
+    exploreSnapshot = snapshotExplore(slot);
+    exploreReturnFocus = trigger || exploreForm.querySelector('[data-edit-card="' + cssEscape(slot) + '"]');
+    exploreForm.querySelectorAll('[data-edit-card]').forEach(function (button) {
+      button.setAttribute('aria-expanded', button.dataset.editCard === slot ? 'true' : 'false');
+    });
+    if (!exploreDrawer.open) {
+      exploreDrawer.showModal();
+    }
+    var invalid = panel.querySelector('.is-invalid');
+    var focusTarget = invalid || title;
+    if (focusTarget) {
+      focusTarget.focus();
+    }
+    renderExplore(slot);
+  }
+
+  function requestCloseExploreDrawer() {
+    if (!exploreDrawer || !exploreDrawer.open || !exploreForm) {
+      return;
+    }
+    var slot = exploreForm.dataset.activeSlot;
+    if (exploreDrawerDirty()) {
+      var panel = exploreFields(slot);
+      var name = panel && panel.dataset.name ? panel.dataset.name : 'this category';
+      if (!window.confirm('Discard unsaved changes to ' + name + '?')) {
+        return;
+      }
+      applyExploreSnapshot(slot, exploreSnapshot);
+      renderExplore(slot);
+    }
+    parkExploreDrawer(true);
+    updateSaveState();
+  }
+
+  function discardExplore() {
+    if (!exploreForm || (!isFormDirty(exploreForm) && !exploreHasFileError())) {
+      return;
+    }
+    if (!window.confirm('Discard unsaved changes to the collection?')) {
+      return;
+    }
+    exploreForm.querySelectorAll('input, textarea').forEach(function (input) {
+      if (input.type === 'hidden' || input.name === '_token' || input.name === '_method') {
+        return;
+      }
+      if (input.type === 'file') {
+        input.value = '';
+      } else if (input.type === 'checkbox' || input.type === 'radio') {
+        input.checked = input.defaultChecked;
+      } else {
+        input.value = input.defaultValue;
+      }
+      clearFieldError(input);
+    });
+    Object.keys(exploreObjectUrls).forEach(revokeExplore);
+    exploreForm.querySelectorAll('[data-explore-slot]').forEach(function (panel) {
+      showFileError(panel, '');
+    });
+    exploreForm.querySelectorAll('[data-explore-slot]').forEach(function (panel) {
+      panel.dataset.mustSubmit = '0';
+    });
+    exploreSnapshot = null;
+    parkExploreDrawer(false);
+    releaseCleanExploreCards();
+    renderAllExplore();
+    updateSaveState();
+  }
+
+  function onExplorePhoto(input) {
+    var panel = input.closest('[data-explore-slot]');
+    if (!panel) {
+      return;
+    }
+    var slot = panel.dataset.exploreSlot;
+    var file = input.files && input.files[0];
+    revokeExplore(slot);
+    if (!file) {
+      showFileError(panel, '');
+      input.classList.remove('is-invalid');
+      input.removeAttribute('aria-invalid');
+      renderExplore(slot);
+      updateSaveState();
+      return;
+    }
+    var message = fileMessage(file);
+    if (message) {
+      input.value = '';
+      showFileError(panel, message);
+      input.classList.add('is-invalid');
+      input.setAttribute('aria-invalid', 'true');
+      renderExplore(slot);
+      updateSaveState();
+      return;
+    }
+    exploreObjectUrls[slot] = URL.createObjectURL(file);
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore) {
+      restore.checked = false;
+    }
+    showFileError(panel, '');
+    clearFieldError(input);
+    renderExplore(slot);
+    updateSaveState();
+  }
+
+  function onExploreRestore(input) {
+    var panel = input.closest('[data-explore-slot]');
+    if (!panel) {
+      return;
+    }
+    if (input.checked) {
+      var photo = panel.querySelector('[data-field="photo"]');
+      if (photo) {
+        photo.value = '';
+        photo.classList.remove('is-invalid');
+        photo.removeAttribute('aria-invalid');
+      }
+      revokeExplore(panel.dataset.exploreSlot);
+      showFileError(panel, '');
+    }
+    renderExplore(panel.dataset.exploreSlot);
+    updateSaveState();
+  }
+
+  function exploreDrawerFileError() {
+    if (!exploreForm || !exploreDrawer || !exploreDrawer.open) {
+      return null;
+    }
+    var mount = exploreForm.querySelector('[data-drawer-mount]');
+    if (!mount) {
+      return null;
+    }
+    var node = mount.querySelector('[data-file-error]:not([hidden])');
+    if (!node || node.textContent.trim() === '') {
+      return null;
+    }
+    return node;
+  }
+
+  if (exploreForm && exploreDrawer) {
+    exploreForm.addEventListener('click', function (event) {
+      var edit = event.target.closest('[data-edit-card]');
+      if (edit) {
+        openExploreDrawer(edit.dataset.editCard, edit);
+        return;
+      }
+      var clear = event.target.closest('[data-clear-photo]');
+      if (!clear || !clear.closest('[data-explore-slot]')) {
+        return;
+      }
+      var panel = clear.closest('[data-explore-slot]');
+      var photo = panel.querySelector('[data-field="photo"]');
+      if (!photo) {
+        return;
+      }
+      photo.value = '';
+      revokeExplore(panel.dataset.exploreSlot);
+      showFileError(panel, '');
+      photo.classList.remove('is-invalid');
+      photo.removeAttribute('aria-invalid');
+      renderExplore(panel.dataset.exploreSlot);
+      updateSaveState();
+    });
+    exploreForm.addEventListener('input', function (event) {
+      var target = event.target;
+      if (target && target.dataset && (target.dataset.field === 'alt' || target.dataset.field === 'heading' || target.dataset.field === 'body')) {
+        clearFieldError(target);
+      }
+      var panel = target && target.closest ? target.closest('[data-explore-slot]') : null;
+      if (panel) {
+        renderExplore(panel.dataset.exploreSlot);
+      }
+      updateSaveState();
+    });
+    exploreForm.addEventListener('change', function (event) {
+      var target = event.target;
+      if (!target || !target.dataset) {
+        return;
+      }
+      if (target.dataset.field === 'photo') {
+        onExplorePhoto(target);
+      } else if (target.dataset.field === 'restore') {
+        onExploreRestore(target);
+      }
+    });
+    exploreDrawer.addEventListener('cancel', function (event) {
+      event.preventDefault();
+      requestCloseExploreDrawer();
+    });
+    exploreDrawer.addEventListener('click', function (event) {
+      if (event.target === exploreDrawer) {
+        requestCloseExploreDrawer();
+      }
+    });
+    exploreDrawer.querySelector('[data-drawer-close]')?.addEventListener('click', requestCloseExploreDrawer);
+    exploreDrawer.querySelector('[data-drawer-cancel]')?.addEventListener('click', requestCloseExploreDrawer);
+    if (exploreDiscard) {
+      exploreDiscard.addEventListener('click', discardExplore);
+    }
+  }
+
+  function stonesFields(slot) {
+    return stonesForm ? stonesForm.querySelector('[data-stone-slot="' + cssEscape(slot) + '"]') : null;
+  }
+
+  function stonesRow(slot) {
+    return stonesForm ? stonesForm.querySelector('[data-stone-row="' + cssEscape(slot) + '"]') : null;
+  }
+
+  function revokeStone(slot) {
+    if (!stonesObjectUrls[slot]) {
+      return;
+    }
+    URL.revokeObjectURL(stonesObjectUrls[slot]);
+    delete stonesObjectUrls[slot];
+  }
+
+  function setStoneFiles(input, files) {
+    if (!input) {
+      return;
+    }
+    if (!files.length) {
+      input.value = '';
+      return;
+    }
+    try {
+      var transfer = new DataTransfer();
+      files.forEach(function (file) { transfer.items.add(file); });
+      input.files = transfer.files;
+    } catch (error) {
+      input.value = '';
+    }
+  }
+
+  function stonesHasFileError() {
+    if (!stonesForm) {
+      return false;
+    }
+    var nodes = stonesForm.querySelectorAll('[data-stone-slot] [data-file-error]');
+    for (var index = 0; index < nodes.length; index += 1) {
+      if (!nodes[index].hidden && nodes[index].textContent.trim() !== '') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function stoneSource(panel) {
+    var slot = panel.dataset.stoneSlot;
+    if (stonesObjectUrls[slot]) {
+      return stonesObjectUrls[slot];
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore && restore.checked) {
+      return panel.dataset.fallback || '';
+    }
+    return panel.dataset.image || panel.dataset.fallback || '';
+  }
+
+  function stoneState(panel) {
+    var photo = panel.querySelector('[data-field="photo"]');
+    if (photo && photo.files && photo.files.length > 0) {
+      return 'New photograph selected';
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore && restore.checked) {
+      return 'Original photograph';
+    }
+    if (panel.dataset.custom === '1') {
+      return 'Homepage photograph';
+    }
+    if (!(panel.dataset.image || panel.dataset.fallback)) {
+      return 'No photograph';
+    }
+    return 'Original photograph';
+  }
+
+  function renderStone(slot) {
+    var panel = stonesFields(slot);
+    var row = stonesRow(slot);
+    if (!panel) {
+      return;
+    }
+    var src = stoneSource(panel);
+    var state = stoneState(panel);
+    var title = panel.querySelector('[data-field="title"]');
+    var link = panel.querySelector('[data-field="link"]');
+    var alt = panel.querySelector('[data-field="alt"]');
+    if (row) {
+      var thumb = row.querySelector('[data-stone-thumb]');
+      if (thumb) {
+        if (src) {
+          thumb.src = src;
+          thumb.hidden = false;
+        } else {
+          thumb.removeAttribute('src');
+          thumb.hidden = true;
+        }
+      }
+      var name = row.querySelector('[data-stone-name]');
+      if (name) {
+        var typedName = title ? title.value.trim() : '';
+        name.textContent = typedName !== '' ? typedName : (panel.dataset.defaultName || 'Application');
+      }
+      var page = row.querySelector('[data-stone-destination]');
+      if (page) {
+        var typedPage = link ? link.value.trim() : '';
+        page.textContent = typedPage !== '' ? typedPage : (panel.dataset.defaultUrl || '');
+      }
+      var photoLabel = row.querySelector('[data-stone-photo]');
+      if (photoLabel) {
+        photoLabel.textContent = state;
+      }
+    }
+    var frame = panel.querySelector('[data-photo-preview]');
+    var frameMissing = panel.querySelector('[data-photo-missing]');
+    if (frame) {
+      if (src) {
+        frame.src = src;
+        frame.hidden = false;
+      } else {
+        frame.removeAttribute('src');
+        frame.hidden = true;
+      }
+      var description = alt && alt.value.trim() !== '' ? alt.value.trim() : (title && title.value.trim() !== '' ? title.value.trim() : panel.dataset.defaultName || '');
+      frame.alt = description;
+    }
+    if (frameMissing) {
+      frameMissing.hidden = Boolean(src);
+    }
+    var caption = panel.querySelector('[data-photo-caption]');
+    if (caption) {
+      caption.textContent = state;
+    }
+    var photo = panel.querySelector('[data-field="photo"]');
+    var chosen = Boolean(photo && photo.files && photo.files.length > 0);
+    var fileName = panel.querySelector('[data-file-name]');
+    var clear = panel.querySelector('[data-clear-photo]');
+    var errorNode = panel.querySelector('[data-file-error]');
+    var errorOn = Boolean(errorNode && !errorNode.hidden && errorNode.textContent.trim() !== '');
+    if (fileName) {
+      fileName.hidden = !chosen;
+      fileName.textContent = chosen ? photo.files[0].name : '';
+    }
+    if (clear) {
+      clear.hidden = !chosen && !errorOn;
+      clear.textContent = chosen ? 'Remove selected photograph' : 'Dismiss';
+    }
+  }
+
+  function renderAllStones() {
+    if (!stonesForm) {
+      return;
+    }
+    stonesForm.querySelectorAll('[data-stone-slot]').forEach(function (panel) {
+      renderStone(panel.dataset.stoneSlot);
+    });
+  }
+
+  function stoneCardDirty(slot) {
+    var panel = stonesFields(slot);
+    if (!panel) {
+      return false;
+    }
+    if (panel.dataset.mustSubmit === '1') {
+      return true;
+    }
+    var names = ['title', 'link', 'alt'];
+    for (var index = 0; index < names.length; index += 1) {
+      var input = panel.querySelector('[data-field="' + names[index] + '"]');
+      if (input && input.value !== input.defaultValue) {
+        return true;
+      }
+    }
+    var photo = panel.querySelector('[data-field="photo"]');
+    if (photo && photo.files && photo.files.length > 0) {
+      return true;
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore && restore.checked !== restore.defaultChecked) {
+      return true;
+    }
+    return false;
+  }
+
+  function setStoneCardEnabled(slot, enabled) {
+    var panel = stonesFields(slot);
+    if (!panel) {
+      return;
+    }
+    panel.querySelectorAll('[data-field]').forEach(function (input) {
+      input.disabled = !enabled;
+    });
+  }
+
+  function releaseCleanStoneCards() {
+    if (!stonesForm) {
+      return;
+    }
+    stonesForm.querySelectorAll('[data-stone-slot]').forEach(function (panel) {
+      var slot = panel.dataset.stoneSlot;
+      var selected = stonesForm.dataset.activeSlot === slot;
+      setStoneCardEnabled(slot, selected || stoneCardDirty(slot));
+    });
+  }
+
+  function stoneFieldShouldSubmit(input) {
+    if (!input) {
+      return false;
+    }
+    if (input.classList.contains('is-invalid') || input.getAttribute('aria-invalid') === 'true') {
+      return true;
+    }
+    if (input.type === 'file') {
+      return Boolean(input.files && input.files.length > 0);
+    }
+    if (input.type === 'checkbox' || input.type === 'radio') {
+      return input.checked !== input.defaultChecked;
+    }
+
+    return input.value !== input.defaultValue;
+  }
+
+  function prepareStonesSubmit() {
+    if (!stonesForm) {
+      return;
+    }
+    ['heading', 'body'].forEach(function (name) {
+      var input = stonesForm.querySelector('[data-field="' + name + '"]');
+      if (!input || input.closest('[data-stone-slot]')) {
+        return;
+      }
+      input.disabled = !stoneFieldShouldSubmit(input);
+    });
+    stonesForm.querySelectorAll('[data-stone-slot]').forEach(function (panel) {
+      panel.querySelectorAll('[data-field]').forEach(function (input) {
+        input.disabled = !stoneFieldShouldSubmit(input);
+      });
+    });
+  }
+
+  function restoreStonesEditing() {
+    if (!stonesForm) {
+      return;
+    }
+    ['heading', 'body'].forEach(function (name) {
+      var input = stonesForm.querySelector('[data-field="' + name + '"]');
+      if (input && !input.closest('[data-stone-slot]')) {
+        input.disabled = false;
+      }
+    });
+    releaseCleanStoneCards();
+  }
+
+  function renderStonePosition(slot) {
+    if (!stonesForm) {
+      return;
+    }
+    var position = stonesForm.querySelector('[data-stone-position]');
+    var rows = stonesForm.querySelectorAll('[data-stone-row]');
+    if (!position) {
+      return;
+    }
+    var index = 0;
+    rows.forEach(function (row, item) {
+      if (row.dataset.stoneRow === slot) {
+        index = item + 1;
+      }
+    });
+    position.textContent = pad(index) + ' / ' + pad(rows.length);
+  }
+
+  function renderStonePager(matchCount) {
+    var pages = Math.max(1, Math.ceil(matchCount / stonesPageSize));
+    if (stonesPage > pages) {
+      stonesPage = pages;
+    }
+    if (stonesPage < 1) {
+      stonesPage = 1;
+    }
+    var range = stonesForm.querySelector('[data-stone-range]');
+    if (range) {
+      if (matchCount === 0) {
+        range.textContent = 'Showing 0 entries';
+      } else {
+        var start = ((stonesPage - 1) * stonesPageSize) + 1;
+        var end = Math.min(stonesPage * stonesPageSize, matchCount);
+        range.textContent = 'Showing ' + start + '-' + end + ' of ' + matchCount + ' entries';
+      }
+    }
+    var list = stonesForm.querySelector('[data-stone-pages]');
+    if (list) {
+      list.replaceChildren();
+      for (var page = 1; page <= pages; page += 1) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'home-stone-page' + (page === stonesPage ? ' is-current' : '');
+        button.textContent = String(page);
+        button.dataset.stonePage = String(page);
+        button.setAttribute('aria-label', 'Page ' + page);
+        if (page === stonesPage) {
+          button.setAttribute('aria-current', 'page');
+        }
+        list.appendChild(button);
+      }
+    }
+    var prev = stonesForm.querySelector('[data-stone-prev]');
+    var next = stonesForm.querySelector('[data-stone-next]');
+    if (prev) {
+      prev.disabled = stonesPage <= 1 || matchCount === 0;
+    }
+    if (next) {
+      next.disabled = stonesPage >= pages || matchCount === 0;
+    }
+  }
+
+  function applyStoneFilter() {
+    if (!stonesForm) {
+      return;
+    }
+    var query = stonesQuery.trim().toLowerCase();
+    var matches = [];
+    stonesForm.querySelectorAll('[data-stone-row]').forEach(function (row) {
+      var panel = stonesFields(row.dataset.stoneRow);
+      var title = panel ? panel.querySelector('[data-field="title"]') : null;
+      var link = panel ? panel.querySelector('[data-field="link"]') : null;
+      var name = title ? title.value.toLowerCase() : '';
+      var page = link ? link.value.toLowerCase() : '';
+      var matched = query === '' || name.indexOf(query) !== -1 || page.indexOf(query) !== -1;
+      if (matched) {
+        matches.push(row);
+      } else {
+        row.hidden = true;
+      }
+    });
+    renderStonePager(matches.length);
+    matches.forEach(function (row, index) {
+      var page = Math.floor(index / stonesPageSize) + 1;
+      row.hidden = page !== stonesPage;
+    });
+    var empty = stonesForm.querySelector('[data-stone-empty]');
+    if (empty) {
+      empty.hidden = matches.length !== 0;
+    }
+  }
+
+  function selectStone(slot) {
+    var panel = stonesFields(slot);
+    var mount = stonesForm ? stonesForm.querySelector('[data-stone-mount]') : null;
+    var store = stonesForm ? stonesForm.querySelector('[data-stone-store]') : null;
+    if (!panel || !mount || !store) {
+      return;
+    }
+    if (mount.firstElementChild && mount.firstElementChild !== panel) {
+      store.appendChild(mount.firstElementChild);
+    }
+    mount.appendChild(panel);
+    stonesForm.dataset.activeSlot = slot;
+    stonesForm.querySelectorAll('[data-stone-row]').forEach(function (row) {
+      var on = row.dataset.stoneRow === slot;
+      row.classList.toggle('is-selected', on);
+      if (on) {
+        row.setAttribute('aria-selected', 'true');
+      } else {
+        row.removeAttribute('aria-selected');
+      }
+    });
+    renderStone(slot);
+    renderStonePosition(slot);
+    releaseCleanStoneCards();
+    var invalid = panel.querySelector('.is-invalid');
+    if (invalid) {
+      invalid.focus();
+    }
+  }
+
+  function discardStones() {
+    if (!stonesForm || (!isFormDirty(stonesForm) && !stonesHasFileError())) {
+      return;
+    }
+    if (!window.confirm('Discard unsaved changes to Natural Indian Stones?')) {
+      return;
+    }
+    stonesForm.querySelectorAll('input, textarea').forEach(function (input) {
+      if (input.type === 'hidden' || input.name === '_token' || input.name === '_method') {
+        return;
+      }
+      if (input.type === 'file') {
+        input.value = '';
+      } else if (input.type === 'checkbox' || input.type === 'radio') {
+        input.checked = input.defaultChecked;
+      } else {
+        input.value = input.defaultValue;
+      }
+      clearFieldError(input);
+    });
+    Object.keys(stonesObjectUrls).forEach(revokeStone);
+    stonesForm.querySelectorAll('[data-stone-slot]').forEach(function (panel) {
+      showFileError(panel, '');
+      panel.dataset.mustSubmit = '0';
+    });
+    renderAllStones();
+    applyStoneFilter();
+    releaseCleanStoneCards();
+    updateSaveState();
+  }
+
+  function onStonePhoto(input) {
+    var panel = input.closest('[data-stone-slot]');
+    if (!panel) {
+      return;
+    }
+    var slot = panel.dataset.stoneSlot;
+    var file = input.files && input.files[0];
+    revokeStone(slot);
+    if (!file) {
+      showFileError(panel, '');
+      input.classList.remove('is-invalid');
+      input.removeAttribute('aria-invalid');
+      renderStone(slot);
+      updateSaveState();
+      return;
+    }
+    var message = fileMessage(file);
+    if (message) {
+      input.value = '';
+      showFileError(panel, message);
+      input.classList.add('is-invalid');
+      input.setAttribute('aria-invalid', 'true');
+      renderStone(slot);
+      updateSaveState();
+      return;
+    }
+    stonesObjectUrls[slot] = URL.createObjectURL(file);
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore) {
+      restore.checked = false;
+    }
+    showFileError(panel, '');
+    clearFieldError(input);
+    renderStone(slot);
+    updateSaveState();
+  }
+
+  function stonesMountedFileError() {
+    if (!stonesForm) {
+      return null;
+    }
+    var mount = stonesForm.querySelector('[data-stone-mount]');
+    if (!mount) {
+      return null;
+    }
+    var node = mount.querySelector('[data-file-error]:not([hidden])');
+    if (!node || node.textContent.trim() === '') {
+      return null;
+    }
+    return node;
+  }
+
+  if (stonesForm) {
+    stonesForm.addEventListener('click', function (event) {
+      var pageButton = event.target.closest('[data-stone-page]');
+      if (pageButton && pageButton.dataset.stonePage) {
+        stonesPage = Number(pageButton.dataset.stonePage) || 1;
+        applyStoneFilter();
+        return;
+      }
+      if (event.target.closest('[data-stone-prev]')) {
+        stonesPage -= 1;
+        applyStoneFilter();
+        return;
+      }
+      if (event.target.closest('[data-stone-next]')) {
+        stonesPage += 1;
+        applyStoneFilter();
+        return;
+      }
+      var edit = event.target.closest('[data-stone-edit]');
+      if (edit) {
+        selectStone(edit.dataset.stoneEdit);
+        return;
+      }
+      var row = event.target.closest('[data-stone-row]');
+      if (row) {
+        selectStone(row.dataset.stoneRow);
+        return;
+      }
+      var clear = event.target.closest('[data-clear-photo]');
+      if (!clear || !clear.closest('[data-stone-slot]')) {
+        return;
+      }
+      var panel = clear.closest('[data-stone-slot]');
+      var photo = panel.querySelector('[data-field="photo"]');
+      if (!photo) {
+        return;
+      }
+      photo.value = '';
+      revokeStone(panel.dataset.stoneSlot);
+      showFileError(panel, '');
+      photo.classList.remove('is-invalid');
+      photo.removeAttribute('aria-invalid');
+      renderStone(panel.dataset.stoneSlot);
+      updateSaveState();
+    });
+    stonesForm.addEventListener('input', function (event) {
+      var target = event.target;
+      if (target && target.dataset && (target.dataset.field === 'title' || target.dataset.field === 'link' || target.dataset.field === 'alt' || target.dataset.field === 'heading' || target.dataset.field === 'body')) {
+        clearFieldError(target);
+      }
+      if (target && target.dataset && (target.dataset.field === 'title' || target.dataset.field === 'link' || target.dataset.field === 'alt')) {
+        var panel = target.closest('[data-stone-slot]');
+        if (panel) {
+          renderStone(panel.dataset.stoneSlot);
+          applyStoneFilter();
+        }
+      }
+    });
+    stonesForm.addEventListener('change', function (event) {
+      var target = event.target;
+      if (!target || !target.dataset) {
+        return;
+      }
+      if (target.dataset.field === 'photo') {
+        onStonePhoto(target);
+      } else if (target.dataset.field === 'restore') {
+        var panel = target.closest('[data-stone-slot]');
+        if (panel) {
+          if (target.checked) {
+            var photo = panel.querySelector('[data-field="photo"]');
+            if (photo) {
+              photo.value = '';
+              photo.classList.remove('is-invalid');
+              photo.removeAttribute('aria-invalid');
+            }
+            revokeStone(panel.dataset.stoneSlot);
+            showFileError(panel, '');
+          }
+          renderStone(panel.dataset.stoneSlot);
+        }
+      }
+    });
+    var stoneSearch = stonesForm.querySelector('[data-stone-search]');
+    if (stoneSearch) {
+      stoneSearch.addEventListener('input', function () {
+        stonesQuery = stoneSearch.value || '';
+        stonesPage = 1;
+        applyStoneFilter();
+      });
+    }
+    if (stonesDiscard) {
+      stonesDiscard.addEventListener('click', discardStones);
+    }
+  }
+
   document.querySelectorAll('.home-editor-form').forEach(function (form) {
     form.addEventListener('input', function () {
       if (form !== heroForm) {
@@ -883,11 +1997,43 @@
       }
     });
     form.addEventListener('submit', function (event) {
+      if (form === exploreForm) {
+        var fileError = exploreDrawerFileError();
+        if (fileError) {
+          event.preventDefault();
+          var invalidPanel = fileError.closest('[data-explore-slot]');
+          var invalidPhoto = invalidPanel ? invalidPanel.querySelector('[data-field="photo"]') : null;
+          if (invalidPhoto) {
+            invalidPhoto.focus();
+          }
+          return;
+        }
+        prepareExploreSubmit();
+      }
+      if (form === stonesForm) {
+        var stoneError = stonesMountedFileError();
+        if (stoneError) {
+          event.preventDefault();
+          var invalidStone = stoneError.closest('[data-stone-slot]');
+          var invalidStonePhoto = invalidStone ? invalidStone.querySelector('[data-field="photo"]') : null;
+          if (invalidStonePhoto) {
+            invalidStonePhoto.focus();
+          }
+          return;
+        }
+        prepareStonesSubmit();
+      }
       var othersDirty = Array.prototype.some.call(document.querySelectorAll('.home-editor-form'), function (other) {
         return other !== form && isFormDirty(other);
       });
       if (othersDirty && !window.confirm('Another section still has unsaved changes. Save this section and leave those changes behind?')) {
         event.preventDefault();
+        if (form === exploreForm) {
+          restoreExploreEditing();
+        }
+        if (form === stonesForm) {
+          restoreStonesEditing();
+        }
         return;
       }
       submitting = true;
@@ -930,5 +2076,25 @@
   var summary = root.querySelector('[data-home-errors]');
   if (summary && !summary.hidden) {
     summary.focus();
+  }
+  if (exploreForm) {
+    renderAllExplore();
+    releaseCleanExploreCards();
+    if (exploreForm.dataset.openSlot) {
+      openExploreDrawer(exploreForm.dataset.openSlot);
+    }
+  }
+  if (stonesForm) {
+    renderAllStones();
+    var firstStone = stonesForm.querySelector('[data-stone-row]');
+    var initialStone = stonesForm.dataset.openSlot || (firstStone ? firstStone.dataset.stoneRow : '');
+    if (initialStone) {
+      var initialRow = stonesRow(initialStone);
+      var initialIndex = initialRow ? Number(initialRow.dataset.stoneIndex) : 0;
+      stonesPage = Math.floor(initialIndex / stonesPageSize) + 1;
+      selectStone(initialStone);
+    }
+    applyStoneFilter();
+    releaseCleanStoneCards();
   }
 })();

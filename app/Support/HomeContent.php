@@ -106,7 +106,7 @@ final class HomeContent
 
     /**
      * @param  Collection<int, Category>  $categories
-     * @return list<array{slot: string, name: string, url: string, image: string, alt: string, custom: bool}>
+     * @return list<array{slot: string, name: string, url: string, image: string, alt: string, custom: bool, fallback: string}>
      */
     public function explore(Collection $categories): array
     {
@@ -131,6 +131,7 @@ final class HomeContent
                 'image' => $resolved['image'],
                 'alt' => $resolved['alt'],
                 'custom' => $resolved['custom'],
+                'fallback' => $fallback,
             ];
         }
 
@@ -138,7 +139,7 @@ final class HomeContent
     }
 
     /**
-     * @return list<array{slot: string, name: string, url: string, image: string, alt: string, custom: bool}>
+     * @return list<array{slot: string, name: string, url: string, image: string, alt: string, custom: bool, fallback: string, default_name: string, default_url: string}>
      */
     public function stones(): array
     {
@@ -153,6 +154,9 @@ final class HomeContent
                 'image' => $resolved['image'],
                 'alt' => $resolved['alt'],
                 'custom' => $resolved['custom'],
+                'fallback' => $stone['image'],
+                'default_name' => $stone['name'],
+                'default_url' => '/'.$stone['slot'],
             ];
         }
 
@@ -251,8 +255,8 @@ final class HomeContent
         return [
             'key' => 'explore',
             'title' => 'Explore the collection',
-            'intro' => 'The heading and paragraph are edited here. Card names stay with the catalogue. A saved photograph is used only on the home page.',
-            'save' => 'Save collection',
+            'intro' => 'Edit the section introduction and manage the category images as a visual collection.',
+            'save' => 'Save section',
             'kind' => 'explore',
             'fields' => $this->fields('explore', ['heading', 'body']),
             'items' => array_map(fn (array $card): array => [
@@ -262,6 +266,7 @@ final class HomeContent
                 'image' => $card['image'],
                 'alt' => $card['alt'],
                 'custom' => $card['custom'],
+                'fallback' => $card['fallback'],
             ], $this->explore($categories)),
         ];
     }
@@ -274,8 +279,8 @@ final class HomeContent
         return [
             'key' => 'stones',
             'title' => 'Natural Indian Stones',
-            'intro' => 'Edit the heading, the paragraph, and each card. A page link must already exist on the site.',
-            'save' => 'Save stone cards',
+            'intro' => 'Manage item names, homepage photos, descriptions and existing page links.',
+            'save' => 'Save section',
             'kind' => 'stones',
             'fields' => $this->fields('stones', ['heading', 'body']),
             'items' => array_map(fn (array $card): array => [
@@ -286,6 +291,9 @@ final class HomeContent
                 'image' => $card['image'],
                 'alt' => $card['alt'],
                 'custom' => $card['custom'],
+                'fallback' => $card['fallback'],
+                'default_name' => $card['default_name'],
+                'default_url' => $card['default_url'],
             ], $this->stones()),
         ];
     }

@@ -7,7 +7,7 @@
 <title>{{ trim($__env->yieldContent('documentTitle')) ?: (trim($__env->yieldContent('pageTitle')) ?: 'Admin') }} | Royal Indian Stones</title>
 <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-<link href="{{ asset('assets/css/admin.css') }}?v=8" rel="stylesheet">
+<link href="{{ asset('assets/css/admin.css') }}?v=10" rel="stylesheet">
 @stack('head')
 </head>
 <body class="admin-shell">
