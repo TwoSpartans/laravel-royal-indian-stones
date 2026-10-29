@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Category;
+use App\Models\HomeImage;
 use App\Models\JournalMedia;
 use App\Models\JournalSetting;
 use App\Models\Page;
@@ -10,6 +11,7 @@ use App\Models\Post;
 use App\Models\ProductImage;
 use App\Models\Project;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 class ResponsivePicture
 {
@@ -187,6 +189,10 @@ class ResponsivePicture
                     $paths[] = $journal->{$column};
                 }
             }
+        }
+
+        if (Schema::hasTable('home_images')) {
+            $paths = array_merge($paths, HomeImage::query()->whereNotNull('path')->pluck('path')->all());
         }
 
         Page::query()->select(['id', 'body'])->orderBy('id')->chunk(40, function ($pages) use (&$paths): void {

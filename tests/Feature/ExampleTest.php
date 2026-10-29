@@ -24,5 +24,8 @@ class ExampleTest extends TestCase
         $response->assertSee('Stone Wall Panel');
         $response->assertSee('Natural Stone Step');
         $response->assertSee('Natural Stone Mosaic');
+        $response->assertDontSee('A closer look');
+        $response->assertDontSee('From selection to shipment');
+        $response->assertDontSee('Stone in context');
     }
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BlogStudioController;
 use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
+use App\Http\Controllers\Admin\HomePageController;
 use App\Http\Controllers\Admin\JournalSettingController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
@@ -60,6 +61,8 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
     Route::delete('/comments/{comment}', [AdminCommentController::class, 'destroy'])->name('comments.destroy');
     Route::get('/journal', [JournalSettingController::class, 'edit'])->name('journal.edit');
     Route::put('/journal', [JournalSettingController::class, 'update'])->name('journal.update');
+    Route::get('/home', [HomePageController::class, 'edit'])->name('home.edit');
+    Route::put('/home/{section}', [HomePageController::class, 'update'])->where('section', 'hero|supplier|explore|stones|journal|enquiry')->name('home.update');
     Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create');
     Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');

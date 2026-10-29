@@ -562,3 +562,57 @@ a.about-principle:hover{color:var(--ris-ink);box-shadow:0 12px 28px #20252014;tr
 @media(prefers-reduced-motion:reduce){
 a.about-principle:hover{transform:none}
 }
+
+.home-page .supplier-band,
+.home-page .stone-origin,
+.home-page .home-journal,
+.home-page .enquiry-band{padding:16px 0}
+.home-page .supplier-band-inner{gap:28px}
+.home-page .supplier-band h2{margin-bottom:10px}
+.home-page .supplier-band p{line-height:1.65}
+.home-page .stone-origin-copy{gap:12px 36px;padding-bottom:12px}
+.home-page .stone-origin-copy>p{padding-top:18px}
+.home-page .stone-origin .category-grid{margin-top:16px}
+.home-page .section-heading{margin-bottom:16px}
+.home-page .category-grid,
+.home-page .journal-grid{gap:16px}
+.home-page .journal-grid{align-items:start}
+.home-page .journal-grid .catalogue-card{height:auto}
+.home-page .home-stones{background:#fff;border-top:1px solid var(--ris-line);border-bottom:1px solid var(--ris-line)}
+.home-page .home-journal{background:var(--ris-paper)}
+.home-page .catalogue-card{display:flex;flex-direction:column;overflow:hidden;height:100%;border:1px solid var(--ris-line);border-radius:14px;background:#fff;color:inherit;text-decoration:none}
+.home-page .catalogue-card picture{overflow:hidden}
+.home-page .catalogue-card:hover,
+.home-page .catalogue-card:focus-visible{color:inherit}
+@media(max-width:767px){
+.home-page .supplier-band,
+.home-page .stone-origin,
+.home-page .home-journal,
+.home-page .enquiry-band{padding:12px 0}
+.home-page .stone-origin-copy>p{padding-top:0}
+}
+#hero.home-hero .hero-shade{background:linear-gradient(90deg,#1c191673 0%,#1c19164d 38%,#1c19160a 100%)}
+.about-page>section{padding:16px 0}
+.about-page .about-section-head{margin-bottom:16px}
+.about-page .about-story-grid{gap:24px 40px}
+.about-story h1{margin:0 0 16px;font-size:clamp(32px,4vw,52px);font-weight:560;line-height:1.08}
+@media(max-width:767px){
+#hero.home-hero .hero-shade{background:linear-gradient(90deg,#2b232073,#2b23203d)}
+.about-page>section{padding:12px 0}
+.about-story h1{font-size:clamp(30px,8vw,40px)}
+}
+.home-page .stone-origin-copy>p,
+.home-page .enquiry-band .container>div>p:not(.eyebrow){
+  font-family:var(--font-text);
+  font-size:var(--body);
+  font-weight:400;
+  line-height:1.65;
+  letter-spacing:0;
+  color:var(--ris-body);
+}
+.home-page .supplier-band{padding-top:48px}
+.about-page>.about-story{padding-top:40px}
+@media(max-width:767px){
+.home-page .supplier-band{padding-top:32px}
+.about-page>.about-story{padding-top:28px}
+}

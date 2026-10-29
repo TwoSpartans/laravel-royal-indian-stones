@@ -70,7 +70,7 @@ class PublicSiteTest extends TestCase
             ->assertDontSee('Relevant Products');
         $this->get('/sandstone-jodhpur-pink.html')->assertRedirect('/sandstone-jodhpur-pink');
         $this->get('/contact?product=sandstone-jodhpur-pink')->assertOk()->assertSee('Quotation: Jodhpur Pink Sandstone');
-        $this->get('/aboutus')->assertOk()->assertSee('A Jodhpur stone house for buildings and landscapes.');
+        $this->get('/aboutus')->assertOk()->assertSee('Who we are')->assertDontSee('A Jodhpur stone house for buildings and landscapes.');
     }
 
     public function test_public_addresses_canonicalize_and_search_text_stays_specific(): void
@@ -186,7 +186,7 @@ class PublicSiteTest extends TestCase
         $this->assertSame(0, Enquiry::query()->count());
     }
 
-    public function test_the_blog_is_in_the_menu_and_recent_notes_sit_above_the_gallery(): void
+    public function test_the_blog_is_in_the_menu_and_recent_notes_appear_on_the_home_page(): void
     {
         Post::query()->create([
             'slug' => 'sandstone-floors',
@@ -206,18 +206,15 @@ class PublicSiteTest extends TestCase
         $home = $this->get('/');
         $home->assertOk()
             ->assertSee('Choosing sandstone for floors')
+            ->assertSee('Notes on Indian stone')
+            ->assertDontSee('From the journal')
             ->assertSee('Read the blog')
             ->assertDontSee('Unpublished quarry note');
 
         $html = $home->getContent();
-        $journal = strpos($html, 'id="journal-title"');
-        $projects = strpos($html, 'id="projects-title"');
         $navStart = strpos($html, 'aria-label="Main navigation"');
         $navEnd = strpos($html, '</nav>', $navStart);
         $nav = substr($html, $navStart, $navEnd - $navStart);
-        $this->assertNotFalse($journal);
-        $this->assertNotFalse($projects);
-        $this->assertLessThan($projects, $journal);
         $this->assertSame(1, substr_count($nav, '>Blog</a>'));
         $this->assertLessThan(strpos($nav, '>Resources<'), strpos($nav, '>Blog</a>'));
         $this->assertSame(1, substr_count($nav, url('/stone-articles')));

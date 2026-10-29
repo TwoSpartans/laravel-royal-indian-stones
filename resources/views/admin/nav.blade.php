@@ -3,6 +3,7 @@
   $productsActive = request()->routeIs('admin.products.*');
   $postsActive = request()->routeIs('admin.posts.*');
   $journalActive = request()->routeIs('admin.journal.*');
+  $homeActive = request()->routeIs('admin.home.*');
   $categoriesActive = request()->routeIs('admin.post-categories.*');
   $commentsActive = request()->routeIs('admin.comments.*');
   $newsletterActive = request()->routeIs('admin.newsletter', 'admin.newsletter.*');
@@ -49,6 +50,10 @@
       <i class="bi bi-chevron-down"></i>
     </summary>
     <div>
+      <a href="{{ route('admin.home.edit') }}" class="admin-nav-link {{ $homeActive ? 'is-active' : '' }}" @if($homeActive) aria-current="page" @endif>
+        <i class="bi bi-house"></i>
+        <span>Home page</span>
+      </a>
       <a href="{{ route('admin.posts.index') }}" class="admin-nav-link {{ $postsActive ? 'is-active' : '' }}" @if($postsActive) aria-current="page" @endif>
         <i class="bi bi-journal-text"></i>
         <span>Blog</span>

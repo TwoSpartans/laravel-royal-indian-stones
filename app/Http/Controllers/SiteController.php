@@ -139,7 +139,7 @@ class SiteController extends Controller
         if ($slug === 'aboutus') {
             return view('about', [
                 'active' => 'about',
-                'title' => 'A Jodhpur stone house for buildings and landscapes | Royal Indian Stones',
+                'title' => 'Who we are | Royal Indian Stones',
                 'description' => 'Royal Indian Stones supplies Indian sandstone, limestone, marble, and granite from Jodhpur for buildings and landscapes.',
                 'shareImage' => asset('assets/img/about.jpg'),
             ]);

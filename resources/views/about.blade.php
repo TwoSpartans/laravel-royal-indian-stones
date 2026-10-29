@@ -14,21 +14,23 @@
     </div>
   </section>
 
-  <section class="about-hero" aria-labelledby="about-title">
-    <div class="container about-hero-grid">
-      <div class="about-hero-copy">
-        <p class="eyebrow">About us</p>
-        <h1 id="about-title">A Jodhpur stone house for buildings and landscapes.</h1>
-        <p class="about-lead">We supply Indian sandstone, limestone, marble, granite, slate, and pebbles, cut to the size and finish the project needs, then checked and packed for shipment.</p>
-        <div class="button-row">
-          <a class="ris-button" href="{{ url('/products') }}">Explore the collection</a>
-          <a class="ris-button ris-button-outline" href="{{ route('contact') }}" data-track="quote_click">Request a Quote</a>
-        </div>
-      </div>
-      <figure class="about-hero-figure">
-        <x-picture src="assets/img/projects/jodhpur-pink-sandstone-wall-cladding-building-construction-project.jpg" alt="Carved Jodhpur pink sandstone facade with a circular stone screen" width="800" height="600" sizes="(max-width: 991px) calc(100vw - 32px), min(680px, 46vw)" fetchpriority="high" />
-        <figcaption>Jodhpur pink sandstone, carved for a building facade.</figcaption>
+  <section class="about-story" aria-labelledby="about-story-title">
+    <div class="container about-story-grid">
+      <figure>
+        <x-picture src="assets/img/about.jpg" alt="Sample slabs of Indian granite, marble, and sandstone on a showroom wall" width="1025" height="768" sizes="(max-width: 991px) calc(100vw - 32px), min(720px, 50vw)" fetchpriority="high" />
+        <figcaption>Sample stones, shown before an order is cut.</figcaption>
       </figure>
+      <div class="about-story-copy">
+        <p class="eyebrow">Who we are</p>
+        <h1 id="about-story-title">Royal Indian Stones</h1>
+        <p>We work from Jodhpur and supply natural stone for paving, cladding, flooring, and custom articles. The range runs from blocks, slabs, and tiles to cobbles, kerbs, pebbles, monuments, and landscaping pieces.</p>
+        <blockquote class="about-pull">
+          <p>Each order is matched for colour and finish, then checked and packed for shipment.</p>
+        </blockquote>
+        <p>Architects, builders, landscapers, and wholesalers stay with the same team from selection through delivery.</p>
+        <p class="about-identity">Supplier · Manufacturer · Exporter</p>
+        <a class="text-link" href="{{ url('/directors-message') }}">Read a note from the company →</a>
+      </div>
     </div>
   </section>
 
@@ -52,26 +54,6 @@
           <dd>Two decades of work across countries</dd>
         </div>
       </dl>
-    </div>
-  </section>
-
-  <section class="about-story" aria-labelledby="about-story-title">
-    <div class="container about-story-grid">
-      <figure>
-        <x-picture src="assets/img/about.jpg" alt="Sample slabs of Indian granite, marble, and sandstone on a showroom wall" width="1025" height="768" loading="lazy" sizes="(max-width: 991px) calc(100vw - 32px), min(720px, 50vw)" />
-        <figcaption>Sample stones, shown before an order is cut.</figcaption>
-      </figure>
-      <div class="about-story-copy">
-        <p class="eyebrow">Who we are</p>
-        <h2 id="about-story-title">Royal Indian Stones</h2>
-        <p>We work from Jodhpur and supply natural stone for paving, cladding, flooring, and custom articles. The range runs from blocks, slabs, and tiles to cobbles, kerbs, pebbles, monuments, and landscaping pieces.</p>
-        <blockquote class="about-pull">
-          <p>Each order is matched for colour and finish, then checked and packed for shipment.</p>
-        </blockquote>
-        <p>Architects, builders, landscapers, and wholesalers stay with the same team from selection through delivery.</p>
-        <p class="about-identity">Supplier · Manufacturer · Exporter</p>
-        <a class="text-link" href="{{ url('/directors-message') }}">Read a note from the company →</a>
-      </div>
     </div>
   </section>
 

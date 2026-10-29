@@ -57,7 +57,8 @@ class ContentAndAdminTest extends TestCase
 
         $this->get('/aboutus')
             ->assertOk()
-            ->assertSee('A Jodhpur stone house for buildings and landscapes.')
+            ->assertSee('Who we are')
+            ->assertDontSee('A Jodhpur stone house for buildings and landscapes.')
             ->assertSee('Quality checks')
             ->assertSee('Packed for the journey')
             ->assertSee('Rajpurohit Bhawan')
