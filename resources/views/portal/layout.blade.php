@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-<link href="{{ asset('assets/css/portal.css') }}?v=19" rel="stylesheet">
+<link href="{{ asset('assets/css/portal.css') }}?v=20" rel="stylesheet">
 </head>
 <body class="portal">
 <a class="skip" href="#portal-main">Skip to content</a>

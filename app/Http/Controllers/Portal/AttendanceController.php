@@ -39,17 +39,30 @@ class AttendanceController extends PortalController
         abort_if($selected instanceof User && ! ($this->access->canViewUser($actor, $selected) || $selected->is($actor)), 404);
 
         $timezone = $selected instanceof User ? PortalTime::timezone($selected) : PortalTime::timezone($actor);
+        $localDay = $day->copy()->timezone($timezone)->toDateString();
         $punches = $selected instanceof User
             ? AttendancePunch::query()
                 ->where('user_id', $selected->id)
                 ->whereNull('superseded_at')
-                ->latest('punched_at')
-                ->limit(40)
+                ->where('punched_at', '>=', Carbon::parse($localDay, $timezone)->subDay())
+                ->where('punched_at', '<', Carbon::parse($localDay, $timezone)->addDays(2))
+                ->orderBy('punched_at')
                 ->get()
+                ->filter(fn (AttendancePunch $punch): bool => $punch->punched_at->copy()->timezone($timezone)->toDateString() === $localDay)
+                ->values()
             : collect();
 
+        $roster = $board->roster($people, $day);
+        $status = $request->string('status')->toString();
+        $statuses = ['present', 'late', 'not_in_yet', 'missed_punch', 'leave', 'absent'];
+        if (! in_array($status, $statuses, true)) {
+            $status = '';
+        }
+
         return view('portal.attendance.index', [
-            'roster' => $board->roster($people, $day),
+            'roster' => $status === '' ? $roster : $roster->where('state', $status)->values(),
+            'counts' => $roster->countBy('state'),
+            'status' => $status,
             'selected' => $selected,
             'punches' => $punches,
             'lastPunch' => $board->lastPunch($actor),

@@ -188,6 +188,9 @@ fieldset.span-2 .check { display: inline-flex; align-items: center; margin: 0 1r
   box-shadow: var(--shadow);
 }
 .card, .table-wrap { padding: 1rem 1.1rem; }
+a.card.stat { color: inherit; text-decoration: none; display: block; }
+a.card.stat.is-selected { outline: 2px solid var(--terra); }
+tr.is-selected td { background: #f6f1ea; }
 .stat strong { display: block; font-family: var(--serif); font-size: 2rem; line-height: 1; }
 .stat span { color: var(--muted); }
 .alert { padding: 0.9rem 1rem; margin-bottom: 0.9rem; }

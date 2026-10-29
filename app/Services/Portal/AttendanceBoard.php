@@ -15,7 +15,7 @@ class AttendanceBoard
 {
     /**
      * @param  Collection<int, User>  $users
-     * @return Collection<int, array{user: User, state: string, label: string, late_minutes: int, first_in: ?AttendancePunch, last_out: ?AttendancePunch}>
+     * @return Collection<int, array{user: User, state: string, label: string, late_minutes: int, first_in: ?AttendancePunch, last_out: ?AttendancePunch, minutes: ?int, hours: ?string, closed: ?bool}>
      */
     public function roster(Collection $users, Carbon $day): Collection
     {
@@ -62,7 +62,7 @@ class AttendanceBoard
 
     /**
      * @param  Collection<int, AttendancePunch>  $punches
-     * @return array{user: User, state: string, label: string, late_minutes: int, first_in: ?AttendancePunch, last_out: ?AttendancePunch}
+     * @return array{user: User, state: string, label: string, late_minutes: int, first_in: ?AttendancePunch, last_out: ?AttendancePunch, minutes: ?int, hours: ?string, closed: ?bool}
      */
     public function summarize(User $user, string $localDay, Collection $punches, bool $onLeave, bool $holiday): array
     {
@@ -117,6 +117,13 @@ class AttendanceBoard
             }
         }
 
+        $worked = null;
+        if (! in_array($state, ['holiday', 'weekly_off', 'leave'], true) && $punches->isNotEmpty()) {
+            $from = Carbon::parse($localDay, $timezone)->startOfDay();
+            $cap = $now->toDateString() === $localDay ? $now->copy() : $from->copy()->addDay();
+            $worked = $this->dayMinutes($punches, $from, $cap);
+        }
+
         return [
             'user' => $user,
             'state' => $state,
@@ -124,7 +131,15 @@ class AttendanceBoard
             'late_minutes' => $lateMinutes,
             'first_in' => $firstIn,
             'last_out' => $lastOut,
+            'minutes' => $worked['minutes'] ?? null,
+            'hours' => $worked === null ? null : $this->formatMinutes($worked['minutes']),
+            'closed' => $worked['closed'] ?? null,
         ];
+    }
+
+    public function formatMinutes(int $minutes): string
+    {
+        return intdiv($minutes, 60).'h '.str_pad((string) ($minutes % 60), 2, '0', STR_PAD_LEFT).'m';
     }
 
     public function lastPunch(User $user): ?AttendancePunch
