@@ -149,17 +149,37 @@ class AttendanceCorrectionTest extends TestCase
             'status' => 'approved',
         ]);
 
-        $this->signIn($employer)->get('/portal/attendance')
+        $this->signIn($employer)->get('/portal/attendance/exceptions')
             ->assertOk()
             ->assertSee('Reject')
             ->assertSee('Buyer loading ran past the shift.')
-            ->assertSeeInOrder(['Waiting for a decision', 'Already decided']);
+            ->assertSee('Waiting for a decision');
 
         $this->signIn($employer)->post(route('portal.attendance.overtime.decide', $overtime), [
             'decision' => 'rejected',
         ])->assertRedirect();
 
         $this->assertSame('rejected', $overtime->fresh()->status);
+    }
+
+    public function test_the_employer_home_shows_todays_yard_snapshot(): void
+    {
+        $employer = User::factory()->employer()->create();
+        $employee = User::factory()->employee()->create(['name' => 'Karan Kumar']);
+
+        $this->signIn($employer)->get('/portal')
+            ->assertOk()
+            ->assertSee('Today at the yards')
+            ->assertSee('On the roster')
+            ->assertSee('Not in yet')
+            ->assertSee('Needs your decision')
+            ->assertSee('No period prepared')
+            ->assertSee('View attendance')
+            ->assertDontSee('Hours worked');
+
+        $this->signIn($employer)->get('/portal?location_id='.$employee->profile->work_location_id)
+            ->assertOk()
+            ->assertSee($employee->profile->location->name);
     }
 
     public function test_clock_in_is_blocked_until_the_data_notice_is_accepted(): void

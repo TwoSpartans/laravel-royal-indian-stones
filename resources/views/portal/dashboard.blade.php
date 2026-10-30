@@ -5,6 +5,7 @@
   $role = auth()->user()->portal_role;
   $oversight = $role?->canAdminister() === true;
 @endphp
+@unless ($role?->isCompanyAdmin())
 <header class="page-head">
   <div>
     <p class="eyebrow">{{ $role?->label() }}</p>
@@ -12,6 +13,7 @@
     <p class="muted">Times use {{ \App\Support\PortalTime::timezone(auth()->user()) }}. Signing in does not mark anyone present.</p>
   </div>
 </header>
+@endunless
 
 @if ($self && auth()->user()->recordsOwnAttendance() && auth()->user()->canOpenPortalSection('attendance'))
   <section class="card" style="margin-bottom:1rem">
@@ -52,7 +54,9 @@
   </section>
 @endif
 
-@if ($oversight)
+@if ($role?->isCompanyAdmin())
+  @include('portal.dashboard.employer')
+@elseif ($oversight)
   <section class="grid stats">
     <article class="card stat"><strong>{{ $counts['workforce'] }}</strong><span>On the roster</span></article>
     <article class="card stat" data-tone="good"><strong>{{ $counts['present'] }}</strong><span>Present, including late</span></article>
@@ -123,6 +127,7 @@
   </div>
 @endif
 
+@unless ($role?->isCompanyAdmin())
 <div class="grid cards-2" style="margin-top:0.9rem">
   <section class="card">
     <h2>Upcoming leave</h2>
@@ -152,6 +157,7 @@
   @endforelse
 </section>
 @endif
+@endunless
 
 @unless ($oversight)
   @if (auth()->user()->canOpenPortalSection('leave'))

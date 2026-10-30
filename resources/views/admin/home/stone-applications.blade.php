@@ -87,78 +87,54 @@
       </div>
     </section>
 
-    <div class="home-stones-layout">
-      <section class="home-stones-library" aria-labelledby="home-stones-library-title">
-        <div class="home-stones-library-head">
-          <h3 id="home-stones-library-title">Stone application cards <span class="home-total">{{ $cardCount }} total</span></h3>
-          <div class="home-stone-search">
-            <label class="visually-hidden" for="stones-search">Search by application name or page</label>
-            <i class="bi bi-search" aria-hidden="true"></i>
-            <input class="home-input" id="stones-search" type="search" placeholder="Search by name or page" data-stone-search autocomplete="off">
-          </div>
+    <section class="home-explore-gallery" aria-labelledby="home-stones-library-title">
+      <div class="home-explore-gallery-head">
+        <h3 id="home-stones-library-title">Stone application cards <span class="home-total">{{ $cardCount }} total</span></h3>
+        <div class="home-stone-search">
+          <label class="visually-hidden" for="stones-search">Search by application name or page</label>
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input class="home-input" id="stones-search" type="search" placeholder="Search by name or page" data-stone-search autocomplete="off">
         </div>
-        <div class="home-stone-table-wrap">
-          <table class="home-stone-table">
-            <thead>
-              <tr>
-                <th scope="col">Image</th>
-                <th scope="col">Stone application</th>
-                <th scope="col">Destination page</th>
-                <th scope="col">Photograph</th>
-                <th scope="col"><span class="visually-hidden">Action</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach($cards as $index => $item)
-                @php
-                  $thumb = $picture($item['image']);
-                  $photoState = $item['custom'] ? 'Homepage photograph' : ($thumb !== '' ? 'Original photograph' : 'No photograph');
-                @endphp
-                <tr data-stone-row="{{ $item['slot'] }}" data-stone-index="{{ $index }}">
-                  <td>
-                    @if($thumb !== '')
-                      <img class="home-stone-thumb" src="{{ $thumb }}" alt="" width="96" height="72" data-stone-thumb>
-                    @else
-                      <img class="home-stone-thumb" alt="" width="96" height="72" data-stone-thumb hidden>
-                    @endif
-                  </td>
-                  <td data-stone-name>{{ $item['heading'] }}</td>
-                  <td class="home-stone-page-cell" data-stone-destination>{{ $item['url'] }}</td>
-                  <td data-stone-photo>{{ $photoState }}</td>
-                  <td>
-                    <button class="home-btn home-btn-quiet home-stone-edit" type="button" data-stone-edit="{{ $item['slot'] }}" aria-label="Edit {{ $item['heading'] }}">
-                      <i class="bi bi-pencil" aria-hidden="true"></i>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              @endforeach
-            </tbody>
-          </table>
+      </div>
+      @if($cards === [])
+        <p class="home-editor-empty">Nothing to show in this section yet.</p>
+      @else
+        <div class="home-explore-grid">
+          @foreach($cards as $index => $item)
+            @php
+              $thumb = $picture($item['image']);
+              $photoState = $item['custom'] ? 'Homepage photograph' : ($thumb !== '' ? 'Original photograph' : 'No photograph');
+            @endphp
+            <article class="home-explore-card" data-stone-row="{{ $item['slot'] }}" data-stone-index="{{ $index }}" aria-labelledby="stone-card-{{ $item['slot'] }}">
+              @if($thumb !== '')
+                <img class="home-explore-thumb" src="{{ $thumb }}" alt="" width="640" height="480" data-stone-thumb>
+              @else
+                <img class="home-explore-thumb" alt="" width="640" height="480" data-stone-thumb hidden>
+              @endif
+              <div class="home-explore-card-body">
+                <div>
+                  <h3 id="stone-card-{{ $item['slot'] }}" data-stone-name>{{ $item['heading'] }}</h3>
+                  <p class="home-explore-meta">
+                    <span data-stone-photo>{{ $photoState }}</span>
+                    <span aria-hidden="true"> · </span>
+                    <span data-stone-destination>{{ $item['url'] }}</span>
+                  </p>
+                </div>
+                <button class="home-btn home-btn-quiet home-explore-edit" type="button" data-stone-edit="{{ $item['slot'] }}" aria-haspopup="dialog" aria-controls="home-stones-drawer" aria-expanded="false" aria-label="Edit {{ $item['heading'] }}">
+                  <i class="bi bi-pencil" aria-hidden="true"></i>
+                  Edit
+                </button>
+              </div>
+            </article>
+          @endforeach
         </div>
-        <p class="home-stone-empty" data-stone-empty hidden>No applications match that search.</p>
-        <div class="home-stone-pager">
-          <p data-stone-range>Showing {{ $cardCount === 0 ? '0' : '1-'.min(6, $cardCount) }} of {{ $cardCount }} entries</p>
-          <div class="home-stone-pager-controls">
-            <button class="home-btn home-btn-quiet" type="button" data-stone-prev disabled>Previous</button>
-            <div class="home-stone-pages" data-stone-pages role="group" aria-label="Stone application pages"></div>
-            <button class="home-btn home-btn-quiet" type="button" data-stone-next @if($cardCount <= 6) disabled @endif>Next</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="home-stones-editor" aria-labelledby="home-stones-editor-title">
-        <div class="home-stones-editor-head">
-          <h3 id="home-stones-editor-title">Edit selected card</h3>
-          <span data-stone-position>{{ $cardCount === 0 ? '00 / 00' : '01 / '.str_pad((string) $cardCount, 2, '0', STR_PAD_LEFT) }}</span>
-        </div>
-        <div data-stone-mount></div>
-        <p class="home-field-note">
-          <i class="bi bi-info-circle" aria-hidden="true"></i>
-          <span>The destination page must already exist before assigning this card.</span>
-        </p>
-      </section>
-    </div>
+      @endif
+      <p class="home-stone-empty" data-stone-empty hidden>No applications match that search.</p>
+      <div class="home-explore-notes">
+        <p>The destination page must already exist before assigning this card.</p>
+        <p>Images shown on the home page only.</p>
+      </div>
+    </section>
 
     <div class="home-stone-store" data-stone-store>
       @foreach($cards as $item)
@@ -235,4 +211,27 @@
       @endforeach
     </div>
   </div>
+
+  <dialog class="home-drawer" id="home-stones-drawer" data-stones-drawer aria-labelledby="home-stones-drawer-title">
+    <div class="home-drawer-head">
+      <div>
+        <p class="home-kicker">Stone application</p>
+        <h3 id="home-stones-drawer-title" data-stone-drawer-title tabindex="-1">Edit card</h3>
+      </div>
+      <button class="home-drawer-close" type="button" data-stone-drawer-close aria-label="Close">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="home-drawer-body" data-stone-mount></div>
+    <div class="home-drawer-foot">
+      <p>The destination page must already exist before assigning this card.</p>
+      <div class="home-drawer-actions">
+        <button class="home-btn home-btn-quiet" type="button" data-stone-drawer-cancel>Cancel</button>
+        <button class="home-btn home-btn-primary" type="submit" form="home-panel-{{ $section }}" data-drawer-save>
+          <i class="bi bi-check2" aria-hidden="true"></i>
+          Save
+        </button>
+      </div>
+    </div>
+  </dialog>
 </form>

@@ -26,9 +26,8 @@
   var currentSection = root.dataset.openSection || 'hero';
   var textFields = ['eyebrow', 'title', 'subtitle', 'body', 'button_label', 'link', 'alt'];
   var tabFields = {
-    content: ['eyebrow', 'title', 'subtitle', 'body', 'button_label'],
-    image: ['photo', 'restore'],
-    metadata: ['link', 'alt']
+    content: ['eyebrow', 'title', 'subtitle', 'body', 'button_label', 'link', 'alt'],
+    image: ['photo', 'restore']
   };
   var saveIcons = {
     saved: 'bi-check-circle',
@@ -66,6 +65,9 @@
   var exploreObjectUrls = {};
   var exploreClosing = false;
   var stonesForm = document.getElementById('home-panel-stones');
+  var stonesDrawer = stonesForm ? stonesForm.querySelector('[data-stones-drawer]') : null;
+  var stonesReturnFocus = null;
+  var stoneSnapshot = null;
   var stonesDiscard = stonesForm ? stonesForm.querySelector('[data-discard]') : null;
   var stonesObjectUrls = {};
   var stonesPage = 1;
@@ -236,6 +238,39 @@
     });
   }
 
+  function fillSizePreviews() {
+    var dialog = root.querySelector('[data-preview-sizes-dialog]');
+    var hero = root.querySelector('[data-preview-frame] .home-preview-hero');
+    if (!dialog || !hero) {
+      return;
+    }
+    dialog.querySelectorAll('[data-size-slot]').forEach(function (slot) {
+      slot.replaceChildren();
+      var shell = document.createElement('div');
+      shell.className = 'home-preview-frame' + (slot.dataset.sizeSlot === 'mobile' ? ' is-mobile' : '');
+      shell.appendChild(hero.cloneNode(true));
+      slot.appendChild(shell);
+    });
+  }
+
+  function openSizePreviews() {
+    var dialog = root.querySelector('[data-preview-sizes-dialog]');
+    if (!dialog) {
+      return;
+    }
+    fillSizePreviews();
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+  }
+
+  function closeSizePreviews() {
+    var dialog = root.querySelector('[data-preview-sizes-dialog]');
+    if (dialog && dialog.open) {
+      dialog.close();
+    }
+  }
+
   function renderPreview(slide, src, alt) {
     var image = root.querySelector('[data-preview="image"]');
     if (image) {
@@ -278,6 +313,10 @@
     var count = root.querySelector('[data-preview-count]');
     if (count) {
       count.textContent = pad(slide.index + 1) + ' / ' + pad(slides.length);
+    }
+    var sizeDialog = root.querySelector('[data-preview-sizes-dialog]');
+    if (sizeDialog && sizeDialog.open) {
+      fillSizePreviews();
     }
     var heading = root.querySelector('[data-editor-title]');
     if (heading) {
@@ -821,7 +860,7 @@
   var editorTabs = root.querySelector('[data-editor-tabs]');
   if (editorTabs) {
     editorTabs.addEventListener('keydown', function (event) {
-      var order = ['content', 'image', 'metadata'];
+      var order = ['content', 'image'];
       var index = order.indexOf(currentTab);
       var next = index;
       if (event.key === 'ArrowRight') {
@@ -878,6 +917,15 @@
       setPreviewMode(button.closest('[data-home-panel]') || root, button.dataset.previewMode);
     });
   });
+  root.querySelector('[data-preview-sizes]')?.addEventListener('click', openSizePreviews);
+  var sizeDialog = root.querySelector('[data-preview-sizes-dialog]');
+  if (sizeDialog) {
+    sizeDialog.querySelector('[data-preview-sizes-close]')?.addEventListener('click', closeSizePreviews);
+    sizeDialog.addEventListener('cancel', function (event) {
+      event.preventDefault();
+      closeSizePreviews();
+    });
+  }
 
   if (supplierForm && supplierData) {
     supplierForm.addEventListener('input', function (event) {
@@ -1767,9 +1815,8 @@
       }
     });
     renderStonePager(matches.length);
-    matches.forEach(function (row, index) {
-      var page = Math.floor(index / stonesPageSize) + 1;
-      row.hidden = page !== stonesPage;
+    matches.forEach(function (row) {
+      row.hidden = false;
     });
     var empty = stonesForm.querySelector('[data-stone-empty]');
     if (empty) {
@@ -1790,20 +1837,123 @@
     mount.appendChild(panel);
     stonesForm.dataset.activeSlot = slot;
     stonesForm.querySelectorAll('[data-stone-row]').forEach(function (row) {
-      var on = row.dataset.stoneRow === slot;
-      row.classList.toggle('is-selected', on);
-      if (on) {
-        row.setAttribute('aria-selected', 'true');
-      } else {
-        row.removeAttribute('aria-selected');
-      }
+      row.classList.toggle('is-selected', row.dataset.stoneRow === slot);
+    });
+    stonesForm.querySelectorAll('[data-stone-edit]').forEach(function (button) {
+      button.setAttribute('aria-expanded', button.dataset.stoneEdit === slot ? 'true' : 'false');
     });
     renderStone(slot);
-    renderStonePosition(slot);
     releaseCleanStoneCards();
+    stoneSnapshot = snapshotStone(slot);
+    if (stonesDrawer && !stonesDrawer.open) {
+      stonesDrawer.showModal();
+    }
     var invalid = panel.querySelector('.is-invalid');
+    var title = stonesForm.querySelector('[data-stone-drawer-title]');
+    if (title) {
+      var name = panel.querySelector('[data-field="title"]');
+      title.textContent = name && name.value.trim() !== '' ? name.value.trim() : (panel.dataset.defaultName || 'Edit card');
+    }
     if (invalid) {
       invalid.focus();
+    } else if (title) {
+      title.focus();
+    }
+  }
+
+  function snapshotStone(slot) {
+    var panel = stonesFields(slot);
+    if (!panel) {
+      return null;
+    }
+    var title = panel.querySelector('[data-field="title"]');
+    var link = panel.querySelector('[data-field="link"]');
+    var alt = panel.querySelector('[data-field="alt"]');
+    var photo = panel.querySelector('[data-field="photo"]');
+    var restore = panel.querySelector('[data-field="restore"]');
+    return {
+      title: title ? title.value : '',
+      link: link ? link.value : '',
+      alt: alt ? alt.value : '',
+      photo: fileKey(photo),
+      restore: restore ? restore.checked : false
+    };
+  }
+
+  function stoneDrawerDirty() {
+    var slot = stonesForm ? stonesForm.dataset.activeSlot : '';
+    var now = snapshotStone(slot);
+    if (!now || !stoneSnapshot) {
+      return false;
+    }
+    return now.title !== stoneSnapshot.title || now.link !== stoneSnapshot.link || now.alt !== stoneSnapshot.alt || now.photo !== stoneSnapshot.photo || now.restore !== stoneSnapshot.restore;
+  }
+
+  function applyStoneSnapshot(slot) {
+    var panel = stonesFields(slot);
+    if (!panel || !stoneSnapshot) {
+      return;
+    }
+    ['title', 'link', 'alt'].forEach(function (name) {
+      var input = panel.querySelector('[data-field="' + name + '"]');
+      if (input) {
+        input.value = stoneSnapshot[name];
+        clearFieldError(input);
+      }
+    });
+    var photo = panel.querySelector('[data-field="photo"]');
+    if (photo && fileKey(photo) !== stoneSnapshot.photo) {
+      photo.value = '';
+      revokeStone(slot);
+      showFileError(panel, '');
+      photo.classList.remove('is-invalid');
+      photo.removeAttribute('aria-invalid');
+    }
+    var restore = panel.querySelector('[data-field="restore"]');
+    if (restore) {
+      restore.checked = stoneSnapshot.restore;
+    }
+    renderStone(slot);
+  }
+
+  function requestCloseStoneDrawer() {
+    if (!stonesDrawer || !stonesDrawer.open || !stonesForm) {
+      return;
+    }
+    var slot = stonesForm.dataset.activeSlot;
+    if (stoneDrawerDirty()) {
+      var panel = stonesFields(slot);
+      var nameInput = panel ? panel.querySelector('[data-field="title"]') : null;
+      var name = nameInput && nameInput.value.trim() !== '' ? nameInput.value.trim() : 'this card';
+      if (!window.confirm('Discard unsaved changes to ' + name + '?')) {
+        return;
+      }
+      applyStoneSnapshot(slot);
+    }
+    parkStoneDrawer(stonesReturnFocus);
+    stoneSnapshot = null;
+    updateSaveState();
+  }
+
+  function parkStoneDrawer(restoreFocus) {
+    if (!stonesForm || !stonesDrawer || !stonesDrawer.open) {
+      return;
+    }
+    var mount = stonesForm.querySelector('[data-stone-mount]');
+    var store = stonesForm.querySelector('[data-stone-store]');
+    if (mount && store) {
+      while (mount.firstElementChild) {
+        store.appendChild(mount.firstElementChild);
+      }
+    }
+    stonesForm.querySelectorAll('[data-stone-edit][aria-expanded="true"]').forEach(function (button) {
+      button.setAttribute('aria-expanded', 'false');
+    });
+    stonesForm.dataset.activeSlot = '';
+    stonesDrawer.close();
+    releaseCleanStoneCards();
+    if (restoreFocus) {
+      restoreFocus.focus();
     }
   }
 
@@ -1910,12 +2060,14 @@
       }
       var edit = event.target.closest('[data-stone-edit]');
       if (edit) {
+        if (stonesDrawer && stonesDrawer.open && stonesForm.dataset.activeSlot && stonesForm.dataset.activeSlot !== edit.dataset.stoneEdit && stoneDrawerDirty()) {
+          if (!window.confirm('Discard unsaved changes to this card?')) {
+            return;
+          }
+          applyStoneSnapshot(stonesForm.dataset.activeSlot);
+        }
+        stonesReturnFocus = edit;
         selectStone(edit.dataset.stoneEdit);
-        return;
-      }
-      var row = event.target.closest('[data-stone-row]');
-      if (row) {
-        selectStone(row.dataset.stoneRow);
         return;
       }
       var clear = event.target.closest('[data-clear-photo]');
@@ -1982,6 +2134,19 @@
     }
     if (stonesDiscard) {
       stonesDiscard.addEventListener('click', discardStones);
+    }
+    if (stonesDrawer) {
+      stonesDrawer.addEventListener('cancel', function (event) {
+        event.preventDefault();
+        requestCloseStoneDrawer();
+      });
+      stonesDrawer.addEventListener('click', function (event) {
+        if (event.target === stonesDrawer) {
+          requestCloseStoneDrawer();
+        }
+      });
+      stonesDrawer.querySelector('[data-stone-drawer-close]')?.addEventListener('click', requestCloseStoneDrawer);
+      stonesDrawer.querySelector('[data-stone-drawer-cancel]')?.addEventListener('click', requestCloseStoneDrawer);
     }
   }
 
@@ -2086,13 +2251,8 @@
   }
   if (stonesForm) {
     renderAllStones();
-    var firstStone = stonesForm.querySelector('[data-stone-row]');
-    var initialStone = stonesForm.dataset.openSlot || (firstStone ? firstStone.dataset.stoneRow : '');
-    if (initialStone) {
-      var initialRow = stonesRow(initialStone);
-      var initialIndex = initialRow ? Number(initialRow.dataset.stoneIndex) : 0;
-      stonesPage = Math.floor(initialIndex / stonesPageSize) + 1;
-      selectStone(initialStone);
+    if (stonesForm.dataset.openSlot) {
+      selectStone(stonesForm.dataset.openSlot);
     }
     applyStoneFilter();
     releaseCleanStoneCards();

@@ -1,7 +1,7 @@
 @extends('portal.layout')
 @section('title', 'Reports')
 @section('content')
-<header class="page-head"><div><p class="eyebrow">Reports</p><h1>Export a staff report</h1><p class="muted">Managers receive their team. Employees cannot export workforce reports.</p></div></header>
+<header class="page-head"><div><p class="eyebrow">Reports</p><h1>Export a staff report</h1><p class="muted">Attendance starts with one line per person, then each day from the first clock-in. Hours are settled time. An open day is marked Unsettled.</p></div></header>
 <form method="post" action="{{ route('portal.reports.export') }}" class="form-grid">
   @csrf
   <div class="field"><label for="type">Report</label>

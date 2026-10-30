@@ -4,37 +4,39 @@ namespace App\Http\Controllers\Portal;
 
 use App\Models\AttendanceCorrection;
 use App\Models\AttendancePunch;
+use App\Models\Department;
 use App\Models\OvertimeRequest;
+use App\Models\Shift;
 use App\Models\User;
+use App\Models\WorkLocation;
 use App\Notifications\PortalStatusNotification;
 use App\Services\Portal\AttendanceBoard;
 use App\Services\Portal\AttendanceClock;
+use App\Services\Portal\AttendanceReview;
 use App\Services\Portal\AuditWriter;
 use App\Services\Portal\CorrectionDecision;
 use App\Support\PortalTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends PortalController
 {
-    public function index(Request $request, AttendanceBoard $board): View
+    public function index(Request $request, AttendanceBoard $board, AttendanceReview $review): View
     {
         $actor = $this->actor($request);
-        $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString()) : now();
-        $people = $this->access->peopleQuery($actor)
-            ->with('profile.location', 'profile.shift')
-            ->orderBy('name')
-            ->get()
-            ->filter(fn (User $user): bool => $user->recordsOwnAttendance())
-            ->values();
-        if ($actor->recordsOwnAttendance() && ! $people->contains('id', $actor->id)) {
-            $actor->load('profile.location', 'profile.shift');
-            $people->prepend($actor);
+        $people = $this->rosterPeople($actor);
+        if ($actor->portal_role?->canAdminister() === true) {
+            return $this->overview($request, $review, $actor, $people);
         }
 
+        $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString()) : now();
         $selected = $people->firstWhere('id', $request->integer('user_id')) ?? $people->first();
         abort_if($selected instanceof User && ! ($this->access->canViewUser($actor, $selected) || $selected->is($actor)), 404);
 
@@ -191,6 +193,346 @@ class AttendanceController extends PortalController
         ));
 
         return back()->with('status', 'Overtime request '.$data['decision'].'.');
+    }
+
+    public function report(Request $request, AttendanceReview $review): View
+    {
+        $actor = $this->actor($request);
+        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        [$from, $to] = $this->window($request);
+        $people = $this->rosterPeople($actor);
+        $person = $this->chosen($request, $people);
+        abort_unless($person instanceof User, 404);
+
+        return view('portal.attendance.report', [
+            'person' => $person,
+            'people' => $people,
+            'report' => $review->period($person, $from, $to),
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+            'range' => $request->string('range')->toString(),
+            'punches' => $this->punchesOn($person, $request->string('day')->toString(), true),
+            'day' => $request->string('day')->toString(),
+        ]);
+    }
+
+    public function compare(Request $request, AttendanceReview $review): View
+    {
+        $actor = $this->actor($request);
+        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        [$from, $to] = $this->window($request);
+        $people = $this->rosterPeople($actor);
+        $chosen = $this->chosenMany($request, $people);
+        $rows = $review->compare($chosen, $from, $to);
+        $sort = $request->string('sort')->toString();
+        if (in_array($sort, ['name', 'rate', 'hours', 'late'], true)) {
+            $rows = collect($rows)->sortBy(match ($sort) {
+                'name' => fn (array $row) => $row['user']->name,
+                'rate' => fn (array $row) => $row['rate'] ?? -1,
+                'hours' => fn (array $row) => $row['tracked_minutes'],
+                'late' => fn (array $row) => $row['late'],
+            }, SORT_REGULAR, $request->string('dir')->toString() === 'desc')->values()->all();
+        }
+
+        return view('portal.attendance.compare', [
+            'people' => $people,
+            'chosen' => $chosen,
+            'rows' => $rows,
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+            'range' => $request->string('range')->toString(),
+            'sort' => $sort,
+        ]);
+    }
+
+    public function exceptions(Request $request): View
+    {
+        $actor = $this->actor($request);
+        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        $people = $this->rosterPeople($actor);
+        $status = $request->string('status')->toString();
+        if (! in_array($status, ['pending', 'approved', 'rejected', ''], true)) {
+            $status = 'pending';
+        }
+        if ($status === '') {
+            $status = 'pending';
+        }
+        $query = $request->string('q')->toString();
+        $date = $request->string('date')->toString();
+        $ids = $people->modelKeys() ?: [-1];
+        $corrections = AttendanceCorrection::query()->with('user.profile')->whereIn('user_id', $ids)->where('status', $status)->latest()->limit(40)->get();
+        $overtime = OvertimeRequest::query()->with('user')->whereIn('user_id', $ids)->where('status', $status)->latest()->limit(40)->get();
+        if ($query !== '') {
+            $corrections = $corrections->filter(fn (AttendanceCorrection $item): bool => str_contains(mb_strtolower($item->user?->name ?? ''), mb_strtolower($query)))->values();
+            $overtime = $overtime->filter(fn (OvertimeRequest $item): bool => str_contains(mb_strtolower($item->user?->name ?? ''), mb_strtolower($query)))->values();
+        }
+        if ($date !== '') {
+            $corrections = $corrections->filter(fn (AttendanceCorrection $item): bool => $item->work_date->toDateString() === $date)->values();
+            $overtime = $overtime->filter(fn (OvertimeRequest $item): bool => $item->work_date->toDateString() === $date)->values();
+        }
+
+        return view('portal.attendance.exceptions', [
+            'people' => $people,
+            'corrections' => $corrections,
+            'overtime' => $overtime,
+            'status' => $status,
+            'query' => $query,
+            'date' => $date,
+            'originals' => $corrections->mapWithKeys(fn (AttendanceCorrection $item): array => [
+                $item->id => $item->user instanceof User ? $this->punchesOn($item->user, $item->work_date->toDateString()) : collect(),
+            ]),
+        ]);
+    }
+
+    public function export(Request $request, AttendanceReview $review): StreamedResponse
+    {
+        $actor = $this->actor($request);
+        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        [$from, $to] = $this->window($request);
+        $people = $this->rosterPeople($actor);
+        $kind = $request->string('kind')->toString();
+        if ($kind === 'compare') {
+            $chosen = $this->chosenMany($request, $people);
+            abort_if($chosen->count() < 2, 422);
+            $rows = $review->compare($chosen, $from, $to);
+            $filename = 'royal-indian-stones-attendance-comparison-'.$from->toDateString().'.csv';
+
+            return $this->csv($filename, ['Employee', 'Scheduled days', 'Days worked', 'Attendance rate', 'Hours worked', 'Average day', 'Late days', 'Leave', 'Missed punches', 'Unsettled days'], array_map(fn (array $row): array => [
+                $row['user']->name,
+                (string) $row['scheduled'],
+                (string) $row['worked'],
+                $row['rate'] === null ? '' : $row['rate'].'%',
+                $row['tracked_label'],
+                $row['average_label'],
+                (string) $row['late'],
+                (string) $row['leave'],
+                (string) $row['missed'],
+                (string) $row['unsettled'],
+            ], $rows));
+        }
+
+        $person = $this->chosen($request, $people);
+        abort_unless($person instanceof User, 404);
+        $report = $review->period($person, $from, $to);
+        $filename = 'royal-indian-stones-attendance-'.$person->id.'-'.$from->toDateString().'.csv';
+        $lines = [[$person->name, $report['from'], $report['to'], $report['tracked_label'], $report['rate'] === null ? '' : $report['rate'].'%']];
+        foreach ($report['days'] as $day) {
+            $lines[] = [$day['date'], $day['status'], $day['in'], $day['out'], $day['hours']];
+        }
+
+        return $this->csv($filename, ['Date or employee', 'Status or end date', 'First in or tracked', 'Last out or rate', 'Hours'], $lines);
+    }
+
+    /**
+     * @param  Collection<int, User>  $people
+     */
+    private function overview(Request $request, AttendanceReview $review, User $actor, Collection $people): View
+    {
+        $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString())->startOfDay() : now()->startOfDay();
+        $filtered = $this->narrow($request, $people);
+        $dayView = $review->day($filtered, $day);
+        $status = $request->string('status')->toString();
+        $statuses = ['present', 'late', 'not_in_yet', 'missed_punch', 'leave', 'absent'];
+        if (! in_array($status, $statuses, true)) {
+            $status = '';
+        }
+        $roster = $status === '' ? $dayView['roster'] : $dayView['roster']->where('state', $status)->values();
+        $page = max(1, $request->integer('page', 1));
+        $paginator = new LengthAwarePaginator(
+            $roster->forPage($page, 20)->values(),
+            $roster->count(),
+            20,
+            $page,
+            ['path' => url()->current(), 'query' => $request->query()],
+        );
+        $selected = $filtered->firstWhere('id', $request->integer('user_id'));
+        if (! $selected instanceof User) {
+            $selected = $filtered->firstWhere('id', $people->firstWhere('id', $request->integer('user_id'))?->id);
+        }
+        abort_if($request->filled('user_id') && ! $selected instanceof User, 404);
+
+        return view('portal.attendance.overview', [
+            'date' => $day->toDateString(),
+            'status' => $status,
+            'query' => $request->string('q')->toString(),
+            'departmentId' => $request->integer('department_id'),
+            'shiftId' => $request->integer('shift_id'),
+            'locationId' => $request->integer('location_id'),
+            'counts' => $dayView['counts'],
+            'roster' => $paginator,
+            'selected' => $selected,
+            'punches' => $selected instanceof User ? $this->punchesOn($selected, $day->toDateString()) : collect(),
+            'events' => $review->dayEvents($filtered, $day),
+            'departments' => Department::query()->orderBy('name')->get(),
+            'shifts' => Shift::query()->orderBy('name')->get(),
+            'locations' => WorkLocation::query()->orderBy('name')->get(),
+            'people' => $people,
+            'timezone' => PortalTime::timezone($actor),
+            'clocks' => $actor->recordsOwnAttendance(),
+        ]);
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function rosterPeople(User $actor): Collection
+    {
+        $people = $this->access->peopleQuery($actor)
+            ->with('profile.department', 'profile.location', 'profile.shift')
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (User $user): bool => $user->recordsOwnAttendance())
+            ->values();
+        if ($actor->recordsOwnAttendance() && ! $people->contains('id', $actor->id)) {
+            $actor->load('profile.department', 'profile.location', 'profile.shift');
+            $people->prepend($actor);
+        }
+
+        return $people;
+    }
+
+    /**
+     * @param  Collection<int, User>  $people
+     * @return Collection<int, User>
+     */
+    private function narrow(Request $request, Collection $people): Collection
+    {
+        $query = mb_strtolower($request->string('q')->toString());
+        $departmentId = $request->integer('department_id');
+        $shiftId = $request->integer('shift_id');
+        $locationId = $request->integer('location_id');
+
+        return $people->filter(function (User $person) use ($query, $departmentId, $shiftId, $locationId): bool {
+            if ($query !== '' && ! str_contains(mb_strtolower($person->name), $query)) {
+                return false;
+            }
+            if ($departmentId > 0 && $person->profile?->department_id !== $departmentId) {
+                return false;
+            }
+            if ($shiftId > 0 && $person->profile?->shift_id !== $shiftId) {
+                return false;
+            }
+            if ($locationId > 0 && $person->profile?->work_location_id !== $locationId) {
+                return false;
+            }
+
+            return true;
+        })->values();
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function window(Request $request): array
+    {
+        $today = now()->timezone('Asia/Kolkata')->startOfDay();
+        $range = $request->string('range')->toString();
+        if ($request->filled('from') && $request->filled('to') && $range === '') {
+            $from = Carbon::parse($request->string('from')->toString())->startOfDay();
+            $to = Carbon::parse($request->string('to')->toString())->startOfDay();
+        } elseif ($range === '7') {
+            $to = $today->copy();
+            $from = $today->copy()->subDays(6);
+        } elseif ($range === '30') {
+            $to = $today->copy();
+            $from = $today->copy()->subDays(29);
+        } elseif ($range === 'month') {
+            $anchor = $request->filled('date') ? Carbon::parse($request->string('date')->toString()) : $today->copy();
+            $from = $anchor->copy()->startOfMonth();
+            $to = $anchor->copy()->endOfMonth();
+            if ($to->gt($today)) {
+                $to = $today->copy();
+            }
+        } else {
+            $from = $request->filled('from') ? Carbon::parse($request->string('from')->toString())->startOfDay() : $today->copy()->subDays(6);
+            $to = $request->filled('to') ? Carbon::parse($request->string('to')->toString())->startOfDay() : $today->copy();
+        }
+
+        if ($to->lt($from) || (($to->getTimestamp() - $from->getTimestamp()) / 86400) > 93) {
+            throw ValidationException::withMessages([
+                'to' => 'Choose an end date within 93 days of the start date.',
+            ]);
+        }
+
+        return [$from, $to];
+    }
+
+    /**
+     * @param  Collection<int, User>  $people
+     */
+    private function chosen(Request $request, Collection $people): ?User
+    {
+        $id = $request->integer('user_id');
+        if ($id === 0) {
+            return $people->first();
+        }
+
+        return $people->firstWhere('id', $id);
+    }
+
+    /**
+     * @param  Collection<int, User>  $people
+     * @return Collection<int, User>
+     */
+    private function chosenMany(Request $request, Collection $people): Collection
+    {
+        $ids = array_values(array_unique(array_map(intval(...), (array) $request->input('employees', []))));
+        if ($ids === []) {
+            return $people->take(min(2, $people->count()))->values();
+        }
+        if (count($ids) > 4) {
+            throw ValidationException::withMessages([
+                'employees' => 'Choose no more than four people.',
+            ]);
+        }
+
+        $chosen = $people->whereIn('id', $ids)->values();
+        abort_if($chosen->count() !== count($ids), 404);
+
+        return $chosen;
+    }
+
+    /**
+     * @return Collection<int, AttendancePunch>
+     */
+    private function punchesOn(User $person, string $date, bool $includeReplaced = false): Collection
+    {
+        if ($date === '') {
+            return collect();
+        }
+        $timezone = PortalTime::timezone($person);
+
+        return AttendancePunch::query()
+            ->where('user_id', $person->id)
+            ->when(! $includeReplaced, fn ($query) => $query->whereNull('superseded_at'))
+            ->where('punched_at', '>=', Carbon::parse($date, $timezone)->subDay())
+            ->where('punched_at', '<', Carbon::parse($date, $timezone)->addDays(2))
+            ->orderBy('punched_at')
+            ->get()
+            ->filter(fn (AttendancePunch $punch): bool => $punch->punched_at->copy()->timezone($punch->timezone ?: $timezone)->toDateString() === $date)
+            ->values();
+    }
+
+    /**
+     * @param  list<string>  $headings
+     * @param  list<list<string>>  $rows
+     */
+    private function csv(string $filename, array $headings, array $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($headings, $rows): void {
+            $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                return;
+            }
+            fputcsv($handle, $headings);
+            foreach ($rows as $row) {
+                fputcsv($handle, $row);
+            }
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'X-Robots-Tag' => 'noindex',
+        ]);
     }
 
     private function canDecide(User $actor, ?User $subject): bool

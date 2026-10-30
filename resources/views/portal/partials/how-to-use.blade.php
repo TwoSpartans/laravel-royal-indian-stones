@@ -27,7 +27,7 @@
           ? 'Review a claim and its receipt. Marking it arranged outside this portal is not a bank confirmation.'
           : 'Submit a claim with the receipt. It waits for a manager.',
       request()->routeIs('portal.people.*') => 'Invite a person as Employee or Manager / HR, and tick the sections an employee may open.',
-      request()->routeIs('portal.reports.*') => 'Choose a report and a date range, then export. Attendance reports leave the employer off the roster.',
+      request()->routeIs('portal.reports.*') => 'Choose a report and a date range, then export. An attendance file starts with one line per person and shows settled hours. The employer stays off the roster.',
       request()->routeIs('portal.payroll.*') => 'Prepare records for review. Salary calculations stay off until a reviewer confirms them, and nothing here is marked paid.',
       request()->routeIs('portal.workplace.*') => 'Save an office network, approve a browser, set holidays and the leave balance, and review sign-ins from outside the network. A matching address does not prove someone is on site.',
       request()->routeIs('portal.account') => 'Update the password for this account. Signing in still does not mark anyone present.',

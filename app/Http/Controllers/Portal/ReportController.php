@@ -48,23 +48,38 @@ class ReportController extends PortalController
             'to' => $to->toDateString(),
         ], $request->ip());
 
+        $sections = $built['sections'] ?? [[
+            'title' => '',
+            'headings' => $built['headings'],
+            'rows' => $built['rows'],
+        ]];
+        $note = $built['note'] ?? '';
         $filename = 'royal-indian-stones-'.$data['type'].'-'.$from->toDateString().'.'.$data['format'];
         if ($data['format'] === 'pdf') {
-            return response($pdf->render($built['title'], $built['headings'], $built['rows']), 200, [
+            return response($pdf->render($built['title'], $sections, $note), 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="'.$filename.'"',
                 'X-Robots-Tag' => 'noindex',
             ]);
         }
 
-        return response()->streamDownload(function () use ($built, $reports): void {
+        return response()->streamDownload(function () use ($sections, $note, $reports): void {
             $handle = fopen('php://output', 'w');
             if ($handle === false) {
                 return;
             }
-            fputcsv($handle, $built['headings']);
-            foreach ($built['rows'] as $row) {
-                fputcsv($handle, array_map(fn (string $cell) => $reports->csvCell($cell), $row));
+            if ($note !== '') {
+                fputcsv($handle, [$note]);
+            }
+            foreach ($sections as $section) {
+                if ($section['title'] !== '') {
+                    fputcsv($handle, [$section['title']]);
+                }
+                fputcsv($handle, $section['headings']);
+                foreach ($section['rows'] as $row) {
+                    fputcsv($handle, array_map(fn (string $cell) => $reports->csvCell($cell), $row));
+                }
+                fputcsv($handle, []);
             }
             fclose($handle);
         }, $filename, [

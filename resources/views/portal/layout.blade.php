@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-<link href="{{ asset('assets/css/portal.css') }}?v=20" rel="stylesheet">
+<link href="{{ asset('assets/css/portal.css') }}?v=31" rel="stylesheet">
 </head>
 <body class="portal">
 <a class="skip" href="#portal-main">Skip to content</a>
@@ -134,8 +134,11 @@
     }
   };
   const helpButton = document.querySelector('.help-open');
+  const homeTools = document.querySelector('#portal-main .home-tools');
   const pageHead = document.querySelector('#portal-main .page-head');
-  if (helpButton && pageHead) {
+  if (helpButton && homeTools) {
+    (homeTools.querySelector('form') ?? homeTools).append(helpButton);
+  } else if (helpButton && pageHead) {
     pageHead.append(helpButton);
   }
   const account = document.querySelector('.account-menu');

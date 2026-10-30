@@ -2,6 +2,7 @@
 
 namespace App\Services\Portal;
 
+use App\Models\AttendancePunch;
 use App\Models\ExpenseClaim;
 use App\Models\LeaveRequest;
 use App\Models\OvertimeRequest;
@@ -48,27 +49,125 @@ class ReportBuilder
      */
     private function attendance($people, string $from, string $to): array
     {
-        $rows = [];
-        $start = Carbon::parse($from);
-        $end = Carbon::parse($to);
+        $lines = [];
+        $start = Carbon::parse($from)->startOfDay();
+        $end = Carbon::parse($to)->startOfDay();
         for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
             foreach ($this->board->roster($people, $day->copy()) as $row) {
-                $rows[] = [
-                    $row['user']->name,
-                    $day->toDateString(),
-                    $row['label'],
-                    (string) $row['late_minutes'],
-                    $row['first_in']?->punched_at?->timezone('Asia/Kolkata')->format('H:i') ?? '',
-                    $row['last_out']?->punched_at?->timezone('Asia/Kolkata')->format('H:i') ?? '',
+                $lines[] = [
+                    'id' => $row['user']->id,
+                    'name' => $row['user']->name,
+                    'date' => $day->toDateString(),
+                    'state' => $row['state'],
+                    'status' => $this->attendanceStatus($row),
+                    'in' => $this->clock($row['first_in']),
+                    'out' => $this->clock($row['last_out']),
+                    'hours' => $this->attendanceHours($row),
+                    'minutes' => $row['minutes'],
+                    'closed' => $row['closed'],
                 ];
             }
         }
 
+        $first = null;
+        foreach ($lines as $line) {
+            if ($line['in'] !== '' || $line['out'] !== '') {
+                $first = $first === null || $line['date'] < $first ? $line['date'] : $first;
+            }
+        }
+
+        $note = 'No clock-ins in this range.';
+        if ($first !== null) {
+            $lines = array_values(array_filter($lines, fn (array $line): bool => $line['date'] >= $first));
+            $note = $first > $from ? 'No clock-ins before '.$first.'. Earlier dates are left out.' : '';
+        }
+
+        $summary = [];
+        foreach (collect($lines)->groupBy('id') as $personLines) {
+            $settled = 0;
+            $unsettled = 0;
+            $present = 0;
+            $late = 0;
+            $missed = 0;
+            $absent = 0;
+            foreach ($personLines as $line) {
+                $present += $line['state'] === 'present' ? 1 : 0;
+                $late += $line['state'] === 'late' ? 1 : 0;
+                $missed += $line['state'] === 'missed_punch' ? 1 : 0;
+                $absent += $line['state'] === 'absent' ? 1 : 0;
+                if ($line['closed'] === true && is_int($line['minutes'])) {
+                    $settled += $line['minutes'];
+                }
+                if ($line['closed'] === false && $line['minutes'] !== null) {
+                    $unsettled++;
+                }
+            }
+            $summary[] = [
+                $personLines->first()['name'],
+                (string) $present,
+                (string) $late,
+                (string) $missed,
+                (string) $absent,
+                $this->board->formatMinutes($settled),
+                (string) $unsettled,
+            ];
+        }
+
+        $daily = array_map(fn (array $line): array => [
+            $line['name'],
+            $line['date'],
+            $line['status'],
+            $line['in'],
+            $line['out'],
+            $line['hours'],
+        ], $first === null ? [] : $lines);
+
+        $summaryHeadings = ['Employee', 'Present', 'Late', 'Missed clock-out', 'Absent', 'Hours worked', 'Unsettled days'];
+        $dailyHeadings = ['Employee', 'Date', 'Status', 'First in', 'Last out', 'Hours'];
+
         return [
             'title' => 'Attendance '.$from.' to '.$to,
-            'headings' => ['Employee', 'Date', 'Status', 'Minutes after shift start', 'First in', 'Last out'],
-            'rows' => $rows,
+            'note' => $note,
+            'headings' => $dailyHeadings,
+            'rows' => $daily,
+            'sections' => [
+                ['title' => 'Summary', 'headings' => $summaryHeadings, 'rows' => $summary],
+                ['title' => 'Each day', 'headings' => $dailyHeadings, 'rows' => $daily],
+            ],
         ];
+    }
+
+    /**
+     * @param  array{state: string, label: string, late_minutes: int}  $row
+     */
+    private function attendanceStatus(array $row): string
+    {
+        if ($row['state'] === 'late' && $row['late_minutes'] > 0) {
+            return $row['label'].', '.$row['late_minutes'].' min late';
+        }
+
+        return $row['label'];
+    }
+
+    /**
+     * @param  array{hours: ?string, closed: ?bool}  $row
+     */
+    private function attendanceHours(array $row): string
+    {
+        if ($row['hours'] === null) {
+            return '';
+        }
+
+        return $row['closed'] ? $row['hours'] : 'Unsettled';
+    }
+
+    private function clock(?AttendancePunch $punch): string
+    {
+        if ($punch?->punched_at === null) {
+            return '';
+        }
+
+        return $punch->punched_at->copy()->timezone($punch->timezone ?: 'Asia/Kolkata')->format('H:i');
     }
 
     /**

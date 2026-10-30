@@ -66,6 +66,10 @@ Route::middleware(NoindexAdminResponses::class)->prefix('portal')->name('portal.
                 Route::post('people/{member}/balances', [DirectoryController::class, 'balance'])->whereNumber('member')->name('people.balances.update');
 
                 Route::get('attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+                Route::get('attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+                Route::get('attendance/compare', [AttendanceController::class, 'compare'])->name('attendance.compare');
+                Route::get('attendance/exceptions', [AttendanceController::class, 'exceptions'])->name('attendance.exceptions');
+                Route::get('attendance/export', [AttendanceController::class, 'export'])->name('attendance.export');
                 Route::post('attendance/clock', [AttendanceController::class, 'clock'])->middleware('throttle:portal-clock')->name('attendance.clock');
                 Route::post('attendance/corrections', [AttendanceController::class, 'correct'])->name('attendance.corrections.store');
                 Route::post('attendance/corrections/{correction}', [AttendanceController::class, 'decideCorrection'])->name('attendance.corrections.decide');

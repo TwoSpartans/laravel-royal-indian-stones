@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\JournalSetting;
 use App\Models\Post;
+use App\Services\JournalIndex;
 use App\Support\JournalDestination;
 use App\Support\ResponsivePicture;
 use Illuminate\Http\RedirectResponse;
@@ -19,11 +20,17 @@ class JournalSettingController extends Controller
 {
     public function __construct(private ResponsivePicture $pictures) {}
 
-    public function edit(): View
+    public function edit(JournalIndex $journalIndex): View
     {
+        $journal = JournalSetting::current();
+        $editIds = old('edit_posts', $journal->edit_post_ids ?? []);
+        $draft = clone $journal;
+        $draft->edit_post_ids = is_array($editIds) ? array_values($editIds) : [];
+
         return view('admin.journal.edit', [
-            'journal' => JournalSetting::current(),
+            'journal' => $journal,
             'posts' => Post::query()->orderBy('title')->get(['id', 'title', 'is_published']),
+            'preview' => $journalIndex->editorPreview($draft),
         ]);
     }
 

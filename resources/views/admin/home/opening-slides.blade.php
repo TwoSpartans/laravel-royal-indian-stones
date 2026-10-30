@@ -1,7 +1,7 @@
 @php
   $slots = array_column($group['items'], 'slot');
   $activeSlot = in_array($heroSlot, $slots, true) ? $heroSlot : ($slots[0] ?? '');
-  $activeTab = in_array($heroTab, ['content', 'image', 'metadata'], true) ? $heroTab : 'content';
+  $activeTab = in_array($heroTab, ['content', 'image'], true) ? $heroTab : 'content';
   $activeItem = $group['items'][0] ?? null;
   $activeIndex = 0;
   foreach ($group['items'] as $index => $item) {
@@ -62,9 +62,8 @@
   $slotErrors = $heroErrors[$activeSlot] ?? [];
   $tabHasError = function (string $tab) use ($slotErrors): bool {
       $fields = [
-          'content' => ['eyebrow', 'title', 'subtitle', 'body', 'button_label'],
+          'content' => ['eyebrow', 'title', 'subtitle', 'body', 'button_label', 'link', 'alt'],
           'image' => ['photo', 'restore'],
-          'metadata' => ['link', 'alt'],
       ];
 
       return array_intersect($slotErrors, $fields[$tab] ?? []) !== [];
@@ -136,7 +135,6 @@
               <strong data-library-title>{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}. {{ $libraryTitle }}</strong>
               <span data-library-state>{{ $libraryState }}</span>
             </span>
-            <span class="home-library-mark" aria-hidden="true"></span>
           </button>
         @endforeach
       </div>
@@ -154,12 +152,8 @@
           <span class="home-tab-dot" @unless($tabHasError('content')) hidden @endunless></span>
         </button>
         <button type="button" role="tab" id="home-editor-tab-image" data-editor-tab="image" aria-selected="{{ $activeTab === 'image' ? 'true' : 'false' }}" aria-controls="home-{{ $activeSlot }}-image" tabindex="{{ $activeTab === 'image' ? '0' : '-1' }}">
-          Image
+          Images
           <span class="home-tab-dot" @unless($tabHasError('image')) hidden @endunless></span>
-        </button>
-        <button type="button" role="tab" id="home-editor-tab-metadata" data-editor-tab="metadata" aria-selected="{{ $activeTab === 'metadata' ? 'true' : 'false' }}" aria-controls="home-{{ $activeSlot }}-metadata" tabindex="{{ $activeTab === 'metadata' ? '0' : '-1' }}">
-          Link &amp; Metadata
-          <span class="home-tab-dot" @unless($tabHasError('metadata')) hidden @endunless></span>
         </button>
       </div>
 
@@ -229,7 +223,27 @@
                 <p class="home-field-error">{{ $message }}</p>
               @enderror
             </div>
-            <p class="home-editor-note">The photograph, page, and description stay in their own tabs. Leave a field blank to keep the wording already on the home page.</p>
+            <div class="home-field">
+              <div class="home-field-label">
+                <label for="link-{{ $group['key'] }}-{{ $item['slot'] }}">Page</label>
+                <span>Must already exist</span>
+              </div>
+              <input class="home-input{{ $errors->has('link.'.$group['key'].'.'.$item['slot']) ? ' is-invalid' : '' }}" id="link-{{ $group['key'] }}-{{ $item['slot'] }}" name="link[{{ $group['key'] }}][{{ $item['slot'] }}]" value="{{ old('link.'.$group['key'].'.'.$item['slot'], $item['url']) }}" maxlength="200" placeholder="{{ $defaults['url'] }}" data-field="link" @if($errors->has('link.'.$group['key'].'.'.$item['slot'])) aria-invalid="true" @endif>
+              @error('link.'.$group['key'].'.'.$item['slot'])
+                <p class="home-field-error">{{ $message }}</p>
+              @enderror
+            </div>
+            <div class="home-field">
+              <div class="home-field-label">
+                <label for="alt-{{ $group['key'] }}-{{ $item['slot'] }}">Description</label>
+                <span>Alternative text</span>
+              </div>
+              <input class="home-input{{ $errors->has('alt.'.$group['key'].'.'.$item['slot']) ? ' is-invalid' : '' }}" id="alt-{{ $group['key'] }}-{{ $item['slot'] }}" name="alt[{{ $group['key'] }}][{{ $item['slot'] }}]" value="{{ old('alt.'.$group['key'].'.'.$item['slot'], $item['alt']) }}" maxlength="180" placeholder="{{ $defaults['alt'] }}" data-field="alt" @if($errors->has('alt.'.$group['key'].'.'.$item['slot'])) aria-invalid="true" @endif>
+              @error('alt.'.$group['key'].'.'.$item['slot'])
+                <p class="home-field-error">{{ $message }}</p>
+              @enderror
+            </div>
+            <p class="home-editor-note">The photograph stays on Images. Leave a field blank to keep the wording already on the home page.</p>
           </div>
 
           <div class="home-editor-tabpanel{{ $activeTab === 'image' ? ' is-active' : '' }}" data-tab="image" id="home-{{ $item['slot'] }}-image" role="tabpanel" aria-labelledby="home-editor-tab-image">
@@ -259,30 +273,6 @@
               @endif
             </div>
           </div>
-
-          <div class="home-editor-tabpanel{{ $activeTab === 'metadata' ? ' is-active' : '' }}" data-tab="metadata" id="home-{{ $item['slot'] }}-metadata" role="tabpanel" aria-labelledby="home-editor-tab-metadata">
-            <div class="home-field">
-              <div class="home-field-label">
-                <label for="link-{{ $group['key'] }}-{{ $item['slot'] }}">Page</label>
-                <span>Must already exist</span>
-              </div>
-              <input class="home-input{{ $errors->has('link.'.$group['key'].'.'.$item['slot']) ? ' is-invalid' : '' }}" id="link-{{ $group['key'] }}-{{ $item['slot'] }}" name="link[{{ $group['key'] }}][{{ $item['slot'] }}]" value="{{ old('link.'.$group['key'].'.'.$item['slot'], $item['url']) }}" maxlength="200" placeholder="{{ $defaults['url'] }}" data-field="link" @if($errors->has('link.'.$group['key'].'.'.$item['slot'])) aria-invalid="true" @endif>
-              @error('link.'.$group['key'].'.'.$item['slot'])
-                <p class="home-field-error">{{ $message }}</p>
-              @enderror
-            </div>
-            <div class="home-field">
-              <div class="home-field-label">
-                <label for="alt-{{ $group['key'] }}-{{ $item['slot'] }}">Description</label>
-                <span>Alternative text</span>
-              </div>
-              <input class="home-input{{ $errors->has('alt.'.$group['key'].'.'.$item['slot']) ? ' is-invalid' : '' }}" id="alt-{{ $group['key'] }}-{{ $item['slot'] }}" name="alt[{{ $group['key'] }}][{{ $item['slot'] }}]" value="{{ old('alt.'.$group['key'].'.'.$item['slot'], $item['alt']) }}" maxlength="180" placeholder="{{ $defaults['alt'] }}" data-field="alt" @if($errors->has('alt.'.$group['key'].'.'.$item['slot'])) aria-invalid="true" @endif>
-              @error('alt.'.$group['key'].'.'.$item['slot'])
-                <p class="home-field-error">{{ $message }}</p>
-              @enderror
-            </div>
-            <p class="home-help">The description is read with the photograph. The page is where the button goes, and it has to be a page already on the site.</p>
-          </div>
         </div>
       @endforeach
     </section>
@@ -290,9 +280,15 @@
     <section class="home-column home-preview" aria-labelledby="home-preview-title">
       <div class="home-column-head home-preview-head">
         <h3 id="home-preview-title">Live homepage preview</h3>
-        <div class="home-mode" role="group" aria-label="Preview size">
-          <button type="button" data-preview-mode="desktop" aria-pressed="true"><i class="bi bi-display" aria-hidden="true"></i> Desktop</button>
-          <button type="button" data-preview-mode="mobile" aria-pressed="false"><i class="bi bi-phone" aria-hidden="true"></i> Mobile</button>
+        <div class="home-preview-tools">
+          <button class="home-btn home-btn-quiet" type="button" data-preview-sizes>
+            <i class="bi bi-aspect-ratio" aria-hidden="true"></i>
+            Preview sizes
+          </button>
+          <div class="home-mode" role="group" aria-label="Preview size">
+            <button type="button" data-preview-mode="desktop" aria-pressed="true"><i class="bi bi-display" aria-hidden="true"></i> Desktop</button>
+            <button type="button" data-preview-mode="mobile" aria-pressed="false"><i class="bi bi-phone" aria-hidden="true"></i> Mobile</button>
+          </div>
         </div>
       </div>
       <div class="home-preview-frame" data-preview-frame>
@@ -340,5 +336,23 @@
       <p class="home-preview-note">Changes in the form appear in the preview before you save. Preview does not publish to the live website.</p>
     </section>
   </div>
+  <dialog class="home-size-dialog" id="home-preview-sizes" data-preview-sizes-dialog aria-labelledby="home-preview-sizes-title">
+    <div class="home-size-head">
+      <h3 id="home-preview-sizes-title">Preview sizes</h3>
+      <button class="home-drawer-close" type="button" data-preview-sizes-close aria-label="Close preview">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="home-size-grid">
+      <section>
+        <p>Desktop</p>
+        <div class="home-size-desktop" data-size-slot="desktop"></div>
+      </section>
+      <section>
+        <p>Mobile</p>
+        <div class="home-size-mobile" data-size-slot="mobile"></div>
+      </section>
+    </div>
+  </dialog>
   <script type="application/json" id="home-opening-slides">@json(['slides' => $editorSlides, 'errors' => (object) $heroErrors])</script>
 </form>

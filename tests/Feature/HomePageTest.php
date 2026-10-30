@@ -544,7 +544,8 @@ class HomePageTest extends TestCase
             ->assertSee('Slide library')
             ->assertSee('Save section')
             ->assertSee('Discard')
-            ->assertSee('Link & Metadata')
+            ->assertSee('Preview sizes')
+            ->assertDontSee('Link & Metadata')
             ->assertSee('Live homepage preview')
             ->assertSee('value="Quiet floors."', false)
             ->assertSee('value="Limestone from Kota"', false)
@@ -592,7 +593,8 @@ class HomePageTest extends TestCase
             ->assertSee('value="Jodhpur sandstone"', false)
             ->assertSee('value="/not-a-real-page"', false)
             ->assertSee('data-home-panel="hero" data-open="1"', false)
-            ->assertSee('class="home-editor-tabpanel is-active" data-tab="metadata" id="home-sandstone-metadata"', false);
+            ->assertSee('class="home-editor-tabpanel is-active" data-tab="content" id="home-sandstone-content"', false)
+            ->assertDontSee('data-tab="metadata"', false);
     }
 
     public function test_a_rejected_opening_slide_photograph_returns_to_the_image_tab(): void

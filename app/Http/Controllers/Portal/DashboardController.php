@@ -15,6 +15,7 @@ use App\Models\Payslip;
 use App\Models\RegisteredDevice;
 use App\Models\RemoteWorkAuthorization;
 use App\Models\User;
+use App\Models\WorkLocation;
 use App\Models\WorkTask;
 use App\Services\Portal\AttendanceBoard;
 use App\Support\PortalTime;
@@ -28,7 +29,11 @@ class DashboardController extends PortalController
     {
         $actor = $this->actor($request);
         $actor->load('profile.location', 'profile.shift', 'profile.department');
-        $today = now();
+        $today = now()->timezone('Asia/Kolkata')->startOfDay();
+        $reportDate = $request->filled('date')
+            ? Carbon::parse($request->string('date')->toString(), 'Asia/Kolkata')->startOfDay()
+            : $today->copy();
+        $locationId = $request->integer('location_id');
         $people = $this->access->peopleQuery($actor)
             ->whereNull('deactivated_at')
             ->whereNotNull('password_set_at')
@@ -41,11 +46,13 @@ class DashboardController extends PortalController
             ->with('profile.location', 'profile.shift', 'profile.department')
             ->get()
             ->filter(fn (User $user): bool => $user->recordsOwnAttendance())
+            ->when($locationId > 0, fn ($rows) => $rows->filter(fn (User $user): bool => $user->profile?->work_location_id === $locationId))
             ->values();
 
-        $roster = $board->roster($people, $today);
+        $roster = $board->roster($people, $reportDate);
         $counts = [
             'workforce' => $people->count(),
+            'on_time' => $roster->where('state', 'present')->count(),
             'present' => $roster->whereIn('state', ['present', 'late'])->count(),
             'late' => $roster->where('state', 'late')->count(),
             'absent' => $roster->where('state', 'absent')->count(),
@@ -59,6 +66,7 @@ class DashboardController extends PortalController
                 'name' => $name,
                 'people' => $rows->count(),
                 'present' => $rows->whereIn('state', ['present', 'late'])->count(),
+                'not_in_yet' => $rows->where('state', 'not_in_yet')->count(),
                 'absent' => $rows->where('state', 'absent')->count(),
             ])->values();
 
@@ -135,6 +143,9 @@ class DashboardController extends PortalController
         return view('portal.dashboard', [
             'counts' => $counts,
             'locations' => $locations,
+            'places' => WorkLocation::query()->orderBy('name')->get(),
+            'reportDate' => $reportDate->toDateString(),
+            'locationId' => $locationId,
             'self' => $self,
             'lastPunch' => $board->lastPunch($actor),
             'upcomingLeave' => $upcomingLeave,

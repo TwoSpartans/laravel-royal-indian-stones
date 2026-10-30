@@ -28,8 +28,8 @@
   $tabForField = [
       'photo' => 'image',
       'restore' => 'image',
-      'link' => 'metadata',
-      'alt' => 'metadata',
+      'link' => 'content',
+      'alt' => 'content',
   ];
   $firstErrorSection = null;
   foreach ($errors->keys() as $key) {
@@ -135,7 +135,7 @@ document.documentElement.classList.add('home-editor-enhanced');
         aria-selected="{{ $openSection === $item['key'] ? 'true' : 'false' }}"
         tabindex="{{ $openSection === $item['key'] ? '0' : '-1' }}"
       >
-        <span>{{ $item['number'] }}</span>
+        <span class="home-section-index">{{ $item['number'] }}</span>
         {{ $item['label'] }}
       </button>
     @endforeach
@@ -259,5 +259,5 @@ document.documentElement.classList.add('home-editor-enhanced');
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/home-editor.js') }}?v=5"></script>
+<script src="{{ asset('assets/js/home-editor.js') }}?v=6"></script>
 @endpush

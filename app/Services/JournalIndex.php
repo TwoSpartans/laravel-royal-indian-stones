@@ -19,6 +19,8 @@ final class JournalIndex
 {
     private const PER_PAGE = 6;
 
+    private const PREVIEW_STORY_LIMIT = 3;
+
     private const COVER = 'assets/img/slide/slide-1.jpg';
 
     public function respond(Request $request): View|RedirectResponse
@@ -94,6 +96,93 @@ final class JournalIndex
             'shareImage' => asset($featureImage ?: $cover['path']),
             'listingSchema' => $this->schema($mode, $category, $search, $listed),
         ]);
+    }
+
+    /**
+     * Saved or drafted landing data for the journal editor preview.
+     *
+     * Uses the same published-story rules as the public landing: the featured
+     * story is the first published choice in The Edit, otherwise the latest
+     * published story. The preview lists the following published stories and
+     * does not include hidden, future, or invented articles.
+     *
+     * @return array{
+     *     featured: array<string, mixed>|null,
+     *     stories: list<array<string, mixed>>,
+     *     more: int,
+     *     empty: bool,
+     *     cards: \stdClass,
+     *     order: list<int>,
+     *     fallback_id: int|null,
+     *     story_limit: int,
+     *     page_size: int,
+     *     standard_cover: string|null
+     * }
+     */
+    public function editorPreview(JournalSetting $settings): array
+    {
+        $published = $this->stories()->get();
+        $cards = [];
+        $order = [];
+        foreach ($published as $post) {
+            $order[] = $post->id;
+            $cards[(string) $post->id] = $this->previewCard($post);
+        }
+
+        $fallbackSettings = clone $settings;
+        $fallbackSettings->edit_post_ids = [];
+        $fallback = $published->isEmpty() ? null : $this->featuredPost($fallbackSettings);
+        $featured = $published->isEmpty() ? null : $this->featuredPost($settings);
+        $stories = [];
+        $more = 0;
+        $standardCover = $this->existingImage(self::COVER);
+
+        if (! $published->isEmpty()) {
+            $query = $this->stories();
+            if ($featured instanceof Post) {
+                $query->whereKeyNot($featured->id);
+            }
+            $remaining = (clone $query)->count();
+            foreach ($query->limit(self::PREVIEW_STORY_LIMIT)->get() as $post) {
+                $stories[] = $cards[(string) $post->id] ?? $this->previewCard($post);
+            }
+            $more = max(0, $remaining - count($stories));
+        }
+
+        return [
+            'featured' => $featured instanceof Post ? ($cards[(string) $featured->id] ?? $this->previewCard($featured)) : null,
+            'stories' => $stories,
+            'more' => $more,
+            'empty' => $published->isEmpty(),
+            'cards' => (object) $cards,
+            'order' => $order,
+            'fallback_id' => $fallback instanceof Post ? $fallback->id : null,
+            'story_limit' => self::PREVIEW_STORY_LIMIT,
+            'page_size' => self::PER_PAGE,
+            'standard_cover' => $standardCover !== null ? asset($standardCover) : null,
+        ];
+    }
+
+    /**
+     * @return array{id: int, title: string, summary: string, image: string|null, alt: string, decorative: bool, minutes: int, category: string|null, url: string}
+     */
+    private function previewCard(Post $post): array
+    {
+        $image = $this->existingImage($post->image);
+        $storedAlt = trim((string) $post->featured_image_alt);
+        $category = $post->postCategory?->name;
+
+        return [
+            'id' => $post->id,
+            'title' => $post->title,
+            'summary' => trim((string) $post->summary),
+            'image' => $image !== null ? asset($image) : null,
+            'alt' => $storedAlt !== '' ? $storedAlt : $post->title,
+            'decorative' => $storedAlt === '' || strcasecmp($storedAlt, $post->title) === 0,
+            'minutes' => $post->readingMinutes(),
+            'category' => is_string($category) && $category !== '' ? $category : null,
+            'url' => url('/'.$post->slug),
+        ];
     }
 
     private function featuredPost(JournalSetting $settings): ?Post
