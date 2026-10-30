@@ -27,7 +27,6 @@ final class HomeContent
             'supplier' => [
                 'heading' => 'Natural Indian Stones Supplier, Manufacturer and Exporter',
                 'body' => 'The Royal Indian Stones evolved into Production and Manufacturing of Blocks, Flooring Slabs, Flooring Tiles, Calibrated - Ready to Fix Tiles, Monuments, Tomb Stones, Sculptures, Artefacts, Cobbles, Cubes, Kerbs, Pebbles, Landscaping Stones, Fireplaces, Fountains, Balusters, Slate Veneers, Mosaics, Stone Articles, Paving Stones, Tumbled Pebbles Stones, Natural River Pebbles Stones and Landscaping Garden Stones.',
-                'button_label' => 'Request a Quote',
             ],
             'explore' => [
                 'heading' => 'Explore the collection',
@@ -191,7 +190,7 @@ final class HomeContent
     {
         return [
             $this->slidePanel(),
-            $this->copyPanel('supplier', 'Supplier line', 'The heading, paragraph, and button under the opening slides.', 'Save supplier line', ['heading', 'body', 'button_label']),
+            $this->copyPanel('supplier', 'Supplier line', 'The heading and paragraph under the opening slides.', 'Save supplier line', ['heading', 'body']),
             $this->explorePanel($categories),
             $this->stonePanel(),
             $this->copyPanel('journal', 'Journal', 'The heading and link above the latest notes. The notes themselves come from the blog.', 'Save journal', ['heading', 'button_label']),
@@ -224,7 +223,7 @@ final class HomeContent
         return [
             'key' => 'hero',
             'title' => 'Opening slides',
-            'intro' => 'Each slide has its own photograph and words. Request a Quote stays on every slide. Leave a field blank to keep the current wording.',
+            'intro' => 'Each slide has its own photograph and words. Leave a field blank to keep the current wording.',
             'save' => 'Save opening slides',
             'kind' => 'slides',
             'fields' => [],

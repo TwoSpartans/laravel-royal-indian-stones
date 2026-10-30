@@ -259,5 +259,5 @@ document.documentElement.classList.add('home-editor-enhanced');
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/home-editor.js') }}?v=6"></script>
+<script src="{{ asset('assets/js/home-editor.js') }}?v=7"></script>
 @endpush

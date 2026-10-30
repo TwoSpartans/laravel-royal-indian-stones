@@ -6,11 +6,6 @@
   foreach ($group['fields'] as $field) {
       $byName[$field['name']] = $field;
   }
-  $quoteUrl = route('contact');
-  $quotePath = parse_url($quoteUrl, PHP_URL_PATH);
-  if (! is_string($quotePath) || $quotePath === '') {
-      $quotePath = '/contact';
-  }
   $shown = function (string $name) use ($byName, $defaults): string {
       $saved = (string) ($byName[$name]['value'] ?? $defaults[$name] ?? '');
       $submitted = old('copy.supplier.'.$name);
@@ -29,19 +24,15 @@
   };
   $heading = $byName['heading'] ?? ['max' => 160, 'value' => $defaults['heading']];
   $body = $byName['body'] ?? ['max' => 1200, 'value' => $defaults['body']];
-  $button = $byName['button_label'] ?? ['max' => 80, 'value' => $defaults['button_label']];
   $supplierEditor = [
       'saved' => [
           'heading' => (string) ($heading['value'] ?? ''),
           'body' => (string) ($body['value'] ?? ''),
-          'button_label' => (string) ($button['value'] ?? ''),
       ],
       'defaults' => [
           'heading' => $defaults['heading'],
           'body' => $defaults['body'],
-          'button_label' => $defaults['button_label'],
       ],
-      'destination' => $quotePath,
   ];
 @endphp
 
@@ -70,7 +61,7 @@
     <section class="home-column" aria-labelledby="home-supplier-content">
       <div class="home-column-head">
         <h3 id="home-supplier-content">Section content</h3>
-        <span class="home-current">Copy &amp; CTA</span>
+        <span class="home-current">Copy</span>
       </div>
       <div class="home-supplier-fields">
         <div class="home-field">
@@ -92,19 +83,9 @@
             <p class="home-field-error">{{ $message }}</p>
           @enderror
         </div>
-        <div class="home-field">
-          <div class="home-field-label">
-            <label for="supplier-button">Button label</label>
-            <span>Primary call to action</span>
-          </div>
-          <input class="home-input{{ $invalid('button_label') ? ' is-invalid' : '' }}" id="supplier-button" name="copy[supplier][button_label]" value="{{ $value('button_label') }}" maxlength="{{ $button['max'] }}" placeholder="{{ $defaults['button_label'] }}" data-field="button_label" @if($invalid('button_label')) aria-invalid="true" @endif>
-          @error('copy.supplier.button_label')
-            <p class="home-field-error">{{ $message }}</p>
-          @enderror
-        </div>
         <p class="home-field-note">
           <i class="bi bi-info-circle" aria-hidden="true"></i>
-          <span>The heading, paragraph and button stay grouped here. The live preview shows spacing, typography and the visual hierarchy visitors see. Leave a field blank to keep the wording already on the home page.</span>
+          <span>The heading and paragraph stay grouped here. The live preview shows the spacing and typography visitors see. Leave a field blank to keep the wording already on the home page.</span>
         </p>
       </div>
     </section>
@@ -124,12 +105,10 @@
               <h4 data-supplier-preview="heading">{{ $shown('heading') }}</h4>
               <p data-supplier-preview="body">{{ $shown('body') }}</p>
             </div>
-            <span class="home-supplier-cta" data-supplier-preview="button_label">{{ $shown('button_label') }}</span>
           </div>
         </div>
       </div>
-      <p class="home-preview-destination">Quote page <span>{{ $quotePath }}</span></p>
-      <p class="home-preview-note">This preview matches the supplier band on the home page. This section has no photograph. The button still opens the quote page.</p>
+      <p class="home-preview-note">This preview matches the supplier band on the home page. This section has no photograph.</p>
     </section>
   </div>
   <script type="application/json" id="home-supplier-line">@json($supplierEditor)</script>

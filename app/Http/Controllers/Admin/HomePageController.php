@@ -89,7 +89,7 @@ class HomePageController extends Controller
     private function sectionFields(string $section): array
     {
         return match ($section) {
-            'supplier' => ['heading' => 160, 'body' => 1200, 'button_label' => 80],
+            'supplier' => ['heading' => 160, 'body' => 1200],
             'explore', 'stones' => ['heading' => 160, 'body' => 1200],
             'journal' => ['heading' => 160, 'button_label' => 80],
             'enquiry' => ['eyebrow' => 80, 'heading' => 160, 'body' => 500, 'button_label' => 80],

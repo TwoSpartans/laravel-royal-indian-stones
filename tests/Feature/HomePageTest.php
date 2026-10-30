@@ -408,7 +408,6 @@ class HomePageTest extends TestCase
                 'supplier' => [
                     'heading' => 'Stone from Jodhpur',
                     'body' => 'Cut and packed in the workshop.',
-                    'button_label' => 'Ask for a price',
                 ],
             ],
         ])->assertRedirect(route('admin.home.edit'))->assertSessionHas('home_section', 'supplier');
@@ -417,14 +416,14 @@ class HomePageTest extends TestCase
             ->assertOk()
             ->assertSee('Stone from Jodhpur')
             ->assertSee('Cut and packed in the workshop.')
-            ->assertSee('Ask for a price');
+            ->assertDontSee('supplier-quote', false)
+            ->assertDontSee('ris-button-light', false);
 
         $this->actingAs($admin)->put(route('admin.home.update', 'supplier'), [
             'copy' => [
                 'supplier' => [
                     'heading' => '',
                     'body' => '',
-                    'button_label' => '',
                 ],
             ],
         ])->assertRedirect(route('admin.home.edit'));
@@ -450,7 +449,7 @@ class HomePageTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('<script>alert(1)</script>', false);
     }
 
-    public function test_supplier_line_editor_shows_saved_wording_and_the_quote_page(): void
+    public function test_supplier_line_editor_shows_saved_wording_without_a_quote_button(): void
     {
         HomeSection::query()->create([
             'key' => 'supplier',
@@ -466,11 +465,12 @@ class HomePageTest extends TestCase
             ->assertSee('Live section preview')
             ->assertSee('value="Stone from Jodhpur"', false)
             ->assertSee('Cut and packed in the workshop.')
-            ->assertSee('value="Ask for a price"', false)
             ->assertSee('name="copy[supplier][heading]"', false)
             ->assertSee('name="copy[supplier][body]"', false)
-            ->assertSee('name="copy[supplier][button_label]"', false)
-            ->assertSee('Quote page <span>/contact</span>', false)
+            ->assertDontSee('name="copy[supplier][button_label]"', false)
+            ->assertDontSee('Quote page', false)
+            ->assertDontSee('home-preview-quote', false)
+            ->assertDontSee('Request a Quote stays on every slide')
             ->assertSee('name="copy[explore][heading]"', false)
             ->assertSee('name="title[stones][index-stone-wall-panel]"', false)
             ->assertSee('Save journal')
@@ -491,14 +491,13 @@ class HomePageTest extends TestCase
                     'supplier' => [
                         'heading' => 'Stone from Jodhpur',
                         'body' => '<b>Workshop notes</b>',
-                        'button_label' => 'Ask for a price',
                     ],
                 ],
             ])
             ->assertOk()
             ->assertSee('Use plain text.')
             ->assertSee('value="Stone from Jodhpur"', false)
-            ->assertSee('value="Ask for a price"', false)
+            ->assertDontSee('name="copy[supplier][button_label]"', false)
             ->assertSee('<b>Workshop notes</b>')
             ->assertSee('class="home-input home-supplier-paragraph is-invalid" id="supplier-body"', false)
             ->assertSee('data-home-panel="supplier" data-open="1"', false)
@@ -521,7 +520,9 @@ class HomePageTest extends TestCase
             ->assertOk()
             ->assertSee('Warm stone.')
             ->assertSee('Cut for your project.')
-            ->assertSee('href="'.url('/sandstone').'"', false);
+            ->assertSee('href="'.url('/sandstone').'"', false)
+            ->assertDontSee('ris-button-light', false)
+            ->assertDontSee('supplier-quote', false);
     }
 
     public function test_opening_slides_editor_binds_saved_copy_and_keeps_the_other_sections(): void

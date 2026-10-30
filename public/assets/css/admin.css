@@ -4456,6 +4456,42 @@ html.journal-editor-enhanced .journal-preview-dialog .journal-preview-more[hidde
   display: none !important;
 }
 
+.outreach-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.outreach-tabs a {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--admin-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.outreach-tabs a[aria-current="page"] {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary);
+  color: #fff;
+}
+
+.outreach-note {
+  max-width: 46rem;
+  margin-bottom: 1rem;
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+}
+
+.outreach-reasons {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
 @media (max-width: 700px) {
   .journal-featured-face img {
     width: 100%;

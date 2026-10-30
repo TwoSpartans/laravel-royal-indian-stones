@@ -92,24 +92,70 @@ class Product extends Model
         return $query->where('is_published', true);
     }
 
-    public function searchTitle(): string
+    /**
+     * Every reason the stored title is not the one search uses.
+     *
+     * @return list<array{key: string, text: string}>
+     */
+    public function searchTitleIssues(): array
     {
         $stored = trim((string) $this->meta_title);
-        if ($stored !== ''
-            && mb_strlen($stored) <= 70
-            && mb_strtolower($stored) !== mb_strtolower($this->name)
-            && ! $this->titleRepeatsTradeWords($stored)) {
-            return $stored;
+        if ($stored === '') {
+            return [$this->titleIssue('title-empty', 'Add a page title. Search is using the stone name until one is saved.')];
         }
 
-        return $this->name.' | Royal Indian Stones';
+        $issues = [];
+        if (mb_strlen($stored) > 70) {
+            $issues[] = $this->titleIssue('title-length', 'Shorten the page title. It is longer than 70 characters, so search is using the stone name.');
+        }
+        if (mb_strtolower($stored) === mb_strtolower($this->name)) {
+            $issues[] = $this->titleIssue('title-name', 'Write a page title that says more than the stone name.');
+        }
+        if ($this->titleRepeatsTradeWords($stored)) {
+            $issues[] = $this->titleIssue('title-trade', 'Rewrite the page title. It repeats trade words such as manufacturer and supplier, so search is using the stone name.');
+        }
+
+        return $issues;
+    }
+
+    public function searchTitleIssue(): ?string
+    {
+        $issue = $this->searchTitleIssues()[0] ?? null;
+
+        return is_array($issue) ? $issue['text'] : null;
+    }
+
+    /**
+     * @return array{key: string, text: string}
+     */
+    private function titleIssue(string $key, string $text): array
+    {
+        return ['key' => $key, 'text' => $text];
+    }
+
+    public function searchDescriptionIssue(): ?string
+    {
+        $stored = trim((string) $this->meta_description);
+        if ($stored === '' || mb_strlen($stored) < 50) {
+            return 'Write a search description of at least 50 characters. A shorter one is replaced by a line built from the name.';
+        }
+
+        return null;
+    }
+
+    public function searchTitle(): string
+    {
+        if ($this->searchTitleIssue() !== null) {
+            return $this->name.' | Royal Indian Stones';
+        }
+
+        return trim((string) $this->meta_title);
     }
 
     public function searchDescription(): string
     {
-        $stored = trim((string) $this->meta_description);
-        if ($stored !== '' && mb_strlen($stored) >= 50) {
-            return $stored;
+        if ($this->searchDescriptionIssue() === null) {
+            return trim((string) $this->meta_description);
         }
 
         $sentence = $this->name;

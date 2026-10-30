@@ -24,7 +24,6 @@
               <p>{{ $slide['text'] }}</p>
               <div class="button-row">
                 <a class="ris-button" href="{{ url($slide['url']) }}">{{ $slide['label'] }} <span aria-hidden="true">↗</span></a>
-                <a class="ris-button ris-button-light" href="{{ route('contact') }}" data-track="quote_click">Request a Quote</a>
               </div>
             </div>
           </div>
@@ -47,7 +46,6 @@
         <h2 id="supplier-title">{{ $supplier['heading'] }}</h2>
         <p>{{ $supplier['body'] }}</p>
       </div>
-      <a class="supplier-quote" href="{{ route('contact') }}" data-track="quote_click">{{ $supplier['button_label'] }}</a>
     </div>
   </section>
   <section class="home-categories stone-origin" aria-labelledby="categories-title">

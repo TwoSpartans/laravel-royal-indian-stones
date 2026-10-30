@@ -45,7 +45,7 @@
   var supplierForm = document.getElementById('home-panel-supplier');
   var supplierNode = document.getElementById('home-supplier-line');
   var supplierData = null;
-  var supplierFields = ['heading', 'body', 'button_label'];
+  var supplierFields = ['heading', 'body'];
   if (supplierNode) {
     try {
       supplierData = JSON.parse(supplierNode.textContent || '');

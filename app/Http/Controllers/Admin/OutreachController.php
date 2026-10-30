@@ -3,39 +3,40 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SeoSubmission;
-use Illuminate\Http\RedirectResponse;
+use App\Services\Outreach\PageQueue;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class OutreachController extends Controller
 {
-    public function index(): View
+    public function index(Request $request, PageQueue $pages): View
     {
-        return view('admin.outreach.index', [
-            'submissions' => SeoSubmission::query()->latest()->get(),
-            'types' => SeoSubmission::TYPES,
+        $gap = $request->string('gap')->toString();
+        if (! array_key_exists($gap, PageQueue::GAPS)) {
+            $gap = '';
+        }
+
+        $rows = $pages->rows();
+        $counts = [];
+        foreach ($rows as $row) {
+            foreach ($row['reasons'] as $reason) {
+                $counts[$reason['key']] = ($counts[$reason['key']] ?? 0) + 1;
+            }
+        }
+
+        $visible = $gap === ''
+            ? $rows
+            : array_values(array_filter(
+                $rows,
+                fn (array $row): bool => collect($row['reasons'])->contains('key', $gap),
+            ));
+
+        return view('admin.outreach.pages', [
+            'pages' => $visible,
+            'total' => count($rows),
+            'gap' => $gap,
+            'counts' => $counts,
+            'gaps' => PageQueue::GAPS,
         ]);
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'type' => ['required', 'in:'.implode(',', array_keys(SeoSubmission::TYPES))],
-            'site_name' => ['required', 'string', 'max:200'],
-            'url' => ['nullable', 'url', 'max:255'],
-            'status' => ['required', 'string', 'max:40'],
-            'note' => ['nullable', 'string', 'max:2000'],
-        ]);
-        SeoSubmission::query()->create($data);
-
-        return back()->with('status', 'Outreach note saved.');
-    }
-
-    public function destroy(SeoSubmission $submission): RedirectResponse
-    {
-        $submission->delete();
-
-        return back()->with('status', 'Outreach note deleted.');
     }
 }

@@ -316,7 +316,6 @@
             <p data-preview="body">{{ $previewBody }}</p>
             <div class="home-preview-actions">
               <span class="home-preview-cta"><span data-preview="button">{{ $previewButton }}</span> <span aria-hidden="true">↗</span></span>
-              <span class="home-preview-quote">Request a Quote</span>
             </div>
           </div>
         </div>
