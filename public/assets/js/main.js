@@ -178,11 +178,9 @@
       }
     })
 
-    const narrowQuery = window.matchMedia('(max-width: 767px)')
     const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    let slideChosen = false
     const heroCarouselInstance = () => bootstrap.Carousel.getOrCreateInstance(heroCarousel)
-    const heroCanAdvance = () => false
+    const heroCanAdvance = () => !reducedQuery.matches
     const restartHeroMotion = () => {
       heroCarousel.classList.remove('is-advancing')
       void heroCarousel.offsetWidth
@@ -202,34 +200,20 @@
       heroCarouselInstance().cycle()
     }
 
-    heroCarousel.addEventListener('mouseenter', holdHero)
-    heroCarousel.addEventListener('mouseleave', releaseHero)
     heroCarousel.addEventListener('focusin', holdHero)
     heroCarousel.addEventListener('focusout', (event) => {
       if (!heroCarousel.contains(event.relatedTarget)) {
         releaseHero()
       }
     })
-    heroCarousel.addEventListener('click', (event) => {
-      if (event.target.closest('[data-bs-slide], [data-bs-slide-to]')) {
-        slideChosen = true
-        holdHero()
-      }
-    })
-    narrowQuery.addEventListener('change', releaseHero)
+    reducedQuery.addEventListener('change', releaseHero)
 
-    window.addEventListener('DOMContentLoaded', () => {
-      if (heroCanAdvance()) {
-        restartHeroMotion()
-      } else {
-        holdHero()
-      }
-    })
-    window.addEventListener('load', () => {
-      if (!heroCanAdvance()) {
-        holdHero()
-      }
-    })
+    const startHero = () => releaseHero()
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', startHero)
+    } else {
+      startHero()
+    }
   }
 
   /**

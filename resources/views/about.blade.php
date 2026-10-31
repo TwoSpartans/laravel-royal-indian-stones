@@ -44,8 +44,8 @@
       </figure>
       <div class="about-story-copy">
         <p class="eyebrow">Who we are</p>
-        <h1 id="about-story-title">Royal Indian Stones</h1>
-        <p>Royal Indian Stones is part of the Royal Indian Exports Group. We are a certified manufacturer and exporter, and the stone is cut in our own factory. We also buy, import, and wholesale it for clients in India and overseas.</p>
+        <h1 id="about-story-title">Royal Indian Exports</h1>
+        <p>Royal Indian Stones is part of the Royal Indian Exports Group. We are a certified manufacturer and exporter, and the stone is cut in our own factory.</p>
         <blockquote class="about-pull">
           <p>Each order is made to the sizes and finish the project needs, at a competitive price and on a short lead time.</p>
         </blockquote>
@@ -81,96 +81,32 @@
 
   <section class="about-principles" aria-labelledby="about-principles-title">
     <div class="container">
-      <div class="about-section-head">
-        <p class="eyebrow">The company</p>
-        <h2 id="about-principles-title">What the work rests on</h2>
-        <p>Stone chosen by hand, quarries we already know, and a team that finishes the order.</p>
+      <div class="about-section-head about-company-head">
+        <p class="eyebrow" id="about-principles-title">The company</p>
+        <p>Royal Indian Stones, part of the Royal Indian Exports Group, has grown to become India's largest professional certified manufacturer, exporter, importer, buyer, wholesaler, trader, and factory owner of natural stones. We supply high-quality Indian natural stone products, suitable for various applications to our valued clients worldwide at a competitive price and in a short lead time. All of our products are customized to meet the needs and requirements of our clients.</p>
       </div>
-      <div class="about-principle-grid">
-        <a class="about-principle" href="{{ url('/quality-control') }}" data-track="trust_click">
-          <span class="step-number">01</span>
-          <h3>Quality checks</h3>
-          <p>The quality team selects each stone so the colour and finish stay consistent. On a long project, testers stay with the work until it matches the specification.</p>
-          <span class="text-link">Our quality process →</span>
-        </a>
+      <div class="about-principle-grid about-company-grid">
         <article class="about-principle">
-          <span class="step-number">02</span>
-          <h3>Clients who return</h3>
-          <p>Wholesalers, architects, builders, and landscapers, in India and overseas, are why the company has kept growing. Those relationships are meant to last.</p>
+          <h3>Quality &amp; Dedicated Services</h3>
+          <p>We are recognized for our innovative natural stone products, high quality, and dedicated service. Our quality control team individually selects all of the stones to ensure consistency and quality. A dedicated team of testers and quality assurance specialists who provide long-term project testing and focus on task completion success.</p>
         </article>
         <article class="about-principle">
-          <span class="step-number">03</span>
-          <h3>Quarries we know</h3>
-          <p>Suppliers across India keep material on a planned schedule. Popular stones stay in hand, and production follows the order.</p>
+          <h3>Satisfied Overseas Clients</h3>
+          <p>Our satisfied overseas clients with our quality, price, and service are the driving force behind our continued growth and strength. We supply wholesalers, architects, builders, landscapers, and large-scale projects. Long-term relationships with both domestic and international clients are critical to business success.</p>
         </article>
         <article class="about-principle">
-          <span class="step-number">04</span>
-          <h3>A workshop team</h3>
-          <p>A large team handles processing, dressing, inspection, and shipment. The group has learned how to keep that team working as the orders have grown.</p>
+          <h3>Close Ties with Suppliers</h3>
+          <p>Because of our strong relationships with Indian suppliers, we can guarantee the best material will be available on carefully planned delivery schedules. By allowing suppliers to access inventory information, we are able to keep sufficient supplies of popular stones on hand and maintain just-in-time production schedules without sacrificing quality standards.</p>
         </article>
-        <a class="about-principle" href="{{ url('/packaging-type') }}" data-track="trust_click">
-          <span class="step-number">05</span>
-          <h3>Packed for the journey</h3>
-          <p>Tiles, slabs, blocks, cobbles, and pebbles each leave in their own packing.</p>
-          <span class="text-link">View packaging →</span>
-        </a>
-        <a class="about-principle" href="{{ url('/project-gallery') }}" data-track="trust_click">
-          <span class="step-number">06</span>
-          <h3>Seen on real buildings</h3>
-          <p>Cladding, paving, and feature work already delivered.</p>
-          <span class="text-link">View the gallery →</span>
-        </a>
+        <article class="about-principle">
+          <h3>Large Team of Professionals</h3>
+          <p>The Royal Indian Exports Group has a large team of professionals who handle the processing, dressing, inspection, and shipment of natural stones. As a company succeeds and grows, we have learned through extensive experience how to effectively manage large teams as manpower increases.</p>
+        </article>
       </div>
-    </div>
-  </section>
-
-  <section class="about-steps" aria-labelledby="about-steps-title">
-    <div class="container">
-      <div class="about-section-head">
-        <p class="eyebrow">The order</p>
-        <h2 id="about-steps-title">Five steps from selection to dispatch</h2>
-        <p>Processing, dressing, inspection, and shipment stay in the same workshop.</p>
+      <div class="about-company-note">
+        <h2>Quality Stones at Competitive Price</h2>
+        <p>The company offers a wide variety of stone products to all the customers and supply best stones at the lowest rates to all our national and international buyers. Our extensive knowledge of different quarries of natural stones of the whole of India enables us to supply quality stones at competitive price.</p>
       </div>
-      <ol class="about-steps-list">
-        <li class="about-step">
-          <span class="step-number">01</span>
-          <h3>Selection</h3>
-          <p>Stone, colour, and finish are chosen for the project.</p>
-        </li>
-        <li class="about-step">
-          <span class="step-number">02</span>
-          <h3>Cutting</h3>
-          <p>The order is cut to the size and surface the drawing asks for.</p>
-        </li>
-        <li class="about-step">
-          <span class="step-number">03</span>
-          <h3>Checks</h3>
-          <p>Dimensions and finish are checked against the specification.</p>
-          <a class="text-link" href="{{ url('/quality-control') }}" data-track="trust_click">Our quality process →</a>
-        </li>
-        <li class="about-step">
-          <span class="step-number">04</span>
-          <h3>Packing</h3>
-          <p>Crates and bundles are prepared for tiles, slabs, blocks, cobbles, and pebbles.</p>
-          <a class="text-link" href="{{ url('/packaging-type') }}" data-track="trust_click">View packaging →</a>
-        </li>
-        <li class="about-step">
-          <span class="step-number">05</span>
-          <h3>Dispatch</h3>
-          <p>The destination is named on the enquiry, and the stone leaves for that site.</p>
-        </li>
-      </ol>
-    </div>
-  </section>
-
-  <section class="about-close" aria-labelledby="about-close-title">
-    <div class="container about-close-grid">
-      <div>
-        <p class="eyebrow">The range</p>
-        <h2 id="about-close-title">Quality stone at a competitive price</h2>
-        <p>A wide range of Indian natural stone, drawn from quarries across the country, for buyers at home and overseas.</p>
-      </div>
-      <a class="ris-button" href="{{ url('/contact') }}" data-track="quote_click">Request a quote</a>
     </div>
   </section>
 </main>

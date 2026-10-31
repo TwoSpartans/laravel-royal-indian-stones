@@ -660,6 +660,13 @@ a.about-principle:hover{transform:none}
 .e-catalogue-count{margin:0;font-size:var(--caption);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ris-muted)}
 .e-catalogue-placeholder{display:block;aspect-ratio:4/3;background:var(--ris-paper)}
 .e-catalogue .text-link{margin-top:auto}
+.about-page .about-company-head,.about-page .about-company-note{max-width:none;width:100%}
+.about-company-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.about-company-grid .about-principle h3{margin-top:0}
+.about-company-note{margin-top:28px;padding-top:28px;border-top:1px solid var(--ris-line)}
+.about-company-note h2{margin:0 0 12px;font-size:clamp(1.6rem,2vw,2.1rem);font-weight:560;line-height:1.2}
+.about-company-note p{margin:0;color:var(--ris-muted);font-size:1.05rem;line-height:1.7}
+@media(max-width:639px){.about-company-grid{grid-template-columns:minmax(0,1fr)}}
 #footer .footer-contact h4{font-family:var(--font-text);font-weight:600;letter-spacing:0}
 .whatsapp-chat{position:fixed;right:22px;bottom:22px;z-index:996;display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:#25d366;color:#fff;text-decoration:none;box-shadow:0 10px 15px -3px #20252033,0 4px 6px -4px #20252033;transition:background .18s ease,transform .18s ease}
 .whatsapp-chat i{font-size:32px;line-height:1;color:#fff}

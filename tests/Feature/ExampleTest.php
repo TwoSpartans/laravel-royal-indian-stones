@@ -16,6 +16,8 @@ class ExampleTest extends TestCase
         $response->assertOk();
         $response->assertSee('Indian natural stone.');
         $response->assertDontSee('data-bs-ride="carousel"', false);
+        $response->assertSee('data-bs-interval="10000"', false);
+        $response->assertSee('data-bs-pause="false"', false);
         $response->assertSee('Tandur and Kota limestone');
         $response->assertSee('Absolute Black and other Indian granites');
         $response->assertDontSee('hero-carousel-pause', false);

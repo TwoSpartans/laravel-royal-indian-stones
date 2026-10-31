@@ -8,7 +8,7 @@
 @endif
 <main id="main" class="home-page">
   <section id="hero" class="home-hero">
-    <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-touch="true" data-bs-interval="false" aria-roledescription="carousel" aria-label="Featured natural stones">
+    <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-touch="true" data-bs-interval="10000" data-bs-pause="false" aria-roledescription="carousel" aria-label="Featured natural stones">
       <div class="carousel-inner">
         @foreach($slides as $index => $slide)
           <div @class(['carousel-item', 'active' => $index === 0])>

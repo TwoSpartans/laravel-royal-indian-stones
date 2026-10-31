@@ -43,7 +43,7 @@
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/boxicons/css/boxicons.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/css/style.css') }}?v=2" rel="stylesheet">
-<link href="{{ asset('assets/css/improvements.css') }}?v=88" rel="stylesheet">
+<link href="{{ asset('assets/css/improvements.css') }}?v=90" rel="stylesheet">
 @php
     $deferredStyles = [
         'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap',
@@ -73,7 +73,7 @@
 <script src="{{ asset('assets/vendor/swiper/swiper-bundle.min.js') }}" defer></script>
 <script src="{{ asset('assets/vendor/waypoints/noframework.waypoints.js') }}" defer></script>
 <script src="{{ asset('assets/js/ajax_jquery.js') }}" defer></script>
-<script src="{{ asset('assets/js/main.js') }}?v=9" defer></script>
+<script src="{{ asset('assets/js/main.js') }}?v=10" defer></script>
 <script src="{{ asset('assets/js/site.js') }}?v=3" defer></script>
 @stack('scripts')
 </body>
