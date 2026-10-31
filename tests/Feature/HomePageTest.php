@@ -70,6 +70,7 @@ class HomePageTest extends TestCase
             $this->get('/')
                 ->assertOk()
                 ->assertSee($first, false)
+                ->assertDontSee('/assets/img/optimized/'.substr(md5($first), 0, 16), false)
                 ->assertDontSee('bced8b2cfeced7e0-380.webp', false);
 
             $this->actingAs($admin)->put(route('admin.home.update', 'explore'), [
@@ -841,9 +842,14 @@ class HomePageTest extends TestCase
         }
 
         $hash = substr(md5($path), 0, 16);
-        foreach (glob(public_path('assets/img/optimized/'.$hash.'-*')) ?: [] as $variant) {
-            if (is_file($variant)) {
-                unlink($variant);
+        foreach ([
+            public_path('assets/img/optimized/'.$hash.'-*'),
+            storage_path('app/public/img/optimized/'.$hash.'-*'),
+        ] as $pattern) {
+            foreach (glob($pattern) ?: [] as $variant) {
+                if (is_file($variant)) {
+                    unlink($variant);
+                }
             }
         }
     }

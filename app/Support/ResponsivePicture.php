@@ -72,7 +72,7 @@ class ResponsivePicture
         foreach ($widths as $width) {
             foreach (['avif', 'webp'] as $extension) {
                 $variant = $this->variantRelative($relative, $width, $extension);
-                if (! is_file(public_path($variant))) {
+                if ($this->locatedFile($variant) === null) {
                     $missing[$width][$extension] = $variant;
                 }
             }
@@ -104,7 +104,7 @@ class ResponsivePicture
             }
             $this->prepare($frame);
             foreach ($formats as $extension => $variant) {
-                $target = public_path($variant);
+                $target = $this->absolutePath($variant);
                 File::ensureDirectoryExists(dirname($target));
                 $written = $extension === 'avif'
                     ? imageavif($frame, $target, 50, 6)
@@ -116,6 +116,8 @@ class ResponsivePicture
 
                     return false;
                 }
+                @chmod(dirname($target), 0755);
+                @chmod($target, 0644);
             }
             if ($frame !== $image) {
                 unset($frame);
@@ -285,13 +287,14 @@ class ResponsivePicture
         $parts = [];
         foreach ($widths as $width) {
             $path = $this->variantRelative($source, $width, $extension);
-            if (is_file(public_path($path))) {
+            if ($this->locatedFile($path) !== null) {
                 $parts[] = $this->publicUrl($path).' '.$width.'w';
             }
         }
 
         if ($parts === [] && $extension === 'webp' && preg_match('/\.webp$/i', $source) === 1) {
-            $size = @getimagesize(public_path($source));
+            $located = $this->locatedFile($source);
+            $size = $located === null ? false : @getimagesize($located);
             if ($size !== false) {
                 return $this->publicUrl($source).' '.$size[0].'w';
             }
@@ -309,7 +312,21 @@ class ResponsivePicture
 
     private function variantRelative(string $source, int $width, string $extension): string
     {
-        return 'assets/img/optimized/'.substr(md5($source), 0, 16).'-'.$width.'.'.$extension;
+        $name = substr(md5($source), 0, 16).'-'.$width.'.'.$extension;
+        if (str_starts_with($source, 'storage/')) {
+            return 'storage/img/optimized/'.$name;
+        }
+
+        return 'assets/img/optimized/'.$name;
+    }
+
+    private function absolutePath(string $relative): string
+    {
+        if (str_starts_with($relative, 'storage/')) {
+            return storage_path('app/public/'.substr($relative, strlen('storage/')));
+        }
+
+        return public_path($relative);
     }
 
     private function isIcon(int $width, int $height): bool
