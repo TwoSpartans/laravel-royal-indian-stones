@@ -19,6 +19,7 @@ class SitemapXmlController extends Controller
         $entries = collect([
             $this->entry(url('/')),
             $this->entry(url('/products')),
+            $this->entry(url('/e-catalogue')),
             $this->entry(url('/contact')),
             $this->entry(url('/project-gallery')),
             $this->entry(url('/faq')),

@@ -2,13 +2,6 @@
 
 @section('content')
 <main id="main">
-  <section class="contact-intro">
-    <div class="container">
-      <p class="eyebrow">Tell us what you’re planning</p>
-      <h1>Let’s find your stone</h1>
-      <p>Send your requirements for a quotation. Sizes, finish, quantity and destination help us understand your project.</p>
-    </div>
-  </section>
   <section id="contact" class="contact">
     <div class="container contact-layout">
       <aside class="contact-details">

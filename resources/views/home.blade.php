@@ -131,11 +131,5 @@
       </div>
     </section>
   @endif
-  <section class="enquiry-band">
-    <div class="container">
-      <div><p class="eyebrow">{{ $enquiry['eyebrow'] }}</p><h2>{{ $enquiry['heading'] }}</h2><p>{{ $enquiry['body'] }}</p></div>
-      <a class="ris-button" href="{{ route('contact') }}" data-track="quote_click">{{ $enquiry['button_label'] }}</a>
-    </div>
-  </section>
 </main>
 @endsection

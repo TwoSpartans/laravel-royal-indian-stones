@@ -57,7 +57,7 @@ class JournalPageTest extends TestCase
         $this->assertSame(1, substr_count($response->getContent(), '<h1'));
         $this->assertSame(1, substr_count($response->getContent(), 'id="newsletter_form"'));
         $response->assertSee('action="'.route('catalogue').'"', false)
-            ->assertSee('Request a Quote')
+            ->assertSee('Contact Us')
             ->assertSee('Join Our Newsletter')
             ->assertSee('href="'.url('/'.$visible->slug).'"', false);
     }

@@ -21,7 +21,7 @@
             <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ url('/sitemap') }}">Sitemap</a></li>
             <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ url('/disclaimer') }}">Disclaimer</a></li>
             <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ url('/privacy-policy') }}">Privacy Policy</a></li>
-            <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ route('portal.login') }}" rel="nofollow">Staff portal</a></li>
+            <li><i class="bx bx-chevron-right" aria-hidden="true"></i> <a href="{{ route('e-catalogue') }}">E-catalogue</a></li>
           </ul>
         </div>
         <div class="col-lg-2 col-md-6 footer-links">

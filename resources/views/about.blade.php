@@ -1,5 +1,27 @@
 @extends('layouts.site')
 
+@push('head')
+@php
+    $aboutPage = [
+        '@context' => 'https://schema.org',
+        '@type' => 'AboutPage',
+        'url' => url('/aboutus'),
+        'name' => 'About Royal Indian Stones',
+        'description' => 'Royal Indian Stones is part of the Royal Indian Exports Group, a certified manufacturer, exporter, and factory owner of natural stone.',
+        'mainEntity' => [
+            '@type' => 'Organization',
+            'name' => 'Royal Indian Stones',
+            'url' => url('/'),
+            'parentOrganization' => [
+                '@type' => 'Organization',
+                'name' => 'Royal Indian Exports',
+            ],
+        ],
+    ];
+@endphp
+<script type="application/ld+json">{!! json_encode($aboutPage, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
+@endpush
+
 @section('content')
 <main id="main" class="about-page">
   <section id="breadcrumbs" class="breadcrumbs">
@@ -23,23 +45,23 @@
       <div class="about-story-copy">
         <p class="eyebrow">Who we are</p>
         <h1 id="about-story-title">Royal Indian Stones</h1>
-        <p>We work from Jodhpur and supply natural stone for paving, cladding, flooring, and custom articles. The range runs from blocks, slabs, and tiles to cobbles, kerbs, pebbles, monuments, and landscaping pieces.</p>
+        <p>Royal Indian Stones is part of the Royal Indian Exports Group. We are a certified manufacturer and exporter, and the stone is cut in our own factory. We also buy, import, and wholesale it for clients in India and overseas.</p>
         <blockquote class="about-pull">
-          <p>Each order is matched for colour and finish, then checked and packed for shipment.</p>
+          <p>Each order is made to the sizes and finish the project needs, at a competitive price and on a short lead time.</p>
         </blockquote>
-        <p>Architects, builders, landscapers, and wholesalers stay with the same team from selection through delivery.</p>
-        <p class="about-identity">Supplier · Manufacturer · Exporter</p>
+        <p>Wholesalers, architects, builders, and landscapers use the stone for paving, cladding, flooring, and large sites. They stay because the quality, the price, and the service hold from one order to the next.</p>
+        <p class="about-identity">Manufacturer · Exporter · Factory</p>
         <a class="text-link" href="{{ url('/directors-message') }}">Read a note from the company →</a>
       </div>
     </div>
   </section>
 
-  <section class="about-facts" aria-label="Where we work">
+  <section class="about-facts" aria-label="The company">
     <div class="container">
       <dl class="about-facts-list">
         <div>
-          <dt>Jodhpur</dt>
-          <dd>Rajasthan, India</dd>
+          <dt>Group</dt>
+          <dd>Royal Indian Exports</dd>
         </div>
         <div>
           <dt>Workshop</dt>
@@ -47,11 +69,11 @@
         </div>
         <div>
           <dt>Work</dt>
-          <dd>Supplier, manufacturer, exporter</dd>
+          <dd>Manufacture, wholesale, and export</dd>
         </div>
         <div>
-          <dt>Projects</dt>
-          <dd>Two decades of work across countries</dd>
+          <dt>Supply</dt>
+          <dd>Quarries across India</dd>
         </div>
       </dl>
     </div>
@@ -60,36 +82,36 @@
   <section class="about-principles" aria-labelledby="about-principles-title">
     <div class="container">
       <div class="about-section-head">
-        <p class="eyebrow">The work</p>
-        <h2 id="about-principles-title">How the stone is handled</h2>
-        <p>From the first sample to the crate that leaves Jodhpur, the order stays with one workshop.</p>
+        <p class="eyebrow">The company</p>
+        <h2 id="about-principles-title">What the work rests on</h2>
+        <p>Stone chosen by hand, quarries we already know, and a team that finishes the order.</p>
       </div>
       <div class="about-principle-grid">
-        <article class="about-principle">
+        <a class="about-principle" href="{{ url('/quality-control') }}" data-track="trust_click">
           <span class="step-number">01</span>
-          <h3>Colour matched first</h3>
-          <p>The colour and finish are agreed before the order is cut.</p>
-        </article>
+          <h3>Quality checks</h3>
+          <p>The quality team selects each stone so the colour and finish stay consistent. On a long project, testers stay with the work until it matches the specification.</p>
+          <span class="text-link">Our quality process →</span>
+        </a>
         <article class="about-principle">
           <span class="step-number">02</span>
-          <h3>Cut to the project</h3>
-          <p>Sizes follow the drawing, from tiles and slabs to custom articles.</p>
+          <h3>Clients who return</h3>
+          <p>Wholesalers, architects, builders, and landscapers, in India and overseas, are why the company has kept growing. Those relationships are meant to last.</p>
         </article>
         <article class="about-principle">
           <span class="step-number">03</span>
-          <h3>Buildings and landscapes</h3>
-          <p>Paving, cladding, flooring, and the articles a site still needs.</p>
+          <h3>Quarries we know</h3>
+          <p>Suppliers across India keep material on a planned schedule. Popular stones stay in hand, and production follows the order.</p>
         </article>
-        <a class="about-principle" href="{{ url('/quality-control') }}" data-track="trust_click">
+        <article class="about-principle">
           <span class="step-number">04</span>
-          <h3>Quality checks</h3>
-          <p>Dimensions, finishes, and your specification are checked during production.</p>
-          <span class="text-link">Our quality process →</span>
-        </a>
+          <h3>A workshop team</h3>
+          <p>A large team handles processing, dressing, inspection, and shipment. The group has learned how to keep that team working as the orders have grown.</p>
+        </article>
         <a class="about-principle" href="{{ url('/packaging-type') }}" data-track="trust_click">
           <span class="step-number">05</span>
           <h3>Packed for the journey</h3>
-          <p>Tiles, slabs, blocks, cobbles, and pebbles each have their own packing.</p>
+          <p>Tiles, slabs, blocks, cobbles, and pebbles each leave in their own packing.</p>
           <span class="text-link">View packaging →</span>
         </a>
         <a class="about-principle" href="{{ url('/project-gallery') }}" data-track="trust_click">
@@ -102,53 +124,12 @@
     </div>
   </section>
 
-  <section class="about-history" aria-labelledby="about-history-title">
-    <div class="container">
-      <div class="about-section-head">
-        <p class="eyebrow">The path</p>
-        <h2 id="about-history-title">From the quarry face to a finished building</h2>
-      </div>
-      <ol class="about-history-list">
-        <li>
-          <span class="about-history-mark">01</span>
-          <h3>A stone house in Jodhpur</h3>
-          <p>Royal Indian Stones works from Jodhpur, in the sandstone country of Rajasthan.</p>
-        </li>
-        <li>
-          <span class="about-history-mark">02</span>
-          <h3>Cut, finished, and packed</h3>
-          <p>Production covers blocks, slabs, tiles, and the landscaping articles a project asks for.</p>
-        </li>
-        <li>
-          <span class="about-history-mark">03</span>
-          <h3>Delivered across countries</h3>
-          <p>Residences, hotels, resorts, and landscaping work have left the workshop for more than two decades.</p>
-        </li>
-      </ol>
-    </div>
-  </section>
-
-  <section class="about-feature" aria-labelledby="about-feature-title">
-    <div class="container">
-      <figure class="about-feature-frame">
-        <x-picture src="assets/img/projects/jaisalmer-yellow-limestone-bush-hammer-finish-wall-cladding-project.jpg" alt="Jaisalmer yellow limestone around an arched entrance" width="800" height="600" loading="lazy" sizes="(max-width: 767px) calc(100vw - 32px), min(1440px, 92vw)" />
-        <div class="about-feature-shade" aria-hidden="true"></div>
-        <figcaption class="about-feature-caption">
-          <div>
-            <p class="eyebrow" id="about-feature-title">Stone in place</p>
-            <p>Jaisalmer yellow limestone around an entrance.</p>
-          </div>
-          <a href="{{ url('/project-gallery') }}" data-track="trust_click">View the gallery →</a>
-        </figcaption>
-      </figure>
-    </div>
-  </section>
-
   <section class="about-steps" aria-labelledby="about-steps-title">
     <div class="container">
       <div class="about-section-head">
         <p class="eyebrow">The order</p>
         <h2 id="about-steps-title">Five steps from selection to dispatch</h2>
+        <p>Processing, dressing, inspection, and shipment stay in the same workshop.</p>
       </div>
       <ol class="about-steps-list">
         <li class="about-step">
@@ -182,34 +163,14 @@
     </div>
   </section>
 
-  <section class="about-after" aria-labelledby="about-after-title">
-    <div class="container about-after-grid">
-      <div>
-        <p class="eyebrow">After delivery</p>
-        <h2 id="about-after-title">After the crate leaves</h2>
-        <p>Care and installation still matter once the stone is on site. These notes cover cleaning, sealing, and the handling we recommend.</p>
-      </div>
-      <div class="about-after-links">
-        <a href="{{ url('/natural-stone-care') }}">Natural stone care <span aria-hidden="true">→</span></a>
-        <a href="{{ url('/general-instruction') }}">General instruction <span aria-hidden="true">→</span></a>
-      </div>
-    </div>
-  </section>
-
   <section class="about-close" aria-labelledby="about-close-title">
     <div class="container about-close-grid">
       <div>
-        <p class="eyebrow">The workshop</p>
-        <h2 id="about-close-title">Tell us the stone, the size, and the destination.</h2>
-        <p>We will reply with a quotation for that order.</p>
-        <address>
-          Royal Indian Exports<br>
-          Rajpurohit Bhawan, Plot-17, Golf Course Road<br>
-          Air Force, Jodhpur-342011, Rajasthan, India<br>
-          <a href="tel:+918769873114" data-track="phone_click">+91 876 987 3114</a>
-        </address>
+        <p class="eyebrow">The range</p>
+        <h2 id="about-close-title">Quality stone at a competitive price</h2>
+        <p>A wide range of Indian natural stone, drawn from quarries across the country, for buyers at home and overseas.</p>
       </div>
-      <a class="ris-button" href="{{ route('contact') }}" data-track="quote_click">Request a Quote →</a>
+      <a class="ris-button" href="{{ url('/contact') }}" data-track="quote_click">Request a quote</a>
     </div>
   </section>
 </main>

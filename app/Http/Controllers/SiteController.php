@@ -139,8 +139,8 @@ class SiteController extends Controller
         if ($slug === 'aboutus') {
             return view('about', [
                 'active' => 'about',
-                'title' => 'Who we are | Royal Indian Stones',
-                'description' => 'Royal Indian Stones supplies Indian sandstone, limestone, marble, and granite from Jodhpur for buildings and landscapes.',
+                'title' => 'About Us | Royal Indian Stones',
+                'description' => 'Royal Indian Stones is part of the Royal Indian Exports Group, a certified manufacturer, exporter, and factory owner of natural stone.',
                 'shareImage' => asset('assets/img/about.jpg'),
             ]);
         }
@@ -212,6 +212,7 @@ class SiteController extends Controller
         return [
             ['label' => 'Home', 'url' => url('/')],
             ['label' => 'Find your stone', 'url' => url('/products')],
+            ['label' => 'E-catalogue', 'url' => route('e-catalogue')],
             ['label' => 'Stone categories', 'url' => url('/natural-stones-of-india')],
             ['label' => 'Request a quote', 'url' => route('contact')],
             ['label' => 'About us', 'url' => url('/aboutus')],

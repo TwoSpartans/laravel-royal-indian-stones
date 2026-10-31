@@ -25,7 +25,6 @@ class HomeController extends Controller
             'stonesCopy' => $content->copy('stones'),
             'stones' => $content->stones(),
             'journalCopy' => $content->copy('journal'),
-            'enquiry' => $content->copy('enquiry'),
             'posts' => Post::query()->published()->with('postCategory')->orderByDesc('published_on')->orderBy('title')->limit(3)->get(),
             'active' => 'home',
             'title' => 'Indian natural stone | Royal Indian Stones',

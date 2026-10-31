@@ -130,7 +130,10 @@ class PublicSiteTest extends TestCase
             ->assertOk()
             ->assertSee('<title>Raj Green Sandstone | Royal Indian Stones</title>', false);
         $this->get('/')->assertOk()->assertSee('<title>Indian natural stone | Royal Indian Stones</title>', false);
-        $this->get('/contact')->assertOk()->assertSee('Let’s find your stone | Royal Indian Stones', false);
+        $this->get('/contact')->assertOk()
+            ->assertSee('Let’s find your stone | Royal Indian Stones', false)
+            ->assertDontSee('Tell us what you’re planning')
+            ->assertDontSee('class="contact-intro"', false);
         $this->get('/sitemap.xml')->assertOk()->assertSee('<lastmod>', false);
         $this->get('/admin/login')->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
         $this->get('/admin/dashboard')->assertRedirect('/admin/login')->assertHeader('X-Robots-Tag', 'noindex');
@@ -209,17 +212,24 @@ class PublicSiteTest extends TestCase
             ->assertSee('Notes on Indian stone')
             ->assertDontSee('From the journal')
             ->assertSee('Read the blog')
-            ->assertDontSee('Unpublished quarry note');
+            ->assertDontSee('Unpublished quarry note')
+            ->assertDontSee('Found a stone you like?')
+            ->assertDontSee('class="enquiry-band"', false);
 
         $html = $home->getContent();
         $navStart = strpos($html, 'aria-label="Main navigation"');
         $navEnd = strpos($html, '</nav>', $navStart);
         $nav = substr($html, $navStart, $navEnd - $navStart);
-        $this->assertSame(1, substr_count($nav, '>Blog</a>'));
-        $this->assertLessThan(strpos($nav, '>Resources<'), strpos($nav, '>Blog</a>'));
+        $this->assertSame(1, substr_count($nav, '>Blogs</a>'));
+        $this->assertLessThan(strpos($nav, '>Blogs</a>'), strpos($nav, '>Stone Articles</a>'));
+        $this->assertLessThan(strpos($nav, '>Contact Us</a>'), strpos($nav, '>Blogs</a>'));
         $this->assertSame(1, substr_count($nav, url('/stone-articles')));
-        $this->assertLessThan(strpos($nav, '>About Us</a>'), strpos($nav, '>Stone Articles</a>'));
-        $this->assertGreaterThan(strpos($nav, '>Resources<'), strpos($nav, url('/project-gallery')));
+        $this->assertLessThan(strpos($nav, '>About Us</a>'), strpos($nav, '>Home</a>'));
+        $this->assertLessThan(strpos($nav, '>Our Stones<'), strpos($nav, '>About Us</a>'));
+        $this->assertSame(1, substr_count($nav, '>Contact Us</a>'));
+        $this->assertStringNotContainsString('Request a Quote', $nav);
+        $this->assertStringNotContainsString('Resources', $nav);
+        $this->assertStringNotContainsString(url('/project-gallery'), $nav);
 
         $this->get('/blog')
             ->assertOk()
@@ -241,7 +251,7 @@ class PublicSiteTest extends TestCase
 
         $this->get('/project-gallery')
             ->assertOk()
-            ->assertSee('href="'.url('/project-gallery').'" class="active"', false);
+            ->assertDontSee('href="'.url('/project-gallery').'" class="active"', false);
     }
 
     public function test_header_search_opens_the_catalogue(): void

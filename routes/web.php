@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ECatalogueController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsletterController;
@@ -89,6 +90,7 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/products', CatalogueController::class)->name('catalogue');
+Route::get('/e-catalogue', ECatalogueController::class)->name('e-catalogue');
 Route::get('/contact', ContactController::class)->name('contact');
 Route::post('/contact', EnquiryController::class)->name('enquiry.store');
 Route::post('/newsletter', NewsletterController::class)->name('newsletter.store');

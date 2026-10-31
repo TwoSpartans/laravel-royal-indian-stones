@@ -58,11 +58,17 @@ class ContentAndAdminTest extends TestCase
         $this->get('/aboutus')
             ->assertOk()
             ->assertSee('Who we are')
+            ->assertSee('Royal Indian Exports Group')
+            ->assertSee('Quality stone at a competitive price')
             ->assertDontSee('A Jodhpur stone house for buildings and landscapes.')
             ->assertSee('Quality checks')
             ->assertSee('Packed for the journey')
             ->assertSee('Rajpurohit Bhawan')
-            ->assertSee('After the crate leaves');
+            ->assertSee('Five steps from selection to dispatch')
+            ->assertDontSee('From the quarry face to a finished building')
+            ->assertDontSee('Stone in place')
+            ->assertDontSee('After the crate leaves')
+            ->assertDontSee('Tell us the stone, the size, and the destination.');
         $this->get('/aboutus.html')->assertRedirect('/aboutus');
         $this->get('/packaging-type-tiles')->assertOk()->assertSee('wooden crates');
         $this->get('/project-gallery')->assertOk()->assertSee('Discuss a similar project');

@@ -20,6 +20,7 @@
     <nav id="navbar" class="navbar" aria-label="Main navigation">
       <ul>
         <li><a href="{{ url('/') }}" @class(['active' => ($active ?? '') === 'home']) @if(($active ?? '') === 'home') aria-current="page" @endif>Home</a></li>
+        <li><a href="{{ url('/aboutus') }}" @class(['active' => ($active ?? '') === 'about']) @if(($active ?? '') === 'about') aria-current="page" @endif>About Us</a></li>
         <li class="dropdown"><a href="{{ url('/products') }}" @class(['active' => ($active ?? '') === 'products']) @if(($active ?? '') === 'products') aria-current="page" @endif><span>Our Stones</span><i class="bi bi-chevron-down" aria-hidden="true"></i></a>
           <ul>
             <li class="nav-all-stones"><a href="{{ url('/products') }}">All stones</a></li>
@@ -38,19 +39,8 @@
           </ul>
         </li>
         <li><a href="{{ url('/stone-articles') }}" @class(['active' => ($active ?? '') === 'articles']) @if(($active ?? '') === 'articles') aria-current="page" @endif>Stone Articles</a></li>
-        <li><a href="{{ url('/aboutus') }}" @class(['active' => ($active ?? '') === 'about']) @if(($active ?? '') === 'about') aria-current="page" @endif>About Us</a></li>
-        <li><a href="{{ url('/blog') }}" @class(['active' => ($active ?? '') === 'blog']) @if(($active ?? '') === 'blog') aria-current="page" @endif>Blog</a></li>
-        <li class="dropdown"><a href="{{ url('/general-instruction') }}" @class(['active' => in_array(($active ?? ''), ['resources', 'projects'], true)]) @if(($active ?? '') === 'resources') aria-current="page" @endif><span>Resources</span><i class="bi bi-chevron-down" aria-hidden="true"></i></a>
-          <ul>
-            <li><a href="{{ url('/project-gallery') }}" @class(['active' => ($active ?? '') === 'projects']) @if(($active ?? '') === 'projects') aria-current="page" @endif>Projects</a></li>
-            <li><a href="{{ url('/quality-control') }}">Quality control</a></li>
-            <li><a href="{{ url('/packaging-type') }}">Packaging</a></li>
-            <li><a href="{{ url('/natural-stone-care') }}">Stone care</a></li>
-            <li><a href="{{ url('/general-instruction') }}">Installation guidance</a></li>
-            <li><a href="{{ url('/faq') }}">FAQ</a></li>
-          </ul>
-        </li>
-        <li><a href="{{ route('contact') }}" @class(['nav-quote', 'active' => ($active ?? '') === 'contact']) @if(($active ?? '') === 'contact') aria-current="page" @endif data-track="quote_click">Request a Quote</a></li>
+        <li><a href="{{ url('/blog') }}" @class(['active' => ($active ?? '') === 'blog']) @if(($active ?? '') === 'blog') aria-current="page" @endif>Blogs</a></li>
+        <li><a href="{{ route('contact') }}" @class(['active' => ($active ?? '') === 'contact']) @if(($active ?? '') === 'contact') aria-current="page" @endif>Contact Us</a></li>
       </ul>
       <button type="button" class="header-search" aria-label="Search" aria-expanded="false" aria-controls="header-search-panel"><i class="bi bi-search" aria-hidden="true"></i></button>
       <button class="mobile-nav-toggle bi bi-list" type="button" aria-label="Open navigation" aria-controls="navbar" aria-expanded="false"></button>
