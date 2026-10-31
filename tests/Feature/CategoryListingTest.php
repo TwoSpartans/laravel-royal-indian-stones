@@ -25,9 +25,11 @@ class CategoryListingTest extends TestCase
         $this->get('/granite')
             ->assertOk()
             ->assertSee('Filter by origin')
+            ->assertSee('North Indian Granites')
             ->assertSee('?group=north-india', false)
             ->assertSee('?group=south-india', false)
-            ->assertSeeInOrder(['River White Granite', 'South India', 'Absolute Black Granite'])
+            ->assertSee('class="category-group-rule"', false)
+            ->assertSeeInOrder(['River White Granite', 'South Indian Granites', 'Absolute Black Granite'])
             ->assertDontSee('Hidden South Granite');
     }
 
@@ -42,7 +44,8 @@ class CategoryListingTest extends TestCase
         $this->get('/granite?group=south-india')
             ->assertOk()
             ->assertSee('Absolute Black Granite')
-            ->assertDontSee('River White Granite');
+            ->assertDontSee('River White Granite')
+            ->assertDontSee('category-group-rule', false);
     }
 
     public function test_an_unknown_granite_filter_keeps_both_regions(): void
@@ -76,12 +79,19 @@ class CategoryListingTest extends TestCase
         $this->stone($pebbles, 'Aqua Onyx Polished Pebbles', 'stone-pebbles-aqua-color-onyx-polished');
         $this->stone($pebbles, 'Beige Sandstone Pebbles', 'stone-pebbles-beige-sandstone-tumbled');
         $this->stone($pebbles, 'Yellow River Pebbles', 'stone-pebbles-yellow-natural-river');
+        $this->stone($pebbles, 'Red Agate River Pebbles', 'stone-pebbles-red-agate-natural-river');
         $this->stone($pebbles, 'Black Agate Polished Pebbles', 'stone-pebbles-black-agate-polished-tumbled');
 
         $this->get('/stone-pebbles')
             ->assertOk()
             ->assertSee('Filter by finish')
+            ->assertSee('Natural River Pebbles')
+            ->assertSee('Natural Stone Tumbled Pebbles')
+            ->assertSee('Natural Onyx Polished Pebbles')
+            ->assertSee('Natural Agate Polished Pebbles')
+            ->assertDontSee('?group=polished', false)
             ->assertSeeInOrder([
+                'Red Agate River Pebbles',
                 'Yellow River Pebbles',
                 'Beige Sandstone Pebbles',
                 'Aqua Onyx Polished Pebbles',

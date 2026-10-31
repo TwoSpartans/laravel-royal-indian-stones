@@ -681,7 +681,7 @@ a.about-principle:hover{transform:none}
 .category-filter a:hover,.category-filter a:focus-visible{color:var(--ris-ink)}
 .category-filter a.is-active,.category-filter a.is-active:hover,.category-filter a.is-active:focus-visible{border-color:var(--ris-ink);background:var(--ris-ink);color:#fff}
 .category-group-title{margin:8px 0 16px;font-size:clamp(1.6rem,2vw,2.1rem);font-weight:560;line-height:1.2}
-.category-group+.category-group{margin-top:36px}
+.category-group-rule{height:0;margin:52px 0 36px;border:0;border-top:1px solid var(--ris-line)}
 @media(max-width:767px){
 .catalogue-page .catalogue-intro{padding-bottom:12px}
 .catalogue-page .catalogue-section,

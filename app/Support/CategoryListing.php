@@ -123,16 +123,17 @@ final class CategoryListing
             'granite' => [
                 'label' => 'Filter by origin',
                 'groups' => [
-                    'north-india' => 'North India',
-                    'south-india' => 'South India',
+                    'north-india' => 'North Indian Granites',
+                    'south-india' => 'South Indian Granites',
                 ],
             ],
             'stone-pebbles' => [
                 'label' => 'Filter by finish',
                 'groups' => [
-                    'natural' => 'Natural',
-                    'tumbled' => 'Tumbled',
-                    'polished' => 'Polished',
+                    'natural' => 'Natural River Pebbles',
+                    'tumbled' => 'Natural Stone Tumbled Pebbles',
+                    'onyx' => 'Natural Onyx Polished Pebbles',
+                    'agate' => 'Natural Agate Polished Pebbles',
                 ],
             ],
             default => null,
@@ -174,12 +175,19 @@ final class CategoryListing
         $name = mb_strtolower($product->name);
         $slug = mb_strtolower($product->slug);
 
-        if (str_contains($slug, 'tumbled') && ! str_contains($name, 'polish')) {
-            return 'tumbled';
+        $polished = str_contains($name, 'polish') || str_contains($slug, 'polish');
+        $river = str_contains($slug, 'natural-river');
+
+        if ($polished && ! $river && (str_contains($name, 'onyx') || str_contains($slug, 'onyx'))) {
+            return 'onyx';
         }
 
-        if (str_contains($name, 'polish') || str_contains($slug, 'polish')) {
-            return 'polished';
+        if ($polished && ! $river && (str_contains($name, 'agate') || str_contains($slug, 'agate'))) {
+            return 'agate';
+        }
+
+        if (str_contains($slug, 'tumbled') && ! str_contains($name, 'polish')) {
+            return 'tumbled';
         }
 
         return 'natural';

@@ -27,6 +27,9 @@
         <div class="empty-state"><h2>No products in this category yet</h2><p><a href="{{ route('contact') }}">Ask our team</a> about {{ $category->name }}.</p></div>
       @else
         @foreach($listing['groups'] as $group)
+          @if(!$loop->first)
+            <hr class="category-group-rule">
+          @endif
           <div class="category-group">
             @if($group['showHeading'])
               <h2 class="category-group-title">{{ $group['label'] }}</h2>
