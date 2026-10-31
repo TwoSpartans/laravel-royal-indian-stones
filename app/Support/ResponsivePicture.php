@@ -72,7 +72,11 @@ class ResponsivePicture
         foreach ($widths as $width) {
             foreach (['avif', 'webp'] as $extension) {
                 $variant = $this->variantRelative($relative, $width, $extension);
-                if ($this->locatedFile($variant) === null) {
+                if (! $this->variantIsUsable($variant)) {
+                    $existing = $this->locatedFile($variant);
+                    if ($existing !== null) {
+                        unlink($existing);
+                    }
                     $missing[$width][$extension] = $variant;
                 }
             }
@@ -279,6 +283,20 @@ class ResponsivePicture
         return is_file($public) ? $public : null;
     }
 
+    private function variantIsUsable(string $relative): bool
+    {
+        $absolute = $this->locatedFile($relative);
+        if ($absolute === null) {
+            return false;
+        }
+
+        if (preg_match('/-(\d+)\.avif$/', $relative, $match) === 1 && (int) $match[1] >= 400 && filesize($absolute) < 4096) {
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * @param  list<int>  $widths
      */
@@ -287,9 +305,10 @@ class ResponsivePicture
         $parts = [];
         foreach ($widths as $width) {
             $path = $this->variantRelative($source, $width, $extension);
-            if ($this->locatedFile($path) !== null) {
-                $parts[] = $this->publicUrl($path).' '.$width.'w';
+            if (! $this->variantIsUsable($path)) {
+                continue;
             }
+            $parts[] = $this->publicUrl($path).' '.$width.'w';
         }
 
         if ($parts === [] && $extension === 'webp' && preg_match('/\.webp$/i', $source) === 1) {
@@ -339,7 +358,7 @@ class ResponsivePicture
         if (! imageistruecolor($image)) {
             imagepalettetotruecolor($image);
         }
-        imagealphablending($image, false);
+        imagealphablending($image, true);
         imagesavealpha($image, true);
     }
 

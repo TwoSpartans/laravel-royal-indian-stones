@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\HomeImage;
 use App\Models\HomeSection;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
 
 final class HomeContent
 {
@@ -18,6 +17,8 @@ final class HomeContent
 
     /** @var Collection<string, HomeSection>|null */
     private ?Collection $sections = null;
+
+    public function __construct(private ServedUpload $uploads) {}
 
     /**
      * @return array<string, array<string, string>>
@@ -401,27 +402,20 @@ final class HomeContent
             return;
         }
 
-        $relative = substr($path, strlen('assets/img/'));
-        $destination = storage_path('app/public/'.$relative);
-        File::ensureDirectoryExists(dirname($destination));
-        if (! is_file($destination)) {
-            File::copy($source, $destination);
+        $moved = $this->uploads->relocate($path, 'assets/img/home/', 'home');
+        if ($moved === null) {
+            return;
         }
-        @chmod(dirname($destination), 0755);
-        @chmod($destination, 0644);
 
-        $image->path = 'storage/'.$relative;
+        $image->path = $moved;
         $image->save();
     }
 
     private function storedFileExists(string $path): bool
     {
-        $path = str_replace('\\', '/', $path);
-        if (str_starts_with($path, 'storage/')) {
-            return is_file(storage_path('app/public/'.substr($path, strlen('storage/'))));
-        }
+        $absolute = $this->uploads->absolute($path);
 
-        return is_file(public_path($path));
+        return $absolute !== null && is_file($absolute);
     }
 
     /**

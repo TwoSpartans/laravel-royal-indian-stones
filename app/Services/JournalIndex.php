@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\PostCategory;
 use App\Services\BlogStudio\StudioDocumentService;
 use App\Support\JournalDestination;
+use App\Support\ServedUpload;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,6 +23,8 @@ final class JournalIndex
     private const PREVIEW_STORY_LIMIT = 3;
 
     private const COVER = 'assets/img/slide/slide-1.jpg';
+
+    public function __construct(private ServedUpload $uploads) {}
 
     public function respond(Request $request): View|RedirectResponse
     {
@@ -418,11 +421,13 @@ final class JournalIndex
     private function existingImage(?string $path): ?string
     {
         $path = str_replace('\\', '/', trim((string) $path));
-        if ($path === '' || str_contains($path, '..') || str_contains($path, '://') || ! is_file(public_path($path))) {
+        if ($path === '' || str_contains($path, '..') || str_contains($path, '://')) {
             return null;
         }
 
-        return $path;
+        $absolute = $this->uploads->absolute($path);
+
+        return $absolute !== null && is_file($absolute) ? $path : null;
     }
 
     private function search(Request $request): string

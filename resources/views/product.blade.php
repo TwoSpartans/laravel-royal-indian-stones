@@ -25,6 +25,9 @@
         $product->paragraphs($product->application),
     );
     $imageCount = $product->images->count();
+    $visibleSpecs = $product->specs->reject(
+        fn (\App\Models\ProductSpec $spec): bool => in_array(mb_strtolower(trim($spec->label)), ['packaging', 'lead time', 'minimum order'], true),
+    );
 @endphp
 
 @section('content')
@@ -97,21 +100,13 @@
         @endif
         <a class="ris-button product-quote" href="{{ route('contact', ['product' => $product->slug]) }}" data-track="quote_click" data-product="{{ $product->slug }}">Request a Quote for This Stone <span aria-hidden="true">→</span></a>
         <p class="product-order-note">Natural stone varies in shade and texture. Confirm the finish, dimensions and quantity with our team.</p>
-        @if($product->specs->isNotEmpty())
+        @if($visibleSpecs->isNotEmpty())
           <p class="eyebrow product-specs-label">Specifications</p>
           <dl class="product-specs">
-            @foreach($product->specs as $spec)
+            @foreach($visibleSpecs as $spec)
               <div>
                 <dt>{{ $spec->label }}</dt>
-                <dd>
-                  @if($spec->label === 'Packaging')
-                    <a href="{{ url('/packaging-type') }}">View packaging options</a>; confirm with your quotation.
-                  @elseif($spec->label === 'Minimum Order' && $spec->value === 'Ask our team for this product.')
-                    One full container is the minimum we accept.
-                  @else
-                    {{ $spec->value }}
-                  @endif
-                </dd>
+                <dd>{{ $spec->value }}</dd>
               </div>
             @endforeach
           </dl>
@@ -238,6 +233,14 @@
       const swiper = slider.swiper;
       const thumbs = Array.from(document.querySelectorAll('.product-thumb'));
       const strip = document.querySelector('.product-thumbs');
+      const row = document.querySelector('.product-thumb-row');
+      const syncThumbNav = function () {
+        if (!row || !strip) {
+          return;
+        }
+        row.classList.remove('has-overflow');
+        row.classList.toggle('has-overflow', strip.scrollWidth > strip.clientWidth + 1);
+      };
       const reveal = function (thumb) {
         if (!strip || !thumb) {
           return;
@@ -278,6 +281,8 @@
         });
       });
       swiper.on('slideChange', mark);
+      syncThumbNav();
+      window.addEventListener('resize', syncThumbNav);
       mark();
     });
   </script>

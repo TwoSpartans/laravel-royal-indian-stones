@@ -8,17 +8,17 @@ use App\Models\Post;
 use App\Services\JournalIndex;
 use App\Support\JournalDestination;
 use App\Support\ResponsivePicture;
+use App\Support\ServedUpload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class JournalSettingController extends Controller
 {
-    public function __construct(private ResponsivePicture $pictures) {}
+    public function __construct(private ResponsivePicture $pictures, private ServedUpload $uploads) {}
 
     public function edit(JournalIndex $journalIndex): View
     {
@@ -163,11 +163,8 @@ class JournalSettingController extends Controller
             ]);
         }
 
-        $directory = 'assets/img/journal/page';
-        File::ensureDirectoryExists(public_path($directory));
         $filename = $name.'-'.Str::lower(Str::random(8)).'.'.$extension;
-        $photo->move(public_path($directory), $filename);
-        $path = $directory.'/'.$filename;
+        $path = $this->uploads->store($photo, 'journal/page', $filename);
         $this->pictures->ensure($path);
 
         return $path;
@@ -175,14 +172,15 @@ class JournalSettingController extends Controller
 
     private function deleteManaged(?string $path): void
     {
-        $path = str_replace('\\', '/', (string) $path);
-        if ($path === '' || str_contains($path, '..') || ! str_starts_with($path, 'assets/img/journal/page/')) {
+        if (! is_string($path) || $path === '') {
             return;
         }
 
-        $fullPath = public_path($path);
-        if (is_file($fullPath)) {
-            unlink($fullPath);
+        $normalized = str_replace('\\', '/', $path);
+        if (! str_starts_with($normalized, 'storage/journal/page/') && ! str_starts_with($normalized, 'assets/img/journal/page/')) {
+            return;
         }
+
+        $this->uploads->delete($normalized);
     }
 }

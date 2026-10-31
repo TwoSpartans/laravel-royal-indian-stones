@@ -782,6 +782,7 @@ class HomePageTest extends TestCase
                 ->assertOk()
                 ->assertSee('Grey wall panels')
                 ->assertSee($path, false)
+                ->assertDontSee('/assets/img/optimized/'.substr(md5((string) $path), 0, 16), false)
                 ->assertSee('Stone Wall Cladding');
 
             $this->actingAs($admin)

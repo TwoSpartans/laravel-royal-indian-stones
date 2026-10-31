@@ -55,7 +55,7 @@ class AdminProductEditorTest extends TestCase
             $this->assertNotNull($image);
             $this->assertSame(640, $image->width);
             $this->assertSame('Pink sandstone sample', $image->alt);
-            $this->assertFileExists(public_path($image->path));
+            $this->assertFileExists($this->storedUpload($image->path));
 
             $this->get('/editor-pink')
                 ->assertOk()
@@ -64,6 +64,7 @@ class AdminProductEditorTest extends TestCase
                 ->assertSee('Rajasthan');
         } finally {
             File::deleteDirectory($directory);
+            File::deleteDirectory(storage_path('app/public/products/sandstone/editor-pink'));
         }
     }
 
@@ -350,6 +351,15 @@ class AdminProductEditorTest extends TestCase
             'name' => 'Sandstone',
             'slug' => 'sandstone',
         ]);
+    }
+
+    private function storedUpload(string $path): string
+    {
+        if (str_starts_with($path, 'storage/')) {
+            return storage_path('app/public/'.substr($path, strlen('storage/')));
+        }
+
+        return public_path($path);
     }
 
     private function stone(): Product

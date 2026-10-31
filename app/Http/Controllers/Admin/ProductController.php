@@ -9,11 +9,11 @@ use App\Models\ProductImage;
 use App\Models\ProductSpec;
 use App\Services\CatalogueIndex;
 use App\Support\ResponsivePicture;
+use App\Support\ServedUpload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +21,7 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function __construct(private ResponsivePicture $pictures) {}
+    public function __construct(private ResponsivePicture $pictures, private ServedUpload $uploads) {}
 
     public function index(Request $request): View
     {
@@ -343,13 +343,10 @@ class ProductController extends Controller
 
         $base = Str::slug(pathinfo($photo->getClientOriginalName(), PATHINFO_FILENAME));
         $filename = ($base !== '' ? $base : 'stone').'-'.Str::lower(Str::random(8)).'.'.$extension;
-        $relativeDirectory = 'assets/img/products/'.$category->slug.'/'.$product->slug;
-        File::ensureDirectoryExists(public_path($relativeDirectory));
-        $photo->move(public_path($relativeDirectory), $filename);
-
-        $relativePath = $relativeDirectory.'/'.$filename;
+        $relativePath = $this->uploads->store($photo, 'products/'.$category->slug.'/'.$product->slug, $filename);
         $this->pictures->ensure($relativePath);
-        $size = getimagesize(public_path($relativePath));
+        $absolute = $this->uploads->absolute($relativePath);
+        $size = is_string($absolute) ? @getimagesize($absolute) : false;
 
         $product->images()->create([
             'path' => $relativePath,
@@ -363,11 +360,11 @@ class ProductController extends Controller
     private function publicProductImagePath(string $path): ?string
     {
         $path = str_replace('\\', '/', $path);
-        if ($path === '' || str_contains($path, '..') || ! str_starts_with($path, 'assets/img/products/')) {
+        if (! str_starts_with($path, 'assets/img/products/') && ! str_starts_with($path, 'storage/products/')) {
             return null;
         }
 
-        return public_path($path);
+        return $this->uploads->absolute($path);
     }
 
     /**

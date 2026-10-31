@@ -297,7 +297,7 @@ class JournalPageTest extends TestCase
         $this->assertNotNull($settings);
         $this->assertSame('Notes from', $settings->heading_lead);
         $this->assertNotNull($settings->cover_image);
-        $this->assertFileExists(public_path((string) $settings->cover_image));
+        $this->assertFileExists($this->journalFile((string) $settings->cover_image));
 
         $this->get('/blog')
             ->assertOk()
@@ -305,10 +305,18 @@ class JournalPageTest extends TestCase
             ->assertSee('the quarry.');
 
         $hash = substr(md5((string) $settings->cover_image), 0, 16);
-        foreach (glob(public_path('assets/img/optimized/'.$hash.'-*')) ?: [] as $variant) {
-            unlink($variant);
+        foreach ([
+            public_path('assets/img/optimized/'.$hash.'-*'),
+            storage_path('app/public/img/optimized/'.$hash.'-*'),
+        ] as $pattern) {
+            foreach (glob($pattern) ?: [] as $variant) {
+                unlink($variant);
+            }
         }
-        unlink(public_path((string) $settings->cover_image));
+        $coverFile = $this->journalFile((string) $settings->cover_image);
+        if (is_file($coverFile)) {
+            unlink($coverFile);
+        }
     }
 
     public function test_a_search_quote_does_not_reveal_an_unpublished_story(): void
@@ -499,8 +507,8 @@ class JournalPageTest extends TestCase
             $this->assertNotNull($coverPath);
             $this->assertNotNull($makerPath);
             $this->assertNotSame($coverPath, $makerPath);
-            $this->assertFileExists(public_path($coverPath));
-            $this->assertFileExists(public_path($makerPath));
+            $this->assertFileExists($this->journalFile($coverPath));
+            $this->assertFileExists($this->journalFile($makerPath));
             $this->assertSame('Notes from', $settings->heading_lead);
 
             $this->get('/blog')
@@ -519,8 +527,8 @@ class JournalPageTest extends TestCase
             $settings->refresh();
             $this->assertSame($coverPath, $settings->cover_image);
             $this->assertNull($settings->maker_image);
-            $this->assertFileExists(public_path($coverPath));
-            $this->assertFileDoesNotExist(public_path($makerPath));
+            $this->assertFileExists($this->journalFile($coverPath));
+            $this->assertFileDoesNotExist($this->journalFile($makerPath));
             $this->assertSame('Notes from', $settings->heading_lead);
         } finally {
             $this->deleteJournalUpload(is_string($coverPath) ? $coverPath : null);
@@ -542,7 +550,7 @@ class JournalPageTest extends TestCase
             $this->assertNotNull($settings);
             $coverPath = $settings->cover_image;
             $this->assertIsString($coverPath);
-            $this->assertFileExists(public_path($coverPath));
+            $this->assertFileExists($this->journalFile($coverPath));
 
             $response = $this->actingAs($admin)
                 ->from('/admin/journal')
@@ -560,7 +568,7 @@ class JournalPageTest extends TestCase
             $settings->refresh();
             $this->assertSame($coverPath, $settings->cover_image);
             $this->assertSame('Stories in', $settings->heading_lead);
-            $this->assertFileExists(public_path($coverPath));
+            $this->assertFileExists($this->journalFile($coverPath));
         } finally {
             $this->deleteJournalUpload(is_string($coverPath) ? $coverPath : null);
         }
@@ -694,15 +702,29 @@ class JournalPageTest extends TestCase
         }
 
         $hash = substr(md5($path), 0, 16);
-        foreach (glob(public_path('assets/img/optimized/'.$hash.'-*')) ?: [] as $variant) {
-            if (is_file($variant)) {
-                unlink($variant);
+        foreach ([
+            public_path('assets/img/optimized/'.$hash.'-*'),
+            storage_path('app/public/img/optimized/'.$hash.'-*'),
+        ] as $pattern) {
+            foreach (glob($pattern) ?: [] as $variant) {
+                if (is_file($variant)) {
+                    unlink($variant);
+                }
             }
         }
 
-        $fullPath = public_path($path);
+        $fullPath = $this->journalFile($path);
         if (is_file($fullPath)) {
             unlink($fullPath);
         }
+    }
+
+    private function journalFile(string $path): string
+    {
+        if (str_starts_with($path, 'storage/')) {
+            return storage_path('app/public/'.substr($path, strlen('storage/')));
+        }
+
+        return public_path($path);
     }
 }

@@ -9,7 +9,7 @@
         <p>Royal Indian Exports<br>Rajpurohit Bhawan, Plot-17<br>Golf Course Road, Air Force<br>Jodhpur-342011, Rajasthan, India</p>
         <p><strong>Call</strong><br><a href="tel:+918769873114" data-track="phone_click">+91 876 987 3114</a></p>
         <p><strong>Email</strong><br><a href="mailto:info@royalindianstones.com">info@royalindianstones.com</a><br><a href="mailto:royalindianstones@gmail.com">royalindianstones@gmail.com</a></p>
-        <p class="company-registration">IEC: 1309006687<br>GST: 08ASYPP8166A1Z4</p>
+        <p class="company-registration"><strong>IEC</strong><br>1309006687<br><strong>GST</strong><br>08ASYPP8166A1Z4</p>
         <a class="text-link" href="{{ url('/products') }}">Browse our stones →</a>
       </aside>
       <form id="contact_form" class="quote-form" action="{{ route('enquiry.store') }}" method="post">

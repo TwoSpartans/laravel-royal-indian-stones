@@ -7,10 +7,10 @@ use App\Models\Post;
 use App\Models\PostCategory;
 use App\Support\JournalHtml;
 use App\Support\ResponsivePicture;
+use App\Support\ServedUpload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -18,7 +18,7 @@ use Illuminate\View\View;
 
 class PostController extends Controller
 {
-    public function __construct(private ResponsivePicture $pictures) {}
+    public function __construct(private ResponsivePicture $pictures, private ServedUpload $uploads) {}
 
     public function index(Request $request): View
     {
@@ -137,7 +137,7 @@ class PostController extends Controller
             $cover = $request->file('cover');
             if ($cover instanceof UploadedFile) {
                 $image = $this->storeImage($cover, $data['slug'], 'cover', 'cover');
-                $created[] = public_path($image);
+                $created[] = $this->uploads->absolute($image) ?? $image;
             } elseif ($request->boolean('remove_cover')) {
                 $image = null;
             }
@@ -193,7 +193,7 @@ class PostController extends Controller
             }
 
             $path = $this->storeImage($file, $slug, 'inline-'.$index, 'inline_images');
-            $created[] = public_path($path);
+            $created[] = $this->uploads->absolute($path) ?? $path;
             $html = preg_replace(
                 '/(<img\b[^>]*\sdata-pending="'.$index.'"[^>]*)(>)/i',
                 '$1 data-stored="'.$path.'"$2',
@@ -226,11 +226,8 @@ class PostController extends Controller
             ]);
         }
 
-        $relativeDirectory = 'assets/img/journal/'.$slug;
-        File::ensureDirectoryExists(public_path($relativeDirectory));
         $filename = $prefix.'-'.Str::lower(Str::random(8)).'.'.$extension;
-        $photo->move(public_path($relativeDirectory), $filename);
-        $relativePath = $relativeDirectory.'/'.$filename;
+        $relativePath = $this->uploads->store($photo, 'journal/'.$slug, $filename);
         $this->pictures->ensure($relativePath);
 
         return $relativePath;
@@ -247,7 +244,7 @@ class PostController extends Controller
             $paths[] = $cover;
         }
 
-        preg_match_all('/\bsrc="(assets\/img\/journal\/[^"]+)"/i', (string) $post->body, $matches);
+        preg_match_all('/\bsrc="((?:assets\/img\/journal|storage\/journal)\/[^"]+)"/i', (string) $post->body, $matches);
         foreach ($matches[1] ?? [] as $src) {
             $path = $this->managedPath($src);
             if ($path !== null) {
@@ -261,13 +258,14 @@ class PostController extends Controller
     private function managedPath(?string $path): ?string
     {
         $path = str_replace('\\', '/', (string) $path);
-        if ($path === '' || str_contains($path, '..') || ! str_starts_with($path, 'assets/img/journal/')) {
+        if ($path === '' || str_contains($path, '..')) {
+            return null;
+        }
+        if (! str_starts_with($path, 'assets/img/journal/') && ! str_starts_with($path, 'storage/journal/')) {
             return null;
         }
 
-        $fullPath = public_path($path);
-
-        return is_file($fullPath) ? $fullPath : $fullPath;
+        return $this->uploads->absolute($path);
     }
 
     /**

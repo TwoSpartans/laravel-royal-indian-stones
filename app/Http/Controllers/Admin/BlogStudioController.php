@@ -16,11 +16,11 @@ use App\Services\RichContent\DocumentValidator;
 use App\Services\RichContent\QualityChecker;
 use App\Services\RichContent\RichContentRenderer;
 use App\Support\ResponsivePicture;
+use App\Support\ServedUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -36,6 +36,7 @@ class BlogStudioController extends Controller
         private ArticleTemplates $templates,
         private RichContentRenderer $renderer,
         private ResponsivePicture $pictures,
+        private ServedUpload $uploads,
     ) {}
 
     public function create(): RedirectResponse
@@ -224,13 +225,11 @@ class BlogStudioController extends Controller
             throw ValidationException::withMessages(['file' => 'Images must be 6 MB or smaller.']);
         }
 
-        $directory = 'assets/img/journal/'.$post->id;
-        File::ensureDirectoryExists(public_path($directory));
         $filename = 'photo-'.Str::lower(Str::random(8)).'.'.$extension;
-        $file->move(public_path($directory), $filename);
-        $path = $directory.'/'.$filename;
+        $path = $this->uploads->store($file, 'journal/'.$post->id, $filename);
         $this->pictures->ensure($path);
-        $size = @getimagesize(public_path($path)) ?: [null, null];
+        $absolute = $this->uploads->absolute($path);
+        $size = is_string($absolute) ? (@getimagesize($absolute) ?: [null, null]) : [null, null];
         $media = JournalMedia::query()->create([
             'path' => $path,
             'alt' => $data['alt'] ?? null,

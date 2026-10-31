@@ -9,19 +9,23 @@ use App\Models\HomeSection;
 use App\Support\HomeContent;
 use App\Support\JournalDestination;
 use App\Support\ResponsivePicture;
+use App\Support\ServedUpload;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class HomePageController extends Controller
 {
-    public function __construct(private HomeContent $content, private ResponsivePicture $pictures) {}
+    public function __construct(
+        private HomeContent $content,
+        private ResponsivePicture $pictures,
+        private ServedUpload $uploads,
+    ) {}
 
     public function edit(): View
     {
@@ -199,7 +203,7 @@ class HomePageController extends Controller
 
                 if ($uploaded instanceof UploadedFile) {
                     $path = $this->storeUpload($uploaded, $section, $slot);
-                } elseif ($request->boolean('restore.'.$section.'.'.$slot) || ($previous !== null && ! is_file(public_path($previous)))) {
+                } elseif ($request->boolean('restore.'.$section.'.'.$slot) || ($previous !== null && ! $this->uploadExists($previous))) {
                     $path = null;
                 }
 
@@ -278,13 +282,8 @@ class HomePageController extends Controller
             $name = 'photograph';
         }
 
-        $directory = storage_path('app/public/home/'.$section);
-        File::ensureDirectoryExists($directory);
         $filename = $name.'-'.Str::lower(Str::random(8)).'.'.$extension;
-        $photo->move($directory, $filename);
-        @chmod($directory, 0755);
-        @chmod($directory.DIRECTORY_SEPARATOR.$filename, 0644);
-        $path = 'storage/home/'.$section.'/'.$filename;
+        $path = $this->uploads->store($photo, 'home/'.$section, $filename);
         $this->pictures->ensure($path);
 
         return $path;
@@ -292,18 +291,22 @@ class HomePageController extends Controller
 
     private function deleteManaged(?string $path): void
     {
-        $path = str_replace('\\', '/', (string) $path);
-        if ($path === '' || str_contains($path, '..')) {
+        if (! is_string($path) || $path === '') {
             return;
         }
 
-        $fullPath = match (true) {
-            str_starts_with($path, 'storage/home/') => storage_path('app/public/'.substr($path, strlen('storage/'))),
-            str_starts_with($path, 'assets/img/home/') => public_path($path),
-            default => null,
-        };
-        if (is_string($fullPath) && is_file($fullPath)) {
-            unlink($fullPath);
+        $normalized = str_replace('\\', '/', $path);
+        if (! str_starts_with($normalized, 'storage/home/') && ! str_starts_with($normalized, 'assets/img/home/')) {
+            return;
         }
+
+        $this->uploads->delete($normalized);
+    }
+
+    private function uploadExists(string $path): bool
+    {
+        $absolute = $this->uploads->absolute($path);
+
+        return $absolute !== null && is_file($absolute);
     }
 }
