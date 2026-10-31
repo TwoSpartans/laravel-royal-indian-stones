@@ -26,7 +26,7 @@
     );
     $imageCount = $product->images->count();
     $visibleSpecs = $product->specs->reject(
-        fn (\App\Models\ProductSpec $spec): bool => in_array(mb_strtolower(trim($spec->label)), ['packaging', 'lead time', 'minimum order'], true),
+        fn (\App\Models\ProductSpec $spec): bool => in_array(mb_strtolower(trim($spec->label)), ['packaging', 'lead time', 'minimum order', 'thickness'], true),
     );
 @endphp
 

@@ -10,11 +10,13 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Services\BlogStudio\StudioDocumentService;
 use App\Services\JournalIndex;
+use App\Support\CategoryListing;
 use App\Support\LaterPages;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SiteController extends Controller
@@ -31,7 +33,7 @@ class SiteController extends Controller
         'aboutus',
     ];
 
-    public function show(string $slug): View|RedirectResponse
+    public function show(Request $request, string $slug, CategoryListing $listings): View|RedirectResponse
     {
         foreach (self::RESERVED_SLUGS as $canonical) {
             if ($slug !== $canonical && strcasecmp($slug, $canonical) === 0) {
@@ -76,9 +78,12 @@ class SiteController extends Controller
                 return redirect('/'.$category->slug, 301);
             }
 
+            $products = $category->products()->published()->with(['images', 'specs'])->orderBy('name')->get();
+            $group = $request->query('group');
+
             return view('category', [
                 'category' => $category,
-                'products' => $category->products()->published()->with('images')->orderBy('name')->get(),
+                'listing' => $listings->present($category, $products, is_string($group) ? $group : null),
                 'active' => $category->slug === 'stone-articles' ? 'articles' : 'products',
                 'title' => $category->name.' | Royal Indian Stones',
                 'description' => $category->searchDescription(),

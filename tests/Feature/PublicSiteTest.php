@@ -53,6 +53,7 @@ class PublicSiteTest extends TestCase
         ]);
         $product->specs()->create(['label' => 'Origin', 'value' => 'India', 'position' => 0]);
         $product->specs()->create(['label' => 'Minimum Order', 'value' => 'Ask our team for this product.', 'position' => 1]);
+        $product->specs()->create(['label' => 'Thickness', 'value' => 'Specify your required thickness in the enquiry.', 'position' => 2]);
         $product->images()->create(['path' => 'assets/img/about.jpg', 'alt' => 'First face', 'position' => 0]);
         $product->images()->create(['path' => 'assets/img/about.jpg', 'alt' => 'Second face', 'position' => 1]);
 
@@ -67,6 +68,8 @@ class PublicSiteTest extends TestCase
             ->assertDontSee('<dt>Minimum Order</dt>', false)
             ->assertDontSee('<dt>Lead Time</dt>', false)
             ->assertDontSee('<dt>Packaging</dt>', false)
+            ->assertDontSee('<dt>Thickness</dt>', false)
+            ->assertDontSee('Specify your required thickness in the enquiry.')
             ->assertDontSee('One full container is the minimum we accept.')
             ->assertSee('aria-label="Previous photograph"', false)
             ->assertSee('aria-label="Next photograph"', false)

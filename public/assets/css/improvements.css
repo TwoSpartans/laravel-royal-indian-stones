@@ -44,7 +44,7 @@ img{max-width:100%;height:auto}picture img{object-fit:cover}button,input,select,
 #hero.home-hero .carousel-indicators{z-index:3;margin-bottom:22px;gap:6px}
 #hero.home-hero .carousel-indicators button{position:relative;width:11px;height:11px;margin:0 4px;padding:0;border:0;border-radius:50%;background-color:#fff;background-clip:padding-box;opacity:.8;box-shadow:0 0 0 1px #14100f66;overflow:hidden}
 #hero.home-hero .carousel-indicators button.active{width:36px;border-radius:999px;background-color:#ffffff73;opacity:1}
-#hero.home-hero .carousel-indicators button.active::after{content:"";position:absolute;inset:0 auto 0 0;width:0;background:#f03c02;border-radius:inherit}
+#hero.home-hero .carousel-indicators button.active::after{content:"";position:absolute;inset:0 auto 0 0;width:0;background:#fff;border-radius:inherit}
 #hero.home-hero .is-advancing .carousel-indicators button.active::after{animation:hero-indicator 10s linear forwards}
 #hero.home-hero .is-held .carousel-item.active .hero-image,#hero.home-hero .is-held .carousel-indicators button.active::after{animation-play-state:paused}
 @keyframes hero-drift{from{transform:scale(1)}to{transform:scale(1.06)}}
@@ -676,6 +676,12 @@ a.about-principle:hover{transform:none}
 .catalogue-page .catalogue-intro{padding-bottom:16px;background:transparent}
 .catalogue-page .catalogue-section,
 .catalogue-page>.home-categories{padding:0 0 48px}
+.category-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.category-filter a{display:inline-flex;align-items:center;min-height:40px;padding:8px 16px;border:1px solid var(--ris-line);border-radius:999px;background:#fff;color:var(--ris-ink);font-family:var(--font-text);font-size:.875rem;font-weight:600;line-height:1.2;text-decoration:none}
+.category-filter a:hover,.category-filter a:focus-visible{color:var(--ris-ink)}
+.category-filter a.is-active,.category-filter a.is-active:hover,.category-filter a.is-active:focus-visible{border-color:var(--ris-ink);background:var(--ris-ink);color:#fff}
+.category-group-title{margin:8px 0 16px;font-size:clamp(1.6rem,2vw,2.1rem);font-weight:560;line-height:1.2}
+.category-group+.category-group{margin-top:36px}
 @media(max-width:767px){
 .catalogue-page .catalogue-intro{padding-bottom:12px}
 .catalogue-page .catalogue-section,
