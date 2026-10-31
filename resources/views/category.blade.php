@@ -4,7 +4,6 @@
 <main id="main" class="catalogue-page">
   <section class="catalogue-intro">
     <div class="container">
-      <p class="eyebrow">Royal Indian Stones</p>
       <h1>{{ $category->name }}</h1>
       @if($category->introduction)
         <p>{{ $category->introduction }}</p>

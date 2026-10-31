@@ -278,11 +278,13 @@ class HomePageController extends Controller
             $name = 'photograph';
         }
 
-        $directory = 'assets/img/home/'.$section;
-        File::ensureDirectoryExists(public_path($directory));
+        $directory = storage_path('app/public/home/'.$section);
+        File::ensureDirectoryExists($directory);
         $filename = $name.'-'.Str::lower(Str::random(8)).'.'.$extension;
-        $photo->move(public_path($directory), $filename);
-        $path = $directory.'/'.$filename;
+        $photo->move($directory, $filename);
+        @chmod($directory, 0755);
+        @chmod($directory.DIRECTORY_SEPARATOR.$filename, 0644);
+        $path = 'storage/home/'.$section.'/'.$filename;
         $this->pictures->ensure($path);
 
         return $path;
@@ -291,12 +293,16 @@ class HomePageController extends Controller
     private function deleteManaged(?string $path): void
     {
         $path = str_replace('\\', '/', (string) $path);
-        if ($path === '' || str_contains($path, '..') || ! str_starts_with($path, 'assets/img/home/')) {
+        if ($path === '' || str_contains($path, '..')) {
             return;
         }
 
-        $fullPath = public_path($path);
-        if (is_file($fullPath)) {
+        $fullPath = match (true) {
+            str_starts_with($path, 'storage/home/') => storage_path('app/public/'.substr($path, strlen('storage/'))),
+            str_starts_with($path, 'assets/img/home/') => public_path($path),
+            default => null,
+        };
+        if (is_string($fullPath) && is_file($fullPath)) {
             unlink($fullPath);
         }
     }

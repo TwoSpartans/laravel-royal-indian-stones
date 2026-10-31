@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\HomeImage;
 use App\Models\HomeSection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 
 final class HomeContent
 {
@@ -371,11 +372,14 @@ final class HomeContent
     private function resolve(string $section, string $slot, string $fallback, string $fallbackAlt): array
     {
         $row = $this->rows()->get($section.'.'.$slot);
+        if ($row instanceof HomeImage) {
+            $this->publishLegacyHomeFile($row);
+        }
         $stored = $row?->path;
         $custom = is_string($stored)
             && $stored !== ''
             && ! str_contains($stored, '..')
-            && is_file(public_path($stored));
+            && $this->storedFileExists($stored);
         $alt = $row?->alt;
 
         return [
@@ -383,6 +387,41 @@ final class HomeContent
             'alt' => is_string($alt) && trim($alt) !== '' ? trim($alt) : $fallbackAlt,
             'custom' => $custom,
         ];
+    }
+
+    private function publishLegacyHomeFile(HomeImage $image): void
+    {
+        $path = str_replace('\\', '/', (string) $image->path);
+        if ($path === '' || str_contains($path, '..') || ! str_starts_with($path, 'assets/img/home/')) {
+            return;
+        }
+
+        $source = public_path($path);
+        if (! is_file($source)) {
+            return;
+        }
+
+        $relative = substr($path, strlen('assets/img/'));
+        $destination = storage_path('app/public/'.$relative);
+        File::ensureDirectoryExists(dirname($destination));
+        if (! is_file($destination)) {
+            File::copy($source, $destination);
+        }
+        @chmod(dirname($destination), 0755);
+        @chmod($destination, 0644);
+
+        $image->path = 'storage/'.$relative;
+        $image->save();
+    }
+
+    private function storedFileExists(string $path): bool
+    {
+        $path = str_replace('\\', '/', $path);
+        if (str_starts_with($path, 'storage/')) {
+            return is_file(storage_path('app/public/'.substr($path, strlen('storage/'))));
+        }
+
+        return is_file(public_path($path));
     }
 
     /**

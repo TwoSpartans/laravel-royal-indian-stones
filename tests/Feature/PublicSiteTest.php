@@ -119,7 +119,8 @@ class PublicSiteTest extends TestCase
         $this->get('/sandstone')
             ->assertOk()
             ->assertSee('<meta name="description" content="Indian sandstone for paving, cladding, and steps.">', false)
-            ->assertSee('The Royal Indian Stones company exports a very long sandstone introduction.');
+            ->assertSee('The Royal Indian Stones company exports a very long sandstone introduction.')
+            ->assertDontSee('<p class="eyebrow">Royal Indian Stones</p>', false);
         $this->get('/sandstone-mint')
             ->assertOk()
             ->assertSee('<title>Mint Sandstone | Royal Indian Stones</title>', false)
@@ -129,7 +130,12 @@ class PublicSiteTest extends TestCase
         $this->get('/sandstone-raj-green')
             ->assertOk()
             ->assertSee('<title>Raj Green Sandstone | Royal Indian Stones</title>', false);
-        $this->get('/')->assertOk()->assertSee('<title>Indian natural stone | Royal Indian Stones</title>', false);
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('<title>Indian natural stone | Royal Indian Stones</title>', false)
+            ->assertSee('href="https://wa.me/918769873114"', false)
+            ->assertSee('Chat on WhatsApp at +91 876 987 3114', false)
+            ->assertDontSee('class="back-to-top"', false);
         $this->get('/contact')->assertOk()
             ->assertSee('Let’s find your stone | Royal Indian Stones', false)
             ->assertDontSee('Tell us what you’re planning')

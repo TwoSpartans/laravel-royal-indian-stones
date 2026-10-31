@@ -65,7 +65,7 @@ class HomePageTest extends TestCase
 
             $first = HomeImage::query()->where('section', 'explore')->where('slot', 'sandstone')->value('path');
             $this->assertIsString($first);
-            $this->assertFileExists(public_path($first));
+            $this->assertFileExists($this->storedUpload($first));
 
             $this->get('/')
                 ->assertOk()
@@ -83,8 +83,8 @@ class HomePageTest extends TestCase
             $second = HomeImage::query()->where('section', 'explore')->where('slot', 'sandstone')->value('path');
             $this->assertIsString($second);
             $this->assertNotSame($first, $second);
-            $this->assertFileDoesNotExist(public_path($first));
-            $this->assertFileExists(public_path($second));
+            $this->assertFileDoesNotExist($this->storedUpload($first));
+            $this->assertFileExists($this->storedUpload($second));
 
             $this->get('/')->assertOk()->assertSee($second, false);
         } finally {
@@ -120,7 +120,7 @@ class HomePageTest extends TestCase
             ])->assertRedirect(route('admin.home.edit'));
 
             $this->assertDatabaseCount('home_images', 0);
-            $this->assertFileDoesNotExist(public_path($path));
+            $this->assertFileDoesNotExist($this->storedUpload($path));
             $this->get('/')
                 ->assertOk()
                 ->assertSee('assets/img/products/sandstone/agra-red/agra-red-sandstone-natural-mosaic-tiles.jpg', false)
@@ -207,7 +207,41 @@ class HomePageTest extends TestCase
         ])->assertRedirect(route('admin.home.edit'));
 
         $this->assertDatabaseCount('home_images', 0);
-        $this->assertSame([], glob(public_path('assets/img/home/explore/*')) ?: []);
+        $this->assertSame([], glob(public_path('assets/img/home/explore/not-a-real-stone*')) ?: []);
+        $this->assertSame([], glob(storage_path('app/public/home/explore/not-a-real-stone*')) ?: []);
+    }
+
+    public function test_a_homepage_photograph_stored_in_the_application_folder_is_copied_where_the_live_site_can_serve_it(): void
+    {
+        $this->sandstone();
+        $legacy = 'assets/img/home/explore/sandstone-legacy.jpg';
+        $source = public_path('assets/img/products/sandstone/agra-red/agra-red-sandstone-natural-mosaic-tiles.jpg');
+        $this->assertFileExists($source);
+        if (! is_dir(dirname(public_path($legacy)))) {
+            mkdir(dirname(public_path($legacy)), 0777, true);
+        }
+        copy($source, public_path($legacy));
+        HomeImage::query()->create([
+            'section' => 'explore',
+            'slot' => 'sandstone',
+            'path' => $legacy,
+            'alt' => 'Warm sandstone',
+        ]);
+
+        try {
+            $this->get('/')
+                ->assertOk()
+                ->assertSee('storage/home/explore/sandstone-legacy.jpg', false)
+                ->assertDontSee($legacy, false);
+
+            $this->assertSame('storage/home/explore/sandstone-legacy.jpg', HomeImage::query()->where('slot', 'sandstone')->value('path'));
+            $this->assertFileExists(storage_path('app/public/home/explore/sandstone-legacy.jpg'));
+        } finally {
+            $this->deleteUploaded('storage/home/explore/sandstone-legacy.jpg');
+            if (is_file(public_path($legacy))) {
+                unlink(public_path($legacy));
+            }
+        }
     }
 
     public function test_explore_editor_shows_catalogue_cards_in_catalogue_order(): void
@@ -319,9 +353,9 @@ class HomePageTest extends TestCase
 
             $path = HomeImage::query()->where('section', 'explore')->where('slot', 'sandstone')->value('path');
             $this->assertIsString($path);
-            $this->assertStringStartsWith('assets/img/home/explore/', $path);
+            $this->assertStringStartsWith('storage/home/explore/', $path);
             $this->assertNotSame($catalogueImage, $path);
-            $this->assertFileExists(public_path($path));
+            $this->assertFileExists($this->storedUpload($path));
             $this->assertSame($catalogueImage, Category::query()->where('slug', 'sandstone')->value('image'));
             $this->assertSame('Sandstone', Category::query()->where('slug', 'sandstone')->value('name'));
             $this->assertSame($limestoneImage, Category::query()->where('slug', 'limestone')->value('image'));
@@ -636,7 +670,7 @@ class HomePageTest extends TestCase
 
             $path = HomeImage::query()->where('section', 'hero')->where('slot', 'marble')->value('path');
             $this->assertIsString($path);
-            $this->assertFileExists(public_path($path));
+            $this->assertFileExists($this->storedUpload($path));
 
             $this->actingAs($admin)
                 ->get(route('admin.home.edit'))
@@ -737,9 +771,9 @@ class HomePageTest extends TestCase
 
             $path = HomeImage::query()->where('section', 'stones')->where('slot', 'index-stone-wall-panel')->value('path');
             $this->assertIsString($path);
-            $this->assertStringStartsWith('assets/img/home/stones/', $path);
+            $this->assertStringStartsWith('storage/home/stones/', $path);
             $this->assertNotSame($original, $path);
-            $this->assertFileExists(public_path($path));
+            $this->assertFileExists($this->storedUpload($path));
             $this->assertFileExists(public_path($original));
             $this->assertSame(1, HomeImage::query()->where('section', 'stones')->count());
 
@@ -785,13 +819,23 @@ class HomePageTest extends TestCase
         ]);
     }
 
+    private function storedUpload(?string $path): string
+    {
+        $path = str_replace('\\', '/', (string) $path);
+        if (str_starts_with($path, 'storage/')) {
+            return storage_path('app/public/'.substr($path, strlen('storage/')));
+        }
+
+        return public_path($path);
+    }
+
     private function deleteUploaded(?string $path): void
     {
         if (! is_string($path) || $path === '') {
             return;
         }
 
-        $fullPath = public_path($path);
+        $fullPath = $this->storedUpload($path);
         if (is_file($fullPath)) {
             unlink($fullPath);
         }

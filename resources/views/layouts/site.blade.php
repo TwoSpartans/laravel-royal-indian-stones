@@ -43,7 +43,7 @@
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/boxicons/css/boxicons.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/css/style.css') }}?v=2" rel="stylesheet">
-<link href="{{ asset('assets/css/improvements.css') }}?v=84" rel="stylesheet">
+<link href="{{ asset('assets/css/improvements.css') }}?v=85" rel="stylesheet">
 @php
     $deferredStyles = [
         'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap',
@@ -65,7 +65,7 @@
 @include('partials.header')
 @yield('content')
 @include('partials.footer')
-<a href="#main" class="back-to-top" aria-label="Back to top"><span class="back-to-top-arrow"><i class="bi bi-arrow-up" aria-hidden="true"></i></span></a>
+<a class="whatsapp-chat" href="https://wa.me/918769873114" target="_blank" rel="noopener noreferrer" data-track="whatsapp_click" aria-label="Chat on WhatsApp at +91 876 987 3114"><i class="bx bxl-whatsapp" aria-hidden="true"></i></a>
 <script src="{{ asset('assets/vendor/aos/aos.js') }}" defer></script>
 <script src="{{ asset('assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}" defer></script>
 <script src="{{ asset('assets/vendor/glightbox/js/glightbox.min.js') }}" defer></script>

@@ -31,7 +31,7 @@ class ResponsivePicture
             return $empty;
         }
 
-        $size = @getimagesize(public_path($relative));
+        $size = @getimagesize($this->locatedFile($relative) ?? '');
         if ($size === false || $this->isIcon((int) $size[0], (int) $size[1])) {
             return ['fallback' => asset($relative), 'avif' => null, 'webp' => null, 'width' => null, 'height' => null];
         }
@@ -58,7 +58,10 @@ class ResponsivePicture
             return false;
         }
 
-        $absolute = public_path($relative);
+        $absolute = $this->locatedFile($relative);
+        if ($absolute === null) {
+            return false;
+        }
         $size = @getimagesize($absolute);
         if ($size === false || $this->isIcon((int) $size[0], (int) $size[1])) {
             return false;
@@ -257,7 +260,21 @@ class ResponsivePicture
             return null;
         }
 
-        return is_file(public_path($path)) ? $path : null;
+        return $this->locatedFile($path) !== null ? $path : null;
+    }
+
+    private function locatedFile(string $relative): ?string
+    {
+        if (str_starts_with($relative, 'storage/')) {
+            $stored = storage_path('app/public/'.substr($relative, strlen('storage/')));
+            if (is_file($stored)) {
+                return $stored;
+            }
+        }
+
+        $public = public_path($relative);
+
+        return is_file($public) ? $public : null;
     }
 
     /**

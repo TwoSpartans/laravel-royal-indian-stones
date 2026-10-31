@@ -658,3 +658,9 @@ a.about-principle:hover{transform:none}
 .e-catalogue-count{margin:0;font-size:var(--caption);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ris-muted)}
 .e-catalogue-placeholder{display:block;aspect-ratio:4/3;background:var(--ris-paper)}
 .e-catalogue .text-link{margin-top:auto}
+#footer .footer-contact h4{font-family:var(--font-text);font-weight:600;letter-spacing:0}
+.whatsapp-chat{position:fixed;right:22px;bottom:22px;z-index:996;display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:#25d366;color:#fff;text-decoration:none;box-shadow:0 10px 15px -3px #20252033,0 4px 6px -4px #20252033;transition:background .18s ease,transform .18s ease}
+.whatsapp-chat i{font-size:32px;line-height:1;color:#fff}
+.whatsapp-chat:hover,.whatsapp-chat:focus-visible{background:#1ebe5d;color:#fff;transform:translateY(-2px)}
+.whatsapp-chat:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.whatsapp-chat{transition:none}.whatsapp-chat:hover,.whatsapp-chat:focus-visible{transform:none}}
