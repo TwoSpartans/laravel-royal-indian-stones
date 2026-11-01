@@ -55,9 +55,13 @@ class OutreachTest extends TestCase
             ->get(route('admin.outreach.index'))
             ->assertOk()
             ->assertSee('Trade Sandstone')
-            ->assertSee('Rewrite the page title. It repeats trade words such as manufacturer and supplier, so search is using the stone name.')
-            ->assertSee('Write a search description of at least 50 characters. A shorter one is replaced by a line built from the name.')
-            ->assertSee('Add a photograph of this stone.')
+            ->assertSee('Title uses supplier words')
+            ->assertSee('manufacturer, supplier, exporter')
+            ->assertSee('Trade Sandstone, Manufacturer, Supplier, Exporter from India')
+            ->assertSee('Description under 50 characters')
+            ->assertSee('15 characters')
+            ->assertSee('is a sandstone in Buff')
+            ->assertSee('No photograph')
             ->assertSee(route('admin.products.edit', $stone), false);
     }
 
@@ -130,7 +134,8 @@ class OutreachTest extends TestCase
             ->get(route('admin.outreach.index', ['gap' => 'title-length']))
             ->assertOk()
             ->assertSee('Long Title Stone')
-            ->assertSee('Titles too long')
+            ->assertSee('Title over 70 characters')
+            ->assertSee('90 characters')
             ->assertDontSee('Trade Sandstone');
     }
 
@@ -139,7 +144,7 @@ class OutreachTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('admin.outreach.index', ['gap' => 'hidden']))
             ->assertOk()
-            ->assertSee('Nothing is left in this group.')
+            ->assertSee('No warnings in this problem.')
             ->assertDontSee('Every public page has a title, description, and photograph.');
     }
 
@@ -168,7 +173,8 @@ class OutreachTest extends TestCase
             ->get(route('admin.outreach.index'))
             ->assertOk()
             ->assertSee('Hidden Limestone')
-            ->assertSee('This stone is hidden, so it is left off the public catalogue and the sitemap.');
+            ->assertSee('Hidden from the catalogue')
+            ->assertSee('Left off the public catalogue and the sitemap.');
     }
 
     public function test_pages_tab_lists_a_journal_note_without_a_search_description(): void
@@ -186,7 +192,9 @@ class OutreachTest extends TestCase
             ->get(route('admin.outreach.index'))
             ->assertOk()
             ->assertSee('Basalt courtyard note')
-            ->assertSee('Add a search description. The public page is using the excerpt.')
+            ->assertSee('Journal has no search description')
+            ->assertSee('No search description')
+            ->assertSee('A note on basalt from the Jodhpur yard, written for architects specifying paving.')
             ->assertSee(route('admin.posts.edit', $post), false);
     }
 
@@ -208,8 +216,137 @@ class OutreachTest extends TestCase
             ->get(route('admin.outreach.index'))
             ->assertOk()
             ->assertSee('Yard photograph note')
-            ->assertSee('Describe the featured photograph. It is part of the story, not decoration.')
-            ->assertDontSee('Add a search description. The public page is using the excerpt.');
+            ->assertSee('Journal photo has no description')
+            ->assertSee('No description on the photograph')
+            ->assertDontSee('No search description');
+    }
+
+    public function test_ignoring_a_warning_hides_it_until_it_is_restored(): void
+    {
+        $category = $this->sandstone();
+        $stone = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Kept Sandstone',
+            'slug' => 'kept-sandstone',
+            'color' => 'Buff',
+            'finishes' => ['Natural'],
+            'applications' => ['Paving'],
+            'summary' => 'A buff sandstone.',
+            'meta_title' => 'Kept Sandstone, Manufacturer and Supplier',
+            'meta_description' => 'Buff sandstone from Jodhpur, supplied for courtyard paving and garden paths.',
+            'is_published' => true,
+        ]);
+        ProductImage::query()->create([
+            'product_id' => $stone->id,
+            'path' => 'assets/img/stones/kept.jpg',
+            'alt' => 'Buff sandstone',
+        ]);
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.outreach.warnings.ignore'), [
+                'subject_type' => 'product',
+                'subject_id' => $stone->id,
+                'gap' => 'title-trade',
+                'return_gap' => 'title-trade',
+            ])
+            ->assertRedirect(route('admin.outreach.index', ['gap' => 'title-trade']))
+            ->assertSessionHas('status', 'Warning ignored.');
+
+        $this->assertDatabaseHas('outreach_ignored_warnings', [
+            'subject_type' => 'product',
+            'subject_id' => $stone->id,
+            'gap' => 'title-trade',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.outreach.index', ['gap' => 'title-trade']))
+            ->assertOk()
+            ->assertDontSee('Kept Sandstone')
+            ->assertSee('No warnings in this problem.');
+
+        $this->actingAs($admin)
+            ->get(route('admin.outreach.index', ['show' => 'ignored', 'gap' => 'title-trade']))
+            ->assertOk()
+            ->assertSee('Kept Sandstone')
+            ->assertSee('manufacturer, supplier')
+            ->assertSee('Restore');
+
+        $this->actingAs($admin)
+            ->delete(route('admin.outreach.warnings.restore'), [
+                'subject_type' => 'product',
+                'subject_id' => $stone->id,
+                'gap' => 'title-trade',
+                'show' => 'ignored',
+                'return_gap' => 'title-trade',
+            ])
+            ->assertRedirect(route('admin.outreach.index', ['show' => 'ignored', 'gap' => 'title-trade']))
+            ->assertSessionHas('status', 'Warning restored.');
+
+        $this->assertDatabaseCount('outreach_ignored_warnings', 0);
+
+        $this->actingAs($admin)
+            ->get(route('admin.outreach.index', ['gap' => 'title-trade']))
+            ->assertOk()
+            ->assertSee('Kept Sandstone');
+    }
+
+    public function test_guest_cannot_ignore_a_warning_and_a_missing_problem_is_rejected(): void
+    {
+        $category = $this->sandstone();
+        $stone = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Courtyard Mint',
+            'slug' => 'courtyard-mint',
+            'color' => 'Green',
+            'finishes' => ['Natural'],
+            'applications' => ['Paving'],
+            'summary' => 'Mint sandstone for courtyards.',
+            'meta_title' => 'Mint sandstone for courtyard paving',
+            'meta_description' => 'Mint sandstone from Jodhpur, supplied for courtyard paving and garden paths.',
+            'is_published' => true,
+        ]);
+        ProductImage::query()->create([
+            'product_id' => $stone->id,
+            'path' => 'assets/img/stones/mint.jpg',
+            'alt' => 'Mint sandstone paving',
+        ]);
+
+        $this->post(route('admin.outreach.warnings.ignore'), [
+            'subject_type' => 'product',
+            'subject_id' => $stone->id,
+            'gap' => 'title-trade',
+        ])->assertRedirect('/admin/login');
+
+        $visitor = User::factory()->create();
+        $visitor->forceFill(['is_site_admin' => false])->save();
+        $this->actingAs($visitor)
+            ->post(route('admin.outreach.warnings.ignore'), [
+                'subject_type' => 'product',
+                'subject_id' => $stone->id,
+                'gap' => 'title-trade',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs(User::factory()->create())
+            ->from(route('admin.outreach.index'))
+            ->post(route('admin.outreach.warnings.ignore'), [
+                'subject_type' => 'product',
+                'subject_id' => $stone->id,
+                'gap' => 'not-a-problem',
+            ])
+            ->assertRedirect(route('admin.outreach.index'))
+            ->assertSessionHasErrors(['gap' => 'Choose a warning from the list.']);
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('admin.outreach.warnings.ignore'), [
+                'subject_type' => 'product',
+                'subject_id' => $stone->id,
+                'gap' => 'title-length',
+            ])
+            ->assertNotFound();
+
+        $this->assertDatabaseCount('outreach_ignored_warnings', 0);
     }
 
     public function test_valid_mention_is_saved_and_a_published_mention_needs_an_address(): void

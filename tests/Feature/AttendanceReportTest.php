@@ -18,13 +18,10 @@ class AttendanceReportTest extends TestCase
         $employer = User::factory()->employer()->create();
         $employee = User::factory()->employee()->create(['name' => 'Karan Kumar']);
         $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
-        $this->travelTo(Carbon::parse('2026-10-21 12:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_start'])->assertRedirect();
-        $this->travelTo(Carbon::parse('2026-10-21 12:30:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_end'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
+        $this->insertBreak($employee, '2026-10-21 12:00:00', '2026-10-21 12:30:00');
         $this->travelTo(Carbon::parse('2026-10-21 18:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'out'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))->assertRedirect();
 
         $csv = $this->signIn($employer)->post('/portal/reports', [
             'type' => 'attendance',
@@ -59,7 +56,7 @@ class AttendanceReportTest extends TestCase
         $employer = User::factory()->employer()->create();
         $employee = User::factory()->employee()->create(['name' => 'Rohan Kanojiya']);
         $this->travelTo(Carbon::parse('2026-10-28 12:29:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
         $this->travelTo(Carbon::parse('2026-10-29 09:00:00', 'Asia/Kolkata'));
 
         $csv = $this->signIn($employer)->post('/portal/reports', [
@@ -81,9 +78,9 @@ class AttendanceReportTest extends TestCase
         $employee = User::factory()->employee()->create(['name' => 'Karan Kumar']);
         $other = User::factory()->employee()->create(['name' => 'Outside Person']);
         $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
         $this->travelTo(Carbon::parse('2026-10-21 18:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'out'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))->assertRedirect();
 
         $this->signIn($employee)->get('/portal/attendance/report?user_id='.$employee->id)->assertForbidden();
 

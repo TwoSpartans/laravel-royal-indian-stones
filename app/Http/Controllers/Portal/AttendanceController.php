@@ -33,7 +33,7 @@ class AttendanceController extends PortalController
         $actor = $this->actor($request);
         $people = $this->rosterPeople($actor);
         if ($actor->portal_role?->canAdminister() === true) {
-            return $this->overview($request, $review, $actor, $people);
+            return $this->overview($request, $review, $board, $actor, $people);
         }
 
         $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString()) : now();
@@ -80,13 +80,31 @@ class AttendanceController extends PortalController
     {
         $actor = $this->actor($request);
         abort_unless($actor->recordsOwnAttendance(), 403);
+        $clockingOut = $request->input('punch_type') === 'out';
         $data = $request->validate([
-            'punch_type' => ['required', Rule::in(['in', 'out', 'break_start', 'break_end'])],
+            'punch_type' => ['required', Rule::in(['in', 'out'])],
+            'working_on' => ['required', 'string', 'max:2000'],
+            'completed_work' => ['required', 'string', 'max:2000'],
+            'planned_work' => ['required', 'string', 'max:2000'],
+        ], [
+            'punch_type.in' => 'Clock in or clock out. Breaks are no longer recorded.',
+            'working_on.required' => 'Say what you are working on.',
+            'working_on.max' => 'What you are working on must be 2000 characters or fewer.',
+            'completed_work.required' => $clockingOut ? 'Say what you have done.' : 'Say what you did yesterday.',
+            'completed_work.max' => 'That section must be 2000 characters or fewer.',
+            'planned_work.required' => $clockingOut ? 'Say what you will be doing tomorrow.' : 'Say what you will work on today.',
+            'planned_work.max' => 'That section must be 2000 characters or fewer.',
         ]);
 
-        $clock->punch($request, $actor, $data['punch_type']);
+        $clock->punch($request, $actor, $data['punch_type'], [
+            'working_on' => $data['working_on'],
+            'completed_work' => $data['completed_work'],
+            'planned_work' => $data['planned_work'],
+        ]);
 
-        return back()->with('status', 'Attendance recorded. Signing in does not mark you present; this punch does.');
+        return back()->with('status', $data['punch_type'] === 'in'
+            ? 'Clocked in. The shift has started.'
+            : 'Clocked out. The shift has ended.');
     }
 
     public function correct(Request $request): RedirectResponse
@@ -326,7 +344,7 @@ class AttendanceController extends PortalController
     /**
      * @param  Collection<int, User>  $people
      */
-    private function overview(Request $request, AttendanceReview $review, User $actor, Collection $people): View
+    private function overview(Request $request, AttendanceReview $review, AttendanceBoard $board, User $actor, Collection $people): View
     {
         $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString())->startOfDay() : now()->startOfDay();
         $filtered = $this->narrow($request, $people);
@@ -369,6 +387,7 @@ class AttendanceController extends PortalController
             'people' => $people,
             'timezone' => PortalTime::timezone($actor),
             'clocks' => $actor->recordsOwnAttendance(),
+            'lastPunch' => $actor->recordsOwnAttendance() ? $board->lastPunch($actor) : null,
         ]);
     }
 

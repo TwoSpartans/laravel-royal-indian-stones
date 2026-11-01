@@ -24,7 +24,7 @@ class AttendanceCorrectionTest extends TestCase
         $other = User::factory()->manager()->create();
         $this->travelTo(Carbon::parse('2026-10-21 10:00:00', 'Asia/Kolkata'));
 
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))
             ->assertRedirect();
         $this->assertSame(1, AttendancePunch::query()->count());
         $this->assertTrue(AccessEvent::query()->where('event_type', 'attendance')->exists());
@@ -61,13 +61,10 @@ class AttendanceCorrectionTest extends TestCase
         $hr = User::factory()->adminHr()->create();
         $employer = User::factory()->employer()->create();
         $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
-        $this->travelTo(Carbon::parse('2026-10-21 12:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_start'])->assertRedirect();
-        $this->travelTo(Carbon::parse('2026-10-21 12:30:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_end'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
+        $this->insertBreak($employee, '2026-10-21 12:00:00', '2026-10-21 12:30:00');
         $this->travelTo(Carbon::parse('2026-10-21 18:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'out'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))->assertRedirect();
 
         $this->signIn($employee)->get('/portal')->assertOk()->assertSee('Hours worked')->assertSee('8h 30m')->assertSee('No open days');
         $this->signIn($manager)->get('/portal')->assertOk()->assertSee('Hours worked')->assertSee('0h 00m');
@@ -79,7 +76,7 @@ class AttendanceCorrectionTest extends TestCase
     {
         $employee = User::factory()->employee()->create();
         $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
         $this->travelTo(Carbon::parse('2026-10-21 12:00:00', 'Asia/Kolkata'));
 
         $this->signIn($employee)->get('/portal')
@@ -95,13 +92,10 @@ class AttendanceCorrectionTest extends TestCase
         $employee = User::factory()->employee()->create();
         $employer = User::factory()->employer()->create();
         $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
-        $this->travelTo(Carbon::parse('2026-10-21 12:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_start'])->assertRedirect();
-        $this->travelTo(Carbon::parse('2026-10-21 12:30:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'break_end'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
+        $this->insertBreak($employee, '2026-10-21 12:00:00', '2026-10-21 12:30:00');
         $this->travelTo(Carbon::parse('2026-10-21 18:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'out'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))->assertRedirect();
 
         $this->signIn($employer)->get('/portal/attendance?date=2026-10-21&user_id='.$employee->id)
             ->assertOk()
@@ -115,11 +109,11 @@ class AttendanceCorrectionTest extends TestCase
         $employee = User::factory()->employee()->create();
         $employer = User::factory()->employer()->create();
         $this->travelTo(Carbon::parse('2026-10-20 09:15:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
         $this->travelTo(Carbon::parse('2026-10-20 18:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'out'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))->assertRedirect();
         $this->travelTo(Carbon::parse('2026-10-21 09:00:00', 'Asia/Kolkata'));
-        $this->signIn($employee)->post('/portal/attendance/clock', ['punch_type' => 'in'])->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
         $this->travelTo(Carbon::parse('2026-10-21 12:00:00', 'Asia/Kolkata'));
 
         $this->signIn($employer)->get('/portal/attendance?date=2026-10-21&user_id='.$employee->id)
@@ -180,6 +174,118 @@ class AttendanceCorrectionTest extends TestCase
         $this->signIn($employer)->get('/portal?location_id='.$employee->profile->work_location_id)
             ->assertOk()
             ->assertSee($employee->profile->location->name);
+    }
+
+    public function test_clock_in_starts_only_after_the_shift_form_is_saved(): void
+    {
+        $employee = User::factory()->employee()->create();
+
+        $this->signIn($employee)->post('/portal/attendance/clock', [
+            'punch_type' => 'in',
+        ])->assertRedirect()->assertSessionHasErrors([
+            'working_on' => 'Say what you are working on.',
+            'completed_work' => 'Say what you did yesterday.',
+            'planned_work' => 'Say what you will work on today.',
+        ]);
+        $this->assertDatabaseCount('attendance_punches', 0);
+
+        $this->signIn($employee)->post('/portal/attendance/clock', [
+            'punch_type' => 'break_start',
+            'working_on' => 'Rajnagar slabs',
+            'completed_work' => 'Packed the lot yesterday',
+            'planned_work' => 'Inspect the new lot today',
+        ])->assertRedirect()->assertSessionHasErrors([
+            'punch_type' => 'Clock in or clock out. Breaks are no longer recorded.',
+        ]);
+
+        $this->signIn($employee)->get('/portal')
+            ->assertOk()
+            ->assertSee('What did you do yesterday')
+            ->assertSee('What will you work on today')
+            ->assertDontSee('Start break')
+            ->assertDontSee('End break');
+
+        $this->signIn($employee)->post('/portal/attendance/clock', [
+            'punch_type' => 'in',
+            'working_on' => '<script>alert(1)</script>',
+            'completed_work' => 'Packed the lot yesterday',
+            'planned_work' => 'Inspect the new lot today',
+        ])->assertRedirect()->assertSessionHas('status', 'Clocked in. The shift has started.');
+
+        $this->assertDatabaseHas('attendance_punches', [
+            'user_id' => $employee->id,
+            'punch_type' => 'in',
+            'working_on' => '<script>alert(1)</script>',
+            'completed_work' => 'Packed the lot yesterday',
+            'planned_work' => 'Inspect the new lot today',
+        ]);
+
+        $this->signIn($employee)->get('/portal')
+            ->assertOk()
+            ->assertSee('What will you be doing tomorrow')
+            ->assertDontSee('What did you do yesterday')
+            ->assertDontSee('Start break');
+
+        $this->signIn($employee)->get('/portal/attendance')
+            ->assertOk()
+            ->assertSee('<script>alert(1)</script>')
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertSee('Packed the lot yesterday')
+            ->assertSee('What did you do yesterday')
+            ->assertDontSee('Start break')
+            ->assertDontSee('End break');
+    }
+
+    public function test_clock_out_saves_what_was_done_and_what_is_next(): void
+    {
+        $employee = User::factory()->employee()->create();
+
+        $this->signIn($employee)->post('/portal/attendance/clock', [
+            'punch_type' => 'out',
+        ])->assertRedirect()->assertSessionHasErrors([
+            'working_on' => 'Say what you are working on.',
+            'completed_work' => 'Say what you have done.',
+            'planned_work' => 'Say what you will be doing tomorrow.',
+        ]);
+
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))
+            ->assertRedirect()
+            ->assertSessionHasErrors([
+                'punch_type' => 'That attendance action does not follow the current punch.',
+            ]);
+        $this->assertDatabaseCount('attendance_punches', 0);
+
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
+        $this->signIn($employee)->post('/portal/attendance/clock', [
+            'punch_type' => 'out',
+            'working_on' => str_repeat('a', 2001),
+            'completed_work' => 'Finished the inspection',
+            'planned_work' => 'Load the container tomorrow',
+        ])->assertRedirect()->assertSessionHasErrors([
+            'working_on' => 'What you are working on must be 2000 characters or fewer.',
+        ]);
+        $this->assertDatabaseMissing('attendance_punches', [
+            'user_id' => $employee->id,
+            'punch_type' => 'out',
+        ]);
+
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Clocked out. The shift has ended.');
+
+        $this->assertDatabaseHas('attendance_punches', [
+            'user_id' => $employee->id,
+            'punch_type' => 'out',
+            'working_on' => 'Rajnagar slabs',
+            'completed_work' => 'Finished the inspection',
+            'planned_work' => 'Load the container tomorrow',
+        ]);
+
+        $this->signIn($employee)->get('/portal/attendance')
+            ->assertOk()
+            ->assertSee('Finished the inspection')
+            ->assertSee('Load the container tomorrow')
+            ->assertSee('What will you work on today');
     }
 
     public function test_clock_in_is_blocked_until_the_data_notice_is_accepted(): void

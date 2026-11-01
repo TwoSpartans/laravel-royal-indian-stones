@@ -29,13 +29,14 @@
         <strong>{{ $correction->user?->name }}</strong> · {{ $correction->work_date->format('d M Y') }} · Attendance correction · {{ str_replace('_', ' ', $correction->status) }}
         <p>Requested clock-in {{ $correction->requested_in ? substr((string) $correction->requested_in, 0, 5) : '—' }}, clock-out {{ $correction->requested_out ? substr((string) $correction->requested_out, 0, 5) : '—' }}</p>
         <p>{{ $correction->reason }}</p>
-        <p class="muted">Original punches:
+        <div class="muted">Original punches:
           @forelse ($originals[$correction->id] ?? [] as $punch)
-            {{ \App\Support\PortalTime::format($punch->punched_at, $correction->user, $punch->timezone) }} {{ str_replace('_', ' ', $punch->punch_type) }}@if(! $loop->last), @endif
+            <p>{{ \App\Support\PortalTime::format($punch->punched_at, $correction->user, $punch->timezone) }} {{ str_replace('_', ' ', $punch->punch_type) }}</p>
+            @include('portal.attendance.partials.shift-notes', ['punch' => $punch])
           @empty
-            none recorded
+            <p>none recorded</p>
           @endforelse
-        </p>
+        </div>
         <p class="muted">No file was attached. The explanation above is the evidence on the request.</p>
       </div>
       @if ($status === 'pending' && ! auth()->user()->is($correction->user))

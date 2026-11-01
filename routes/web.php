@@ -74,6 +74,8 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
     Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
     Route::post('/products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
     Route::get('/outreach', [OutreachController::class, 'index'])->name('outreach.index');
+    Route::post('/outreach/warnings/ignore', [OutreachController::class, 'ignore'])->name('outreach.warnings.ignore');
+    Route::delete('/outreach/warnings/ignore', [OutreachController::class, 'restore'])->name('outreach.warnings.restore');
     Route::get('/outreach/mentions', [OutreachMentionController::class, 'index'])->name('outreach.mentions.index');
     Route::post('/outreach/mentions', [OutreachMentionController::class, 'store'])->name('outreach.mentions.store');
     Route::put('/outreach/mentions/{mention}', [OutreachMentionController::class, 'update'])->name('outreach.mentions.update');

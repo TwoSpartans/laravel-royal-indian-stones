@@ -635,3 +635,20 @@ button.account-toggle {
 }
 .account-panel button.btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
 .account-panel button.btn-secondary:hover { background: #f6f1ea; color: var(--ink); }
+.shift-form h3 { margin: 0 0 0.35rem; font-family: var(--serif); font-size: 1.35rem; }
+.shift-section {
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.85rem 0.2rem;
+  background: #fff;
+}
+.shift-form textarea { min-height: 5.25rem; }
+.shift-notes { margin: 0.15rem 0 0.85rem; }
+.shift-notes dt {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.shift-notes dd { margin: 0; white-space: pre-wrap; }

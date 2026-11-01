@@ -9,13 +9,9 @@
   </div>
 </header>
 @if (auth()->user()->recordsOwnAttendance())
-<form method="post" action="{{ route('portal.attendance.clock') }}" class="btn-row">
-  @csrf
-  <button class="clock-btn" name="punch_type" value="in">Clock in</button>
-  <button class="clock-btn btn-secondary" name="punch_type" value="break_start">Start break</button>
-  <button class="clock-btn btn-secondary" name="punch_type" value="break_end">End break</button>
-  <button class="clock-btn" name="punch_type" value="out">Clock out</button>
-</form>
+<section class="card" style="margin-bottom:1rem">
+  @include('portal.partials.clock-form', ['lastPunch' => $lastPunch])
+</section>
 @else
 <p class="muted">This account runs the roster. It does not clock in, request corrections, or apply for leave.</p>
 @endif
@@ -62,6 +58,7 @@
   <h2>Punches on {{ \Illuminate\Support\Carbon::parse($date)->format('d M Y') }} for {{ $selected?->name }}</h2>
   @forelse ($punches as $punch)
     <p>{{ \App\Support\PortalTime::format($punch->punched_at, $selected, $punch->timezone) }} · {{ str_replace('_', ' ', $punch->punch_type) }} @if($punch->is_correction)<span class="badge">Correction</span>@endif</p>
+    @include('portal.attendance.partials.shift-notes', ['punch' => $punch])
   @empty
     <div class="empty"><strong>No punches for this date</strong>@if (auth()->user()->recordsOwnAttendance())<p>Use clock in when the shift starts.</p>@endif</div>
   @endforelse

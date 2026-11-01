@@ -92,6 +92,7 @@
   <h2>Punches on {{ \Illuminate\Support\Carbon::parse($day)->format('d M Y') }}</h2>
   @forelse ($punches as $punch)
     <p>{{ \App\Support\PortalTime::format($punch->punched_at, $person, $punch->timezone) }} · {{ str_replace('_', ' ', $punch->punch_type) }} @if($punch->is_correction)<span class="badge">Correction</span>@endif @if($punch->superseded_at)<span class="badge">Replaced</span>@endif</p>
+    @include('portal.attendance.partials.shift-notes', ['punch' => $punch])
   @empty
     <div class="empty"><strong>No punches for this date</strong></div>
   @endforelse

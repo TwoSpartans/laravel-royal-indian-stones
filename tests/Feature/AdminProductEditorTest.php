@@ -103,8 +103,9 @@ class AdminProductEditorTest extends TestCase
                 'is_published' => '1',
             ])
             ->assertOk()
-            ->assertSee('Check the form')
-            ->assertSee('aria-invalid="true"', false);
+            ->assertSee('Check the highlighted fields')
+            ->assertSee('aria-invalid="true"', false)
+            ->assertSee('id="product-panel-basics" class="home-card product-panel is-open"', false);
 
         $this->assertSame(1, Product::query()->count());
     }
@@ -130,7 +131,14 @@ class AdminProductEditorTest extends TestCase
             ->assertOk()
             ->assertSee('Preview')
             ->assertSee('Readiness')
-            ->assertSee('Make cover');
+            ->assertSee('Make cover')
+            ->assertSee('role="tablist"', false)
+            ->assertSee('Basics')
+            ->assertSee('Specifications')
+            ->assertSee('All changes saved')
+            ->assertSee('Add Sandstone labels')
+            ->assertSee('On the product page')
+            ->assertSee('bi-files', false);
     }
 
     public function test_reordering_photos_makes_the_first_image_the_cover(): void
@@ -248,12 +256,42 @@ class AdminProductEditorTest extends TestCase
             ->get('/admin/products?q=Jodhpur')
             ->assertOk()
             ->assertSee('Jodhpur Pink')
+            ->assertSee('bi-pencil', false)
             ->assertDontSee('Other Gold Granite');
 
         $this->actingAs($admin)
             ->get('/admin/products?q=zzzz-no-stone')
             ->assertOk()
             ->assertSee('No stone matched.');
+    }
+
+    public function test_the_product_list_can_be_filtered_by_visibility(): void
+    {
+        $admin = User::factory()->create();
+        $shown = $this->stone();
+        $shown->forceFill(['is_published' => true])->save();
+        Product::query()->create([
+            'category_id' => $shown->category_id,
+            'name' => 'Hidden Basalt',
+            'slug' => 'hidden-basalt',
+            'color' => 'Black',
+            'finishes' => [],
+            'applications' => [],
+            'summary' => 'A hidden stone.',
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/products?shown=hidden')
+            ->assertOk()
+            ->assertSee('Hidden Basalt')
+            ->assertDontSee('Jodhpur Pink');
+
+        $this->actingAs($admin)
+            ->get('/admin/products?shown=shown')
+            ->assertOk()
+            ->assertSee('Jodhpur Pink')
+            ->assertDontSee('Hidden Basalt');
     }
 
     public function test_a_shared_photo_file_is_kept_when_one_stone_drops_it(): void

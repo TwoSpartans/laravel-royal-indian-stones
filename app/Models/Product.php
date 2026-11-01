@@ -184,17 +184,35 @@ class Product extends Model
         return $sentence.'.';
     }
 
+    /**
+     * Supplier words found in the saved title, in a fixed order.
+     *
+     * @return list<string>
+     */
+    public function titleTradeWords(): array
+    {
+        return $this->matchedTradeWords(trim((string) $this->meta_title));
+    }
+
     private function titleRepeatsTradeWords(string $title): bool
     {
-        $hits = 0;
+        return count($this->matchedTradeWords($title)) >= 2;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function matchedTradeWords(string $title): array
+    {
+        $found = [];
         $lower = mb_strtolower($title);
         foreach (['manufacturer', 'supplier', 'exporter', 'wholesaler', 'trader'] as $word) {
             if (str_contains($lower, $word)) {
-                $hits++;
+                $found[] = $word;
             }
         }
 
-        return $hits >= 2;
+        return $found;
     }
 
     private function indefiniteArticle(string $word): string

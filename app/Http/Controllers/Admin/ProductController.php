@@ -27,18 +27,25 @@ class ProductController extends Controller
     {
         $search = trim($request->string('q')->toString());
         $categoryId = $request->integer('category');
+        $visibility = $request->string('shown')->toString();
+        if (! in_array($visibility, ['shown', 'hidden'], true)) {
+            $visibility = '';
+        }
         $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
 
         return view('admin.products.index', [
             'products' => Product::query()
-                ->with('category')
+                ->with(['category', 'images'])
                 ->when($search !== '', fn ($query) => $query->where('name', 'like', $like))
                 ->when($categoryId > 0, fn ($query) => $query->where('category_id', $categoryId))
+                ->when($visibility === 'shown', fn ($query) => $query->where('is_published', true))
+                ->when($visibility === 'hidden', fn ($query) => $query->where('is_published', false))
                 ->orderBy('name')
                 ->get(),
             'categories' => Category::query()->orderBy('name')->get(),
             'search' => $search,
             'categoryId' => $categoryId,
+            'visibility' => $visibility,
         ]);
     }
 

@@ -15,14 +15,15 @@ class AttendanceClock
         private RecordAccess $accessEvents,
     ) {}
 
-    public function punch(Request $request, User $user, string $type): AttendancePunch
+    /**
+     * @param  array{working_on: string, completed_work: string, planned_work: string}  $notes
+     */
+    public function punch(Request $request, User $user, string $type, array $notes): AttendancePunch
     {
         $last = $this->board->lastPunch($user);
         $allowed = match ($type) {
             'in' => $last === null || $last->punch_type === 'out',
-            'out' => $last !== null && in_array($last->punch_type, ['in', 'break_end'], true),
-            'break_start' => $last !== null && $last->punch_type === 'in',
-            'break_end' => $last !== null && $last->punch_type === 'break_start',
+            'out' => $last !== null && in_array($last->punch_type, ['in', 'break_start', 'break_end'], true),
             default => false,
         };
 
@@ -40,6 +41,9 @@ class AttendanceClock
             'punched_at' => now(),
             'timezone' => PortalTime::timezone($user),
             'access_event_id' => $event->id,
+            'working_on' => $notes['working_on'],
+            'completed_work' => $notes['completed_work'],
+            'planned_work' => $notes['planned_work'],
         ]);
     }
 }

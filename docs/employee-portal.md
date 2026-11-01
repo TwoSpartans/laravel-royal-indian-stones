@@ -48,7 +48,7 @@ HR can record a review. The original result is not rewritten.
 
 ## Attendance
 
-Clock in, clock out, and breaks are explicit. Signing in never creates a punch. Late means the first clock-in is after the shift start plus the grace period, in the location timezone. The application timezone is already `Asia/Kolkata`. Each punch also stores the location timezone used at that moment. Weekly offs and holidays are not absences. A missed in or out can be corrected; a manager or HR approval replaces that day’s punches and keeps the correction flag.
+Clock in and clock out are explicit. Each one asks what the person is working on, what they have done, and what they will do next. Breaks are no longer recorded. Signing in never creates a punch. Late means the first clock-in is after the shift start plus the grace period, in the location timezone. The application timezone is already `Asia/Kolkata`. Each punch also stores the location timezone used at that moment. Weekly offs and holidays are not absences. A missed in or out can be corrected; a manager or HR approval replaces that day’s punches and keeps the correction flag.
 
 ## Payroll boundary
 

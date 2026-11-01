@@ -14,7 +14,7 @@
           ? 'Review the roster, then approve corrections and overtime. This account is not on the list.'
           : ($helpOversight
               ? 'See who is in, then approve or reject a correction or overtime request. You cannot decide your own.'
-              : 'Record the start of the shift, breaks, and the end of the shift. A missed punch can be sent for approval.'),
+              : 'Fill in the shift form, then clock in. Clock out asks what you did and what is next. A missed punch can be sent for approval.'),
       request()->routeIs('portal.leave.*') => $helpEmployer
           ? 'Approve or reject requests from the team. This account does not apply.'
           : ($helpOversight

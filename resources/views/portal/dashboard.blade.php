@@ -19,15 +19,7 @@
   <section class="card" style="margin-bottom:1rem">
     <h2>Your attendance</h2>
     <p>Status: <span class="badge">{{ $self['label'] }}</span></p>
-    @php $openPunch = $lastPunch?->punch_type; @endphp
-    <form method="post" action="{{ route('portal.attendance.clock') }}" class="btn-row">
-      @csrf
-      <button class="clock-btn {{ $openPunch === 'in' ? 'btn-secondary' : '' }}" name="punch_type" value="in" type="submit" @disabled(in_array($openPunch, ['in', 'break_start', 'break_end'], true))>Clock in</button>
-      <button class="clock-btn btn-secondary" name="punch_type" value="break_start" type="submit" @disabled($openPunch !== 'in')>Start break</button>
-      <button class="clock-btn btn-secondary" name="punch_type" value="break_end" type="submit" @disabled($openPunch !== 'break_start')>End break</button>
-      <button class="clock-btn {{ $openPunch === 'in' ? '' : 'btn-secondary' }}" name="punch_type" value="out" type="submit" @disabled(! in_array($openPunch, ['in', 'break_end'], true))>Clock out</button>
-    </form>
-    <p class="help">Last punch: {{ $lastPunch ? \App\Support\PortalTime::format($lastPunch->punched_at, auth()->user(), $lastPunch->timezone).' · '.$lastPunch->punch_type : 'none yet today' }}</p>
+    @include('portal.partials.clock-form', ['lastPunch' => $lastPunch])
   </section>
 @endif
 
@@ -38,7 +30,7 @@
       <article class="card stat"><strong>{{ $workedHours['today'] }}</strong><span>Today</span></article>
       <article class="card stat"><strong>{{ $workedHours['month'] }}</strong><span>This month</span></article>
     </div>
-    <p class="help">Counted from clock-in to clock-out. Breaks are left out. A day without clock-out is listed as unsettled.</p>
+    <p class="help">Counted from clock-in to clock-out. A break already on record is left out. A day without clock-out is listed as unsettled.</p>
   </section>
   <section class="card" style="margin-bottom:1rem">
     <h2>Unsettled working hours</h2>

@@ -22,13 +22,9 @@
 </header>
 @include('portal.attendance.partials.tabs')
 @if ($clocks)
-<form method="post" action="{{ route('portal.attendance.clock') }}" class="btn-row">
-  @csrf
-  <button class="clock-btn" name="punch_type" value="in">Clock in</button>
-  <button class="clock-btn btn-secondary" name="punch_type" value="break_start">Start break</button>
-  <button class="clock-btn btn-secondary" name="punch_type" value="break_end">End break</button>
-  <button class="clock-btn" name="punch_type" value="out">Clock out</button>
-</form>
+<section class="card" style="margin-bottom:1rem">
+  @include('portal.partials.clock-form', ['lastPunch' => $lastPunch])
+</section>
 @else
 <p class="muted">This account runs the roster. It does not clock in, request corrections, or apply for leave.</p>
 @endif
@@ -120,6 +116,7 @@
       <h2>Recent punches</h2>
       @forelse ($events as $event)
         <p>{{ \App\Support\PortalTime::format($event->punched_at, $event->user, $event->timezone) }} · {{ $event->user?->name }} · {{ str_replace('_', ' ', $event->punch_type) }}</p>
+        @include('portal.attendance.partials.shift-notes', ['punch' => $event])
       @empty
         <div class="empty"><strong>No punches on this date</strong></div>
       @endforelse
@@ -137,6 +134,7 @@
   <h3>Punches on {{ \Illuminate\Support\Carbon::parse($date)->format('d M Y') }}</h3>
   @forelse ($punches as $punch)
     <p>{{ \App\Support\PortalTime::format($punch->punched_at, $selected, $punch->timezone) }} · {{ str_replace('_', ' ', $punch->punch_type) }} @if($punch->is_correction)<span class="badge">Correction</span>@endif</p>
+    @include('portal.attendance.partials.shift-notes', ['punch' => $punch])
   @empty
     <div class="empty"><strong>No punches for this date</strong></div>
   @endforelse

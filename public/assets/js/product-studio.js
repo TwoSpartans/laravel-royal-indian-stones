@@ -26,12 +26,72 @@
   var filteringFiles = false;
   var maxBytes = 5120 * 1024;
   var slugPattern = /^[A-Za-z0-9_-]+$/;
-  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var sections = ['basics', 'photos', 'specifications', 'story', 'search'];
+  var currentSection = form.dataset.openSection || 'basics';
+  var saveModes = {
+    fresh: { icon: 'bi-circle', label: 'Not saved', className: 'is-fresh' },
+    saved: { icon: 'bi-check-circle', label: 'All changes saved', className: 'is-saved' },
+    dirty: { icon: 'bi-exclamation-circle', label: 'Unsaved changes', className: 'is-dirty' },
+    error: { icon: 'bi-exclamation-circle', label: 'Check the highlighted fields', className: 'is-error' },
+    saving: { icon: 'bi-arrow-repeat', label: 'Saving', className: 'is-saving' }
+  };
+  var fieldTabs = {
+    name: 'basics',
+    slug: 'basics',
+    category_id: 'basics',
+    color: 'basics',
+    finishes_text: 'basics',
+    applications_text: 'basics',
+    photos: 'photos',
+    specifications: 'specifications',
+    summary: 'story',
+    detail: 'story',
+    application: 'story',
+    meta_title: 'search',
+    meta_description: 'search'
+  };
+
+  function setMode(mode) {
+    var choice = saveModes[mode];
+    var icon = form.querySelector('[data-save-icon]');
+    var label = form.querySelector('[data-save-label]');
+    if (!saveState || !choice) return;
+    saveState.classList.remove('is-fresh', 'is-saved', 'is-dirty', 'is-error', 'is-saving');
+    saveState.classList.add(choice.className);
+    if (label) label.textContent = choice.label;
+    if (icon) icon.className = 'bi ' + choice.icon;
+  }
+
+  function showSection(key, updateHash) {
+    if (sections.indexOf(key) === -1) return;
+    currentSection = key;
+    document.documentElement.dataset.productSection = key;
+    form.querySelectorAll('[data-product-panel]').forEach(function (panel) {
+      var on = panel.dataset.productPanel === key;
+      panel.classList.toggle('is-open', on);
+    });
+    var selectedTab = null;
+    form.querySelectorAll('[data-section-tab]').forEach(function (tab) {
+      var selected = tab.dataset.sectionTab === key;
+      tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected) selectedTab = tab;
+    });
+    var crumb = form.querySelector('[data-crumb]');
+    if (crumb && selectedTab) crumb.textContent = selectedTab.dataset.label || '';
+    if (updateHash) {
+      var url = new URL(window.location.href);
+      url.hash = key;
+      history.replaceState(null, '', url);
+    }
+  }
 
   function markDirty() {
     if (submitting) return;
     dirty = true;
-    if (saveState) saveState.textContent = 'Unsaved';
+    setMode('dirty');
+    var tab = form.querySelector('[data-section-tab="' + currentSection + '"]');
+    if (tab) tab.dataset.dirty = '1';
   }
 
   function announce(message) {
@@ -56,8 +116,10 @@
     activeCards().forEach(function (card, index) {
       var position = card.querySelector('[data-photo-position]');
       var badge = card.querySelector('[data-cover-badge]');
+      var makeCoverButton = card.querySelector('[data-make-cover]');
       if (position) position.value = String(index);
       if (badge) badge.hidden = index !== 0;
+      if (makeCoverButton) makeCoverButton.hidden = index === 0;
     });
   }
 
@@ -226,6 +288,89 @@
     else specList.insertBefore(target, row);
     renumberSpecs();
     markDirty();
+    refreshStatus();
+  }
+
+  function specTemplates() {
+    try {
+      return JSON.parse(form.querySelector('[data-spec-templates]')?.textContent || '{}');
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function selectedMaterialName() {
+    var select = form.querySelector('#category_id');
+    var option = select && select.selectedOptions && select.selectedOptions[0];
+    return option && option.value ? option.textContent.trim() : '';
+  }
+
+  function updateMaterialTemplate() {
+    var button = form.querySelector('[data-apply-material]');
+    if (!button) return;
+    var name = selectedMaterialName();
+    var labels = name ? specTemplates()[name] : null;
+    if (Array.isArray(labels)) {
+      button.disabled = false;
+      button.textContent = 'Add ' + name + ' labels';
+      return;
+    }
+    button.disabled = true;
+    button.textContent = name ? 'No suggested labels for ' + name : 'Select a material first';
+  }
+
+  function applySpecLabels(labels) {
+    var existing = specRows().map(function (row) {
+      return (row.querySelector('[data-spec-label]')?.value || '').trim().toLowerCase();
+    });
+    var added = 0;
+    labels.forEach(function (label) {
+      if (existing.indexOf(String(label).toLowerCase()) !== -1) return;
+      var empty = specRows().find(function (row) {
+        return !row.querySelector('[data-spec-label]')?.value.trim() && !row.querySelector('[data-spec-value]')?.value.trim();
+      });
+      if (empty) {
+        empty.querySelector('[data-spec-label]').value = label;
+      } else {
+        addSpecRow(label, '');
+      }
+      existing.push(String(label).toLowerCase());
+      added += 1;
+    });
+    if (added) {
+      markDirty();
+      refreshStatus();
+    }
+    announce(added ? 'Added ' + added + ' specification labels. Existing values were kept.' : 'Those labels are already in the list.');
+  }
+
+  function renderSpecPreview() {
+    var target = form.querySelector('[data-spec-preview]');
+    if (!target) return;
+    target.replaceChildren();
+    var table = document.createElement('table');
+    var count = 0;
+    specRows().forEach(function (row) {
+      var label = row.querySelector('[data-spec-label]')?.value.trim();
+      var value = row.querySelector('[data-spec-value]')?.value.trim();
+      if (!label || !value) return;
+      count += 1;
+      var line = document.createElement('tr');
+      var headingCell = document.createElement('th');
+      var valueCell = document.createElement('td');
+      headingCell.textContent = label;
+      valueCell.textContent = value;
+      line.append(headingCell, valueCell);
+      table.append(line);
+    });
+    if (!count) {
+      var empty = document.createElement('p');
+      empty.className = 'product-spec-preview-empty';
+      empty.textContent = 'Complete rows appear here, in this order.';
+      target.append(empty);
+      return;
+    }
+    target.append(table);
   }
 
   function paragraphs(text) {
@@ -266,9 +411,11 @@
   }
 
   function renderSeo() {
-    var title = form.querySelector('#meta_title')?.value.trim() || form.querySelector('#name')?.value.trim() || 'Page title';
+    var titleValue = form.querySelector('#meta_title')?.value.trim() || '';
+    var descriptionValue = form.querySelector('#meta_description')?.value.trim() || '';
+    var title = titleValue || form.querySelector('#name')?.value.trim() || 'Page title';
     var slug = form.querySelector('#slug')?.value.trim();
-    var description = form.querySelector('#meta_description')?.value.trim() || form.querySelector('#summary')?.value.trim() || 'Page description';
+    var description = descriptionValue || form.querySelector('#summary')?.value.trim() || 'Page description';
     var titleNode = form.querySelector('[data-seo-title]');
     var urlNode = form.querySelector('[data-seo-url]');
     var descriptionNode = form.querySelector('[data-seo-description]');
@@ -277,8 +424,8 @@
     if (descriptionNode) descriptionNode.textContent = description;
     var titleCount = form.querySelector('[data-title-count]');
     var descriptionCount = form.querySelector('[data-description-count]');
-    if (titleCount) titleCount.textContent = titleGuidance(title.length, 50, 60, 'page title');
-    if (descriptionCount) descriptionCount.textContent = titleGuidance(description.length, 120, 160, 'description');
+    if (titleCount) titleCount.textContent = titleGuidance(titleValue.length, 50, 60, 'page title');
+    if (descriptionCount) descriptionCount.textContent = titleGuidance(descriptionValue.length, 120, 160, 'description');
     var slugField = form.querySelector('#slug');
     var slugHint = form.querySelector('[data-slug-hint]');
     if (slugField) {
@@ -334,10 +481,36 @@
     setMark('story', summary ? 'complete' : 'recommended', summary ? 'Complete' : 'Recommended');
     setMark('search', title && description ? 'complete' : 'recommended', title && description ? 'Complete' : 'Recommended');
 
-    var barName = form.querySelector('[data-bar-name]');
-    var visibility = form.querySelector('[data-bar-visibility]');
-    if (barName) barName.textContent = name || 'New stone';
-    if (visibility) visibility.textContent = form.querySelector('[data-published]')?.checked ? 'Shown' : 'Hidden';
+    var shown = !!form.querySelector('[data-published]')?.checked;
+    form.querySelectorAll('[data-bar-name]').forEach(function (node) {
+      node.textContent = name || 'New stone';
+    });
+    form.querySelectorAll('[data-bar-visibility]').forEach(function (node) {
+      node.textContent = shown ? 'Shown' : 'Hidden';
+      node.classList.toggle('is-shown', shown);
+      node.classList.toggle('is-hidden', !shown);
+    });
+    var materialSelect = form.querySelector('#category_id');
+    var materialLabel = form.querySelector('[data-stone-material]');
+    if (materialLabel && materialSelect) {
+      var option = materialSelect.selectedOptions && materialSelect.selectedOptions[0];
+      materialLabel.textContent = option && option.value ? option.textContent : 'No material yet';
+    }
+    var cover = form.querySelector('[data-stone-cover]');
+    var coverEmpty = form.querySelector('[data-stone-cover-empty]');
+    var coverSource = activeCards()[0]?.querySelector('img') || form.querySelector('[data-photo-preview] img');
+    if (cover) {
+      if (coverSource) {
+        cover.src = coverSource.currentSrc || coverSource.src;
+        cover.hidden = false;
+      } else {
+        cover.removeAttribute('src');
+        cover.hidden = true;
+      }
+    }
+    if (coverEmpty) coverEmpty.hidden = !!coverSource;
+    updateMaterialTemplate();
+    renderSpecPreview();
     renderStory();
     renderSeo();
   }
@@ -421,15 +594,25 @@
       event.preventDefault();
       return;
     }
+    var invalid = form.querySelector(':invalid');
+    if (invalid) {
+      event.preventDefault();
+      var panel = invalid.closest('[data-product-panel]');
+      if (panel) showSection(panel.dataset.productPanel, false);
+      form.querySelectorAll('input, select, textarea').forEach(function (field) {
+        if (field.willValidate && !field.checkValidity()) {
+          field.setAttribute('aria-invalid', 'true');
+        }
+      });
+      openIssues();
+      return;
+    }
     renumberPhotos();
     renumberSpecs();
     submitting = true;
     dirty = false;
-    if (saveButton) {
-      saveButton.disabled = true;
-      saveButton.textContent = 'Saving';
-    }
-    if (saveState) saveState.textContent = 'Saving';
+    if (saveButton) saveButton.disabled = true;
+    setMode('saving');
   });
 
   window.addEventListener('beforeunload', function (event) {
@@ -532,7 +715,12 @@
   overlayAlt?.addEventListener('input', syncOverlayAlt);
 
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && overlay && !overlay.hidden) closeOverlay();
+    if (event.key !== 'Escape') return;
+    if (issueModal && !issueModal.hidden) {
+      closeIssues();
+      return;
+    }
+    if (overlay && !overlay.hidden) closeOverlay();
   });
 
   form.querySelector('[data-add-spec]')?.addEventListener('click', function () {
@@ -586,6 +774,7 @@
     dragSpec = null;
     renumberSpecs();
     markDirty();
+    refreshStatus();
   });
 
   specList?.addEventListener('dragend', function () {
@@ -594,70 +783,70 @@
     renumberSpecs();
   });
 
-  form.querySelector('[data-apply-template]')?.addEventListener('click', function () {
-    var selected = form.querySelector('[data-spec-template]')?.value;
-    var templates = {};
-    try {
-      templates = JSON.parse(form.querySelector('[data-spec-templates]')?.textContent || '{}');
-    } catch (error) {
-      templates = {};
-    }
-    var labels = templates[selected] || [];
-    var existing = specRows().map(function (row) {
-      return (row.querySelector('[data-spec-label]')?.value || '').trim().toLowerCase();
-    });
-    var added = 0;
-    labels.forEach(function (label) {
-      if (existing.indexOf(label.toLowerCase()) !== -1) return;
-      var empty = specRows().find(function (row) {
-        return !row.querySelector('[data-spec-label]')?.value.trim() && !row.querySelector('[data-spec-value]')?.value.trim();
-      });
-      if (empty) {
-        empty.querySelector('[data-spec-label]').value = label;
-      } else {
-        addSpecRow(label, '');
-      }
-      existing.push(label.toLowerCase());
-      added += 1;
-    });
-    if (added) {
-      markDirty();
-      refreshStatus();
-    }
-    announce(added ? 'Added ' + added + ' specification labels. Existing values were kept.' : 'Those labels are already in the list.');
+  form.querySelector('[data-apply-material]')?.addEventListener('click', function () {
+    var labels = specTemplates()[selectedMaterialName()];
+    if (!Array.isArray(labels)) return;
+    applySpecLabels(labels);
   });
 
-  document.querySelectorAll('[data-section-link]').forEach(function (link) {
-    link.addEventListener('click', function (event) {
-      if (reducedMotion) return;
-      var section = document.getElementById(link.getAttribute('href').slice(1));
-      if (!section) return;
-      event.preventDefault();
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  form.querySelector('[data-apply-template]')?.addEventListener('click', function () {
+    var selected = form.querySelector('[data-spec-template]')?.value;
+    if (!selected) {
+      announce('Choose a material template first.');
+      return;
+    }
+    applySpecLabels(specTemplates()[selected] || []);
+  });
+
+  form.querySelectorAll('[data-section-tab]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      showSection(tab.dataset.sectionTab, true);
     });
   });
+
+  form.querySelector('[data-section-nav]')?.addEventListener('keydown', function (event) {
+    var tabs = Array.prototype.slice.call(form.querySelectorAll('[data-section-tab]'));
+    var index = tabs.findIndex(function (tab) { return tab.dataset.sectionTab === currentSection; });
+    var next = index;
+    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = tabs.length - 1;
+    else return;
+    event.preventDefault();
+    showSection(tabs[next].dataset.sectionTab, true);
+    tabs[next].focus();
+  });
+
+  var issueModal = document.querySelector('[data-issue-modal]');
+
+  function openIssues() {
+    if (!issueModal) return;
+    refreshStatus();
+    issueModal.hidden = false;
+    var clientNote = issueModal.querySelector('[data-issue-client]');
+    if (clientNote) clientNote.hidden = !!issueModal.querySelector('[data-issue-problem]');
+    issueModal.querySelector('[data-issue-close]')?.focus();
+  }
+
+  function closeIssues() {
+    if (!issueModal) return;
+    issueModal.hidden = true;
+  }
 
   document.querySelectorAll('[data-goto]').forEach(function (button) {
     button.addEventListener('click', function () {
-      var target = document.getElementById(button.dataset.goto);
-      target?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+      var key = button.dataset.goto;
+      closeIssues();
+      showSection(fieldTabs[key] || 'basics', true);
+      var target = document.getElementById(key);
       if (target?.matches('input, textarea, select')) target.focus();
     });
   });
 
-  if ('IntersectionObserver' in window) {
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        document.querySelectorAll('[data-section-link]').forEach(function (link) {
-          link.classList.toggle('is-active', link.dataset.sectionLink === entry.target.id);
-        });
-      });
-    }, { rootMargin: '-30% 0px -55% 0px', threshold: 0.1 });
-    document.querySelectorAll('[data-section]').forEach(function (section) {
-      observer.observe(section);
-    });
-  }
+  issueModal?.addEventListener('click', function (event) {
+    if (event.target === issueModal || event.target.closest('[data-issue-close]')) closeIssues();
+  });
 
   form.querySelector('[data-open-preview]')?.addEventListener('click', function () {
     renderPreview();
@@ -694,14 +883,20 @@
     dirty = false;
   });
 
+  window.addEventListener('hashchange', function () {
+    var next = location.hash.replace(/^#/, '');
+    if (sections.indexOf(next) !== -1) showSection(next, false);
+  });
+
   renumberPhotos();
-  refreshStatus();
-  if (form.querySelector('.product-editor-errors') && saveState) {
-    saveState.textContent = 'Check the form';
+  if (form.dataset.lock !== '1') {
+    var hash = location.hash.replace(/^#/, '');
+    if (sections.indexOf(hash) !== -1) currentSection = hash;
   }
-  var firstInvalid = form.querySelector('[aria-invalid="true"]');
-  if (firstInvalid) {
-    firstInvalid.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
-    firstInvalid.focus({ preventScroll: true });
+  showSection(currentSection, false);
+  refreshStatus();
+  if (form.dataset.saveMode === 'error') setMode('error');
+  if (issueModal && !issueModal.hidden) {
+    openIssues();
   }
 })();
