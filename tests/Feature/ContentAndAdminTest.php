@@ -202,7 +202,7 @@ class ContentAndAdminTest extends TestCase
         $comment = $post->comments()->first();
         $this->actingAs(User::factory()->create())->post('/admin/comments/'.$comment->id.'/approve');
         $this->get('/blog-note')->assertSee('This stone would suit a courtyard.');
-        $this->get('/sitemap.xml')->assertOk()->assertSee('/blog-note', false);
+        $this->get('/sitemap-journal.xml')->assertOk()->assertSee('/blog-note', false);
     }
 
     public function test_guest_is_sent_to_the_admin_login_from_the_blog(): void
@@ -257,7 +257,8 @@ class ContentAndAdminTest extends TestCase
 
         $this->get('/blog')->assertOk()->assertDontSee('Unpublished courtyard note');
         $this->get('/unpublished-courtyard-note')->assertNotFound();
-        $this->get('/sitemap.xml')->assertOk()->assertDontSee('/unpublished-courtyard-note', false);
+        $this->get('/sitemap.xml')->assertOk()->assertDontSee('unpublished-courtyard-note', false);
+        $this->get('/sitemap-journal.xml')->assertNotFound();
         $this->get('/sitemap')->assertOk()->assertDontSee('Unpublished courtyard note');
     }
 

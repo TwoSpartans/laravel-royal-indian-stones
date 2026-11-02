@@ -7,6 +7,9 @@
 @if(!empty($description))
 <meta name="description" content="{{ $description }}">
 @endif
+@if(!empty($robots ?? null))
+<meta name="robots" content="{{ $robots }}">
+@endif
 <link rel="canonical" href="{{ $canonical ?? url()->current() }}">
 <meta property="og:title" content="{{ $title ?? 'Royal Indian Stones' }}">
 @if(!empty($description))

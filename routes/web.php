@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\OutreachTopicController;
 use App\Http\Controllers\Admin\PostCategoryController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\SitemapController as AdminSitemapController;
 use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
@@ -23,7 +24,7 @@ use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\SiteController;
-use App\Http\Controllers\SitemapXmlController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\NoindexAdminResponses;
 use Illuminate\Support\Facades\Route;
 
@@ -88,6 +89,12 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
     Route::post('/outreach/topics', [OutreachTopicController::class, 'store'])->name('outreach.topics.store');
     Route::put('/outreach/topics/{topic}', [OutreachTopicController::class, 'update'])->name('outreach.topics.update');
     Route::delete('/outreach/topics/{topic}', [OutreachTopicController::class, 'destroy'])->name('outreach.topics.destroy');
+    Route::get('/sitemap', [AdminSitemapController::class, 'index'])->name('sitemap.index');
+    Route::get('/sitemap/exclusions', [AdminSitemapController::class, 'exclusions'])->name('sitemap.exclusions');
+    Route::get('/sitemap/history', [AdminSitemapController::class, 'history'])->name('sitemap.history');
+    Route::post('/sitemap/regenerate', [AdminSitemapController::class, 'regenerate'])->name('sitemap.regenerate');
+    Route::post('/sitemap/regenerate-group', [AdminSitemapController::class, 'regenerateGroup'])->name('sitemap.regenerate-group');
+    Route::post('/sitemap/validate', [AdminSitemapController::class, 'validateSitemap'])->name('sitemap.validate');
 });
 
 Route::get('/', HomeController::class)->name('home');
@@ -96,7 +103,10 @@ Route::get('/e-catalogue', ECatalogueController::class)->name('e-catalogue');
 Route::get('/contact', ContactController::class)->name('contact');
 Route::post('/contact', EnquiryController::class)->name('enquiry.store');
 Route::post('/newsletter', NewsletterController::class)->name('newsletter.store');
-Route::get('/sitemap.xml', SitemapXmlController::class)->name('sitemap.xml');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.xml');
+Route::get('/sitemap-{name}.xml', [SitemapController::class, 'show'])
+    ->where('name', '[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*')
+    ->name('sitemap.show');
 Route::get('/blogs', function () {
     $query = request()->getQueryString();
 

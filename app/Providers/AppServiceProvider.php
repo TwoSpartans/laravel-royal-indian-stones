@@ -2,6 +2,18 @@
 
 namespace App\Providers;
 
+use App\Models\Category;
+use App\Models\Faq;
+use App\Models\HomeImage;
+use App\Models\HomeSection;
+use App\Models\JournalMedia;
+use App\Models\Page;
+use App\Models\Post;
+use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\Project;
+use App\Observers\SitemapObserver;
+use App\Services\Sitemap\SitemapRefresher;
 use App\View\Composers\AdminShellComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
@@ -19,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AdminShellComposer::class);
+        $this->app->singleton(SitemapRefresher::class);
     }
 
     /**
@@ -49,6 +62,21 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer(['admin.layout', 'admin.dashboard'], AdminShellComposer::class);
+
+        foreach ([
+            Product::class,
+            ProductImage::class,
+            Category::class,
+            Page::class,
+            Post::class,
+            HomeImage::class,
+            HomeSection::class,
+            Project::class,
+            Faq::class,
+            JournalMedia::class,
+        ] as $model) {
+            $model::observe(SitemapObserver::class);
+        }
     }
 
     private function trustConfiguredProxies(): void

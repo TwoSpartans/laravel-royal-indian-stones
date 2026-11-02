@@ -8,6 +8,7 @@
   $commentsActive = request()->routeIs('admin.comments.*');
   $newsletterActive = request()->routeIs('admin.newsletter', 'admin.newsletter.*');
   $outreachActive = request()->routeIs('admin.outreach.*');
+  $sitemapActive = request()->routeIs('admin.sitemap.*');
 @endphp
 <nav class="admin-nav" aria-label="Admin navigation">
   <a href="{{ route('admin.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.dashboard') ? 'is-active' : '' }}" @if(request()->routeIs('admin.dashboard')) aria-current="page" @endif>
@@ -95,6 +96,10 @@
       <i class="bi bi-chevron-down"></i>
     </summary>
     <div>
+      <a href="{{ route('admin.sitemap.index') }}" class="admin-nav-link {{ $sitemapActive ? 'is-active' : '' }}" @if($sitemapActive) aria-current="page" @endif>
+        <i class="bi bi-diagram-3"></i>
+        <span>Sitemap</span>
+      </a>
       <a href="{{ route('admin.outreach.index') }}" class="admin-nav-link {{ $outreachActive ? 'is-active' : '' }}" @if($outreachActive) aria-current="page" @endif>
         <i class="bi bi-send"></i>
         <span>Outreach</span>

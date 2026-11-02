@@ -59,11 +59,15 @@ class CanonicalPublicUrl
     private function canonicalPath(string $path): string
     {
         $trimmed = rtrim($path, '/') ?: '/';
+        $lower = strtolower($trimmed);
+        if (preg_match('#^/sitemap(?:-[a-z0-9-]+)?\.xml$#', $lower) === 1) {
+            return $lower;
+        }
         if ($trimmed === '/' || $this->keepsRequestedCase($trimmed)) {
             return $trimmed;
         }
 
-        return self::FIXED_PATHS[strtolower($trimmed)] ?? $trimmed;
+        return self::FIXED_PATHS[$lower] ?? $trimmed;
     }
 
     private function keepsRequestedCase(string $path): bool

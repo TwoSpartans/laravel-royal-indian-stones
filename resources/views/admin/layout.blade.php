@@ -7,7 +7,7 @@
 <title>{{ trim($__env->yieldContent('documentTitle')) ?: (trim($__env->yieldContent('pageTitle')) ?: 'Admin') }} | Royal Indian Stones</title>
 <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-<link href="{{ asset('assets/css/admin.css') }}?v=30" rel="stylesheet">
+<link href="{{ asset('assets/css/admin.css') }}?v=31" rel="stylesheet">
 @stack('head')
 </head>
 <body class="admin-shell">
@@ -93,6 +93,12 @@ if (window.matchMedia('(min-width: 992px)').matches) {
       <div class="admin-flash" role="status">
         <i class="bi bi-check-circle"></i>
         {{ session('status') }}
+      </div>
+    @endif
+    @if(session('error'))
+      <div class="admin-flash is-error" role="alert">
+        <i class="bi bi-exclamation-circle"></i>
+        {{ session('error') }}
       </div>
     @endif
     @yield('content')

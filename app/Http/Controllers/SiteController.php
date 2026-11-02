@@ -161,6 +161,7 @@ class SiteController extends Controller
                 'active' => $page->nav_group,
                 'title' => $this->readablePageTitle($page->title).' | Royal Indian Stones',
                 'description' => $page->meta_description ?: $page->title.' from Royal Indian Stones.',
+                'robots' => $page->is_indexable ? null : 'noindex',
             ]);
         }
 

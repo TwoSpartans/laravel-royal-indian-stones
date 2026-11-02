@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureNoticeAcknowledged;
 use App\Http\Middleware\EnsurePortalAccount;
 use App\Http\Middleware\EnsurePortalSection;
 use App\Http\Middleware\EnsureSiteAdministrator;
+use App\Http\Middleware\FlushSitemapUpdates;
 use App\Http\Middleware\NoindexAdminResponses;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -22,10 +23,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('portal:prune-retention')->dailyAt('02:30');
+        $schedule->command('sitemap:reconcile')->dailyAt('03:40')->withoutOverlapping(30)->onOneServer();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [
             CanonicalPublicUrl::class,
+        ]);
+        $middleware->web(append: [
+            FlushSitemapUpdates::class,
         ]);
         $middleware->prependToPriorityList(AuthenticatesRequests::class, NoindexAdminResponses::class);
         $middleware->alias([

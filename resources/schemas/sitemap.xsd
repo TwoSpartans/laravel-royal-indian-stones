@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.sitemaps.org/schemas/sitemap/0.9"
+            xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+            elementFormDefault="qualified">
+  <xsd:element name="urlset">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="url" minOccurs="0" maxOccurs="50000">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="loc" type="xsd:anyURI"/>
+              <xsd:element name="lastmod" minOccurs="0" type="xsd:string"/>
+              <xsd:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="1000"/>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+      <xsd:anyAttribute processContents="lax"/>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="sitemapindex">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="sitemap" minOccurs="0" maxOccurs="50000">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="loc" type="xsd:anyURI"/>
+              <xsd:element name="lastmod" minOccurs="0" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>

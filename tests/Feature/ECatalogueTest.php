@@ -40,7 +40,8 @@ class ECatalogueTest extends TestCase
             ->assertSee('href="'.url('/sandstone').'"', false)
             ->assertDontSee('Cut articles.');
 
-        $this->get('/sitemap.xml')->assertOk()->assertSee('/e-catalogue', false);
+        $this->get('/sitemap.xml')->assertOk()->assertSee('sitemap-pages.xml', false);
+        $this->get('/sitemap-pages.xml')->assertOk()->assertSee('/e-catalogue', false);
     }
 
     public function test_the_e_catalogue_explains_when_no_collections_are_listed(): void
