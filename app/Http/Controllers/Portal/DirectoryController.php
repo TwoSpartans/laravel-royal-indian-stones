@@ -167,8 +167,8 @@ class DirectoryController extends PortalController
                 'joined_on' => $data['joined_on'] ?? null,
                 'probation_ends_on' => $data['probation_ends_on'] ?? null,
                 'phone' => $data['phone'] ?? null,
-                'visible_sections' => $role === PortalRole::Employee ? array_values($data['visible_sections'] ?? []) : null,
             ]);
+            $this->applySections($profile, $role, $data);
 
             if ($this->access->canViewSensitive($actor, $person)) {
                 $profile->address = $data['address'] ?? null;
@@ -460,5 +460,33 @@ class DirectoryController extends PortalController
         }
 
         return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function applySections(EmployeeProfile $profile, PortalRole $role, array $data): void
+    {
+        if ($role !== PortalRole::Employee) {
+            $profile->visible_sections = null;
+            $profile->sections_set_at = null;
+
+            return;
+        }
+
+        if (! array_key_exists('visible_sections', $data)) {
+            return;
+        }
+
+        $next = array_values($data['visible_sections']);
+        $current = array_values($profile->visible_sections ?? []);
+        $sortedNext = $next;
+        $sortedCurrent = $current;
+        sort($sortedNext);
+        sort($sortedCurrent);
+        $profile->visible_sections = $next;
+        if ($sortedNext !== $sortedCurrent) {
+            $profile->sections_set_at = now();
+        }
     }
 }

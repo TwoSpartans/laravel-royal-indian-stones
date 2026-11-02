@@ -32,6 +32,7 @@ class EnsurePortalSection
             'portal.expenses.' => 'expenses',
             'portal.attachments.' => 'tasks',
             'portal.payroll.' => 'payslips',
+            'portal.payslips.' => 'payslips',
         ] as $prefix => $section) {
             if (is_string($name) && str_starts_with($name, $prefix)) {
                 return $section;

@@ -20,14 +20,16 @@
     <div class="empty"><strong>No device registered on this account yet</strong></div>
   @endforelse
 </section>
+@if ($person->canOpenPortalSection('payslips'))
 <section class="card" style="margin-top:0.9rem">
-  <h2>Published payslips</h2>
+  <div class="card-head"><h2>Published payslips</h2><a href="{{ route('portal.payslips.index') }}">Open payslips</a></div>
   @forelse ($payslips as $payslip)
     <p><a href="{{ route('portal.payroll.show', $payslip) }}">{{ $payslip->period }}</a></p>
   @empty
     <div class="empty"><strong>No published payslip</strong></div>
   @endforelse
 </section>
+@endif
 <section class="card" style="margin-top:0.9rem">
   <h2>My documents</h2>
   @forelse ($documents as $document)

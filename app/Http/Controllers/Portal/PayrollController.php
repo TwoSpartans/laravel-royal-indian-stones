@@ -134,6 +134,7 @@ class PayrollController extends PortalController
     public function show(Request $request, Payslip $payslip, AuditWriter $audit): View
     {
         $actor = $this->actor($request);
+        abort_unless($actor->canOpenPortalSection('payslips'), 404);
         $owner = User::query()->find($payslip->user_id);
         $allowed = $owner instanceof User && (
             $this->access->canAdminister($actor)

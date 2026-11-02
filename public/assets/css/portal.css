@@ -272,6 +272,13 @@ fieldset.span-2 .check { display: inline-flex; align-items: center; margin: 0 1r
 .yard-chips .btn-secondary { min-height: 2.3rem; padding: 0.3rem 0.7rem; border-radius: 0.6rem; background: #fff; font-size: 0.78rem; }
 .yard-foot { display: flex; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin: 0.9rem 0 0; color: #9b8476; font-size: 0.75rem; }
 .yard-foot a { font-weight: 700; text-decoration: none; }
+.section-presets { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.15rem 0 0.85rem; }
+.section-choices { display: grid; gap: 0.55rem; }
+.section-choices .check span, .section-access li > span { display: grid; gap: 0.1rem; }
+.section-choices small, .section-access small { color: var(--muted); font-weight: 400; }
+.section-access { list-style: none; margin: 0.2rem 0 0.6rem; padding: 0; display: grid; gap: 0.55rem; }
+.section-access li { display: flex; align-items: flex-start; gap: 0.65rem; }
+fieldset[hidden] { display: none; }
 .attendance-tabs { display: flex; flex-wrap: wrap; gap: 0.2rem 1.25rem; margin: 0 0 1rem; border-bottom: 1px solid var(--line); }
 .attendance-tabs a { color: var(--muted); text-decoration: none; padding: 0.55rem 0.1rem; font-weight: 650; }
 .attendance-tabs a[aria-current="page"] { color: var(--terra-deep); box-shadow: inset 0 -2px 0 var(--terra); }

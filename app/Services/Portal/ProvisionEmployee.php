@@ -99,7 +99,12 @@ class ProvisionEmployee
             'joined_on' => $attributes['joined_on'] ?? null,
             'probation_ends_on' => $attributes['probation_ends_on'] ?? null,
             'phone' => $attributes['phone'] ?? null,
-            'visible_sections' => is_array($attributes['visible_sections'] ?? null) ? array_values($attributes['visible_sections']) : null,
+            'visible_sections' => $user->portal_role === PortalRole::Employee && is_array($attributes['visible_sections'] ?? null)
+                ? array_values($attributes['visible_sections'])
+                : null,
+            'sections_set_at' => $user->portal_role === PortalRole::Employee && is_array($attributes['visible_sections'] ?? null)
+                ? now()
+                : null,
         ]);
     }
 

@@ -23,6 +23,29 @@ return [
         'payslips' => 'Payslips',
     ],
 
+    'employee_section_notes' => [
+        'attendance' => 'Clock in, corrections, and overtime for this person',
+        'leave' => 'The leave balance and their own requests',
+        'tasks' => 'Stone-work tasks they can open',
+        'expenses' => 'Expense claims they can submit',
+        'payslips' => 'Published payslips for this person',
+    ],
+
+    'employee_section_presets' => [
+        'yard' => [
+            'label' => 'Yard',
+            'sections' => ['attendance', 'leave'],
+        ],
+        'office' => [
+            'label' => 'Office',
+            'sections' => ['attendance', 'leave', 'tasks', 'expenses'],
+        ],
+        'all' => [
+            'label' => 'All five',
+            'sections' => ['attendance', 'leave', 'tasks', 'expenses', 'payslips'],
+        ],
+    ],
+
     /*
     | Explicit proxy addresses for staff IP checks. "*" is ignored.
     | Leave empty to use only the direct connection address.

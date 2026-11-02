@@ -16,12 +16,15 @@
   if ($isAdmin) {
     $links[] = ['portal.payroll.index', 'Payroll', 'bi-wallet2'];
     $links[] = ['portal.workplace.index', 'Workplace', 'bi-geo-alt'];
+  } else {
+    $links[] = ['portal.payslips.index', 'Payslips', 'bi-wallet2'];
   }
   $sectionForLink = [
     'portal.attendance.index' => 'attendance',
     'portal.leave.index' => 'leave',
     'portal.tasks.index' => 'tasks',
     'portal.expenses.index' => 'expenses',
+    'portal.payslips.index' => 'payslips',
   ];
   $links = array_values(array_filter($links, function (array $link) use ($sectionForLink): bool {
     $section = $sectionForLink[$link[0]] ?? null;
@@ -59,7 +62,7 @@
         foreach ($links as $link) {
             $group = match ($link[0]) {
                 'portal.home', 'portal.attendance.index', 'portal.leave.index' => 'My day',
-                'portal.tasks.index', 'portal.expenses.index' => 'Work',
+                'portal.tasks.index', 'portal.expenses.index', 'portal.payslips.index' => 'Work',
                 default => 'Company',
             };
             $groups[$group][] = $link;

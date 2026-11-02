@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Portal;
 use App\Models\EmergencyContact;
 use App\Models\EmployeeDocument;
 use App\Models\Payslip;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class AccountController extends PortalController
@@ -20,8 +22,33 @@ class AccountController extends PortalController
             'person' => $actor,
             'contacts' => EmergencyContact::query()->where('user_id', $actor->id)->get(),
             'documents' => EmployeeDocument::query()->where('user_id', $actor->id)->orderByDesc('id')->get(),
-            'payslips' => Payslip::query()->where('user_id', $actor->id)->where('status', 'published')->orderByDesc('period')->get(),
+            'payslips' => $this->publishedPayslips($actor),
         ]);
+    }
+
+    public function payslips(Request $request): View
+    {
+        $actor = $this->actor($request);
+
+        return view('portal.payslips.index', [
+            'payslips' => $this->publishedPayslips($actor),
+        ]);
+    }
+
+    /**
+     * @return Collection<int, Payslip>
+     */
+    private function publishedPayslips(User $actor): Collection
+    {
+        if (! $actor->canOpenPortalSection('payslips')) {
+            return new Collection;
+        }
+
+        return Payslip::query()
+            ->where('user_id', $actor->id)
+            ->where('status', 'published')
+            ->orderByDesc('period')
+            ->get();
     }
 
     public function read(Request $request, string $notification): RedirectResponse

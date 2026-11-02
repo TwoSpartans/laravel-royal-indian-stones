@@ -100,6 +100,7 @@ Route::middleware(NoindexAdminResponses::class)->prefix('portal')->name('portal.
                 Route::post('expenses/{expense}/payment', [ExpenseController::class, 'payment'])->name('expenses.payment');
                 Route::get('expenses/{expense}/receipt', [ExpenseController::class, 'receipt'])->name('expenses.receipt');
 
+                Route::get('payslips', [AccountController::class, 'payslips'])->name('payslips.index');
                 Route::get('payroll', [PayrollController::class, 'index'])->name('payroll.index');
                 Route::post('payroll/structures', [PayrollController::class, 'structure'])->name('payroll.structures.store');
                 Route::post('payroll/adjustments', [PayrollController::class, 'adjustment'])->name('payroll.adjustments.store');

@@ -43,21 +43,50 @@
       <div class="field"><label for="identity_document_label">Identity document</label><input id="identity_document_label" name="identity_document_label" value="{{ old('identity_document_label', $person?->profile?->identity_document_label) }}"></div>
       <div class="field"><label for="identity_document_number">Document number</label><input id="identity_document_number" name="identity_document_number" autocomplete="off" placeholder="Leave blank to keep the saved number"></div>
     @endif
-    <fieldset class="span-2">
+    <fieldset class="span-2" id="employee-sections">
       <legend>Sections this employee can open</legend>
       <input type="hidden" name="sections_chosen" value="1">
+      <div class="section-presets" role="group" aria-label="Section presets">
+        @foreach (config('portal.employee_section_presets') as $presetKey => $preset)
+          <button type="button" class="btn-secondary" data-section-preset="{{ $presetKey }}">{{ $preset['label'] }}</button>
+        @endforeach
+      </div>
       @php
         $chosen = old('visible_sections', $person?->profile?->visible_sections ?? array_keys(config('portal.employee_sections')));
       @endphp
-      @foreach (config('portal.employee_sections') as $key => $label)
-        <label class="check" for="section-{{ $key }}">
-          <input id="section-{{ $key }}" type="checkbox" name="visible_sections[]" value="{{ $key }}" @checked(in_array($key, $chosen, true))>
-          <span>{{ $label }}</span>
-        </label>
-      @endforeach
-      <p class="help">Checked sections appear for an employee. The employer and every Manager / HR account always see every section.</p>
+      <div class="section-choices">
+        @foreach (config('portal.employee_sections') as $key => $label)
+          <label class="check" for="section-{{ $key }}">
+            <input id="section-{{ $key }}" data-employee-section type="checkbox" name="visible_sections[]" value="{{ $key }}" @checked(in_array($key, $chosen, true))>
+            <span><strong>{{ $label }}</strong><small>{{ config('portal.employee_section_notes.'.$key) }}</small></span>
+          </label>
+        @endforeach
+      </div>
+      <p class="help">Yard opens attendance and leave. Office adds tasks and expenses. All five also opens payslips. Manager / HR and the employer keep their own access.</p>
     </fieldset>
   </div>
   <button type="submit">{{ $person ? 'Save record' : 'Create invitation' }}</button>
 </form>
+<script>
+(() => {
+  const presets = @json(collect(config('portal.employee_section_presets'))->map(fn (array $preset): array => $preset['sections']));
+  const role = document.getElementById('portal_role');
+  const box = document.getElementById('employee-sections');
+  const sync = () => {
+    if (box && role) {
+      box.hidden = role.value !== 'employee';
+    }
+  };
+  role?.addEventListener('change', sync);
+  sync();
+  document.querySelectorAll('[data-section-preset]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const keys = presets[button.dataset.sectionPreset] ?? [];
+      document.querySelectorAll('[data-employee-section]').forEach((input) => {
+        input.checked = keys.includes(input.value);
+      });
+    });
+  });
+})();
+</script>
 @endsection
