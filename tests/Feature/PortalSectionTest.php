@@ -113,4 +113,57 @@ class PortalSectionTest extends TestCase
         $this->signIn($manager)->get(route('portal.people.show', $employee))
             ->assertSee('Sections they can open');
     }
+
+    public function test_the_employer_can_restrict_manager_and_hr_access(): void
+    {
+        $employer = User::factory()->employer()->create();
+        $manager = User::factory()->manager()->create();
+        $hr = User::factory()->adminHr()->create();
+        $profile = $manager->profile;
+
+        $this->signIn($employer)->put(route('portal.people.update', $manager), [
+            'name' => $manager->name,
+            'email' => $manager->email,
+            'portal_role' => 'manager',
+            'job_title' => $profile->job_title,
+            'department_id' => $profile->department_id,
+            'work_location_id' => $profile->work_location_id,
+            'shift_id' => $profile->shift_id,
+            'joined_on' => $profile->joined_on->toDateString(),
+            'employment_status' => $profile->employment_status->value,
+            'sections_chosen' => '1',
+            'visible_sections' => ['attendance', 'leave'],
+        ])->assertRedirect();
+
+        $profile->refresh();
+        $this->assertEqualsCanonicalizing(['attendance', 'leave'], $profile->visible_sections);
+        $this->assertNotNull($profile->sections_set_at);
+
+        $this->signIn($manager)->get('/portal')
+            ->assertOk()
+            ->assertDontSee(route('portal.people.index'), false)
+            ->assertDontSee(route('portal.payroll.index'), false);
+        $this->signIn($manager)->get('/portal/people')->assertRedirect('/portal');
+        $this->signIn($manager)->get('/portal/payroll')->assertRedirect('/portal');
+        $this->signIn($manager)->get('/portal/reports')->assertRedirect('/portal');
+        $this->signIn($manager)->get('/portal/workplace')->assertRedirect('/portal');
+        $this->signIn($manager)->get('/portal/attendance')
+            ->assertOk()
+            ->assertSee('Shifts and punches')
+            ->assertDontSee('Attendance overview');
+        $this->signIn($employer)->get(route('portal.people.show', $manager))
+            ->assertOk()
+            ->assertSee('Team attendance')
+            ->assertSee('Closed')
+            ->assertSee('Last changed');
+
+        $hr->profile?->forceFill([
+            'visible_sections' => ['people'],
+            'sections_set_at' => now(),
+        ])->save();
+        $this->signIn($hr)->get('/portal/people')->assertOk();
+        $this->signIn($hr)->get('/portal/payroll')->assertRedirect('/portal');
+        $this->signIn($employer)->get('/portal/people')->assertOk();
+        $this->signIn($employer)->get('/portal/payroll')->assertOk();
+    }
 }

@@ -44,6 +44,7 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
     Route::get('/posts', [AdminPostController::class, 'index'])->name('posts.index');
     Route::get('/posts/studio/create', [BlogStudioController::class, 'create'])->name('posts.studio.create');
     Route::get('/posts/studio/products', [BlogStudioController::class, 'products'])->name('posts.studio.products');
+    Route::get('/posts/studio/product-cards', [BlogStudioController::class, 'productCards'])->name('posts.studio.product-cards');
     Route::get('/posts/create', [AdminPostController::class, 'create'])->name('posts.create');
     Route::post('/posts', [AdminPostController::class, 'store'])->name('posts.store');
     Route::get('/posts/{post}/studio', [BlogStudioController::class, 'show'])->name('posts.studio');
@@ -54,6 +55,7 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
     Route::delete('/posts/{post}/studio/schedule', [BlogStudioController::class, 'cancelSchedule'])->name('posts.studio.schedule.cancel');
     Route::post('/posts/{post}/studio/convert', [BlogStudioController::class, 'convert'])->name('posts.studio.convert');
     Route::post('/posts/{post}/studio/media', [BlogStudioController::class, 'media'])->name('posts.studio.media');
+    Route::get('/posts/{post}/preview', [BlogStudioController::class, 'previewPage'])->name('posts.preview');
     Route::get('/posts/{post}/edit', [AdminPostController::class, 'edit'])->name('posts.edit');
     Route::put('/posts/{post}', [AdminPostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{post}', [AdminPostController::class, 'destroy'])->name('posts.destroy');

@@ -8,6 +8,7 @@ use App\Models\LeaveType;
 use App\Notifications\PortalStatusNotification;
 use App\Services\Portal\LeaveDays;
 use App\Services\Portal\LeaveDecision;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -19,7 +20,9 @@ class LeaveController extends PortalController
     public function index(Request $request): View
     {
         $actor = $this->actor($request);
-        $people = $this->access->peopleQuery($actor)->orderBy('name')->get();
+        $people = $actor->canOpenPortalSection('team_leave')
+            ? $this->access->peopleQuery($actor)->orderBy('name')->get()
+            : new Collection([$actor]);
         $status = $request->string('status')->toString();
         $requests = LeaveRequest::query()
             ->with('user', 'type')
@@ -52,7 +55,7 @@ class LeaveController extends PortalController
     public function store(Request $request, LeaveDays $days): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($actor->recordsOwnAttendance(), 403);
+        abort_unless($actor->recordsOwnAttendance() && $actor->canOpenPortalSection('leave'), 403);
         $data = $request->validate([
             'starts_on' => ['required', 'date'],
             'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],

@@ -80,8 +80,18 @@ class DashboardController extends PortalController
             return $query;
         };
 
-        $upcomingLeave = $scope(LeaveRequest::query()
-            ->with('user', 'type'))
+        $leaveIds = $actor->canOpenPortalSection('team_leave') ? $ids : [$actor->id];
+        $documentIds = $actor->canOpenPortalSection('people') ? $ids : [$actor->id];
+        $limitTo = function ($query, ?array $only) {
+            if ($only !== null) {
+                $query->whereIn('user_id', $only === [] ? [-1] : $only);
+            }
+
+            return $query;
+        };
+
+        $upcomingLeave = $limitTo(LeaveRequest::query()
+            ->with('user', 'type'), $leaveIds)
             ->where('status', 'approved')
             ->whereDate('starts_on', '>=', $today->toDateString())
             ->whereDate('starts_on', '<=', $today->copy()->addDays(14)->toDateString())
@@ -89,8 +99,8 @@ class DashboardController extends PortalController
             ->limit(8)
             ->get();
 
-        $expiringDocuments = $scope(EmployeeDocument::query()
-            ->with('user'))
+        $expiringDocuments = $limitTo(EmployeeDocument::query()
+            ->with('user'), $documentIds)
             ->whereDate('expires_on', '>=', $today->toDateString())
             ->whereDate('expires_on', '<=', $today->copy()->addDays(30)->toDateString())
             ->orderBy('expires_on')
@@ -102,14 +112,16 @@ class DashboardController extends PortalController
             'expenses' => $scope(ExpenseClaim::query())->whereIn('status', $this->expenseStatuses($actor))->count(),
             'corrections' => $scope(AttendanceCorrection::query())->where('status', 'pending')->count(),
             'overtime' => $scope(OvertimeRequest::query())->where('status', 'pending')->count(),
-            'devices' => $this->access->canAdminister($actor) ? RegisteredDevice::query()->where('status', 'pending')->count() : 0,
-            'remote' => $this->access->canAdminister($actor) ? RemoteWorkAuthorization::query()->where('status', 'pending')->count() : 0,
-            'reviews' => $this->access->canAdminister($actor)
+            'devices' => $actor->canOpenPortalSection('workplace') ? RegisteredDevice::query()->where('status', 'pending')->count() : 0,
+            'remote' => $actor->canOpenPortalSection('workplace') ? RemoteWorkAuthorization::query()->where('status', 'pending')->count() : 0,
+            'reviews' => $actor->canOpenPortalSection('workplace')
                 ? AccessEvent::query()->whereIn('classification', ['outside_network', 'unable_to_verify'])->whereNull('reviewed_at')->count()
                 : 0,
         ];
 
-        $payslips = $scope(Payslip::query())->select('status')->get();
+        $payslips = $actor->canOpenPortalSection('payroll')
+            ? $scope(Payslip::query())->select('status')->get()
+            : collect();
         $tasks = WorkTask::query()
             ->with('assignee')
             ->where(function ($query) use ($ids): void {
@@ -124,7 +136,7 @@ class DashboardController extends PortalController
             ->get();
 
         $workedHours = null;
-        if ($actor->portal_role === PortalRole::Employee || $actor->portal_role?->isManagerLevel()) {
+        if (($actor->portal_role === PortalRole::Employee || $actor->portal_role?->isManagerLevel()) && $actor->canOpenPortalSection('attendance')) {
             $summary = $board->hourSummary($actor, now());
             $workedHours = [
                 'today' => $this->formatWorked($summary['today']),
@@ -168,15 +180,11 @@ class DashboardController extends PortalController
      */
     private function leaveStatuses(User $actor): array
     {
-        if ($this->access->canAdminister($actor)) {
+        if ($this->access->canAdminister($actor) && $actor->canOpenPortalSection('team_leave')) {
             return ['pending_manager', 'pending_hr'];
         }
 
-        if ($actor->portal_role?->isManagerLevel()) {
-            return ['pending_manager'];
-        }
-
-        return ['pending_manager', 'pending_hr'];
+        return [];
     }
 
     /**
@@ -184,14 +192,10 @@ class DashboardController extends PortalController
      */
     private function expenseStatuses(User $actor): array
     {
-        if ($this->access->canAdminister($actor)) {
+        if ($this->access->canAdminister($actor) && $actor->canOpenPortalSection('team_expenses')) {
             return ['submitted', 'pending_hr'];
         }
 
-        if ($actor->portal_role?->isManagerLevel()) {
-            return ['submitted'];
-        }
-
-        return ['submitted', 'pending_hr'];
+        return [];
     }
 }

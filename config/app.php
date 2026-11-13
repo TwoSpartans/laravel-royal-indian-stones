@@ -68,6 +68,14 @@ return [
     'timezone' => 'Asia/Kolkata',
 
     /*
+    | Schedule inputs are labelled IST. Stones already stores instants in
+    | Asia/Kolkata, so a datetime-local value is the same instant as now().
+    */
+
+    'display_timezone' => 'Asia/Kolkata',
+    'display_timezone_label' => 'IST',
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------

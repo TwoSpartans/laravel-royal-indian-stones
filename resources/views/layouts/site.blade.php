@@ -16,7 +16,7 @@
 <meta property="og:description" content="{{ $description }}">
 @endif
 <meta property="og:url" content="{{ $canonical ?? url()->current() }}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{{ $ogType ?? 'website' }}">
 <meta property="og:image" content="{{ $shareImage ?? asset('assets/img/slide/slide-1.jpg') }}">
 <meta property="og:site_name" content="Royal Indian Stones">
 @php

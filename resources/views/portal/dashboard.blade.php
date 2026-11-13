@@ -3,7 +3,7 @@
 @section('content')
 @php
   $role = auth()->user()->portal_role;
-  $oversight = $role?->canAdminister() === true;
+  $oversight = $role?->canAdminister() === true && auth()->user()->canOpenPortalSection('team_attendance');
 @endphp
 @unless ($role?->isCompanyAdmin())
 <header class="page-head">

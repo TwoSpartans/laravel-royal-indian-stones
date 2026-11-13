@@ -113,10 +113,16 @@
       </ul>
     </section>
     <section class="card">
-      <h2>Recent punches</h2>
+      <div class="card-head">
+        <h2>Recent punches</h2>
+        <a href="{{ route('portal.attendance.notes', $filters) }}">Shift notes</a>
+      </div>
       @forelse ($events as $event)
-        <p>{{ \App\Support\PortalTime::format($event->punched_at, $event->user, $event->timezone) }} · {{ $event->user?->name }} · {{ str_replace('_', ' ', $event->punch_type) }}</p>
-        @include('portal.attendance.partials.shift-notes', ['punch' => $event])
+        <p class="punch-line">
+          <span class="badge {{ $event->punch_type === 'in' ? 'badge-good' : 'badge-warn' }}">{{ $event->punch_type === 'in' ? 'In' : 'Out' }}</span>
+          <strong>{{ $event->user?->name }}</strong>
+          <span class="muted">{{ \App\Support\PortalTime::format($event->punched_at, $event->user, $event->timezone) }}</span>
+        </p>
       @empty
         <div class="empty"><strong>No punches on this date</strong></div>
       @endforelse
@@ -133,8 +139,7 @@
   <p><a class="btn" href="{{ route('portal.attendance.report', ['user_id' => $selected->id, 'from' => \Illuminate\Support\Carbon::parse($date)->startOfMonth()->toDateString(), 'to' => $date]) }}">Full report</a></p>
   <h3>Punches on {{ \Illuminate\Support\Carbon::parse($date)->format('d M Y') }}</h3>
   @forelse ($punches as $punch)
-    <p>{{ \App\Support\PortalTime::format($punch->punched_at, $selected, $punch->timezone) }} · {{ str_replace('_', ' ', $punch->punch_type) }} @if($punch->is_correction)<span class="badge">Correction</span>@endif</p>
-    @include('portal.attendance.partials.shift-notes', ['punch' => $punch])
+    @include('portal.attendance.partials.punch-note', ['punch' => $punch, 'personName' => $selected->name])
   @empty
     <div class="empty"><strong>No punches for this date</strong></div>
   @endforelse

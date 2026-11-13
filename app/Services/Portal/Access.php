@@ -96,7 +96,7 @@ class Access
 
     public function canEditEmployment(User $actor, User $subject): bool
     {
-        return $this->canAdminister($actor) && $subject->portal_role !== null && $this->canViewUser($actor, $subject);
+        return $this->canAdminister($actor) && $actor->canOpenPortalSection('people') && $subject->portal_role !== null && $this->canViewUser($actor, $subject);
     }
 
     public function canDecideLeave(User $actor, LeaveRequest $leave): bool
@@ -106,11 +106,12 @@ class Access
         }
 
         if ($this->canAdminister($actor)) {
-            return true;
+            return $actor->canOpenPortalSection('team_leave');
         }
 
         return $leave->status === 'pending_manager'
             && $this->role($actor)?->isManagerLevel() === true
+            && $actor->canOpenPortalSection('team_leave')
             && $leave->user?->profile?->manager_id === $actor->id;
     }
 
@@ -121,16 +122,16 @@ class Access
         }
 
         if ($claim->status === 'submitted') {
-            return $this->canAdminister($actor)
-                || ($this->role($actor)?->isManagerLevel() === true && $claim->user?->profile?->manager_id === $actor->id);
+            return ($this->canAdminister($actor) && $actor->canOpenPortalSection('team_expenses'))
+                || ($this->role($actor)?->isManagerLevel() === true && $actor->canOpenPortalSection('team_expenses') && $claim->user?->profile?->manager_id === $actor->id);
         }
 
-        return $claim->status === 'pending_hr' && $this->canAdminister($actor);
+        return $claim->status === 'pending_hr' && $this->canAdminister($actor) && $actor->canOpenPortalSection('team_expenses');
     }
 
     public function canRecordPayment(User $actor, ExpenseClaim $claim): bool
     {
-        return $this->canAdminister($actor) && $claim->status === 'approved' && $claim->payment_state === 'none';
+        return $this->canAdminister($actor) && $actor->canOpenPortalSection('team_expenses') && $claim->status === 'approved' && $claim->payment_state === 'none';
     }
 
     public function canViewTask(User $actor, WorkTask $task): bool
@@ -169,7 +170,7 @@ class Access
 
     public function canExport(User $actor): bool
     {
-        return $this->canBrowseDirectory($actor);
+        return $this->canAdminister($actor) && $actor->canOpenPortalSection('reports');
     }
 
     /**

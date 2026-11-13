@@ -288,6 +288,35 @@ class AttendanceCorrectionTest extends TestCase
             ->assertSee('What will you work on today');
     }
 
+    public function test_shift_notes_are_separated_from_the_roster(): void
+    {
+        $employee = User::factory()->employee()->create(['name' => 'Karan Kumar']);
+        $employer = User::factory()->employer()->create();
+        $this->travelTo(Carbon::parse('2026-11-13 09:24:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
+
+        $this->signIn($employer)->get('/portal/attendance?date=2026-11-13')
+            ->assertOk()
+            ->assertSee('Shift notes')
+            ->assertSee('Karan Kumar')
+            ->assertSee('In')
+            ->assertDontSee('What are you working on')
+            ->assertDontSee('Clock in');
+
+        $this->signIn($employer)->get('/portal/attendance/notes?date=2026-11-13')
+            ->assertOk()
+            ->assertSee('Karan Kumar')
+            ->assertSee('In')
+            ->assertSee('What are you working on')
+            ->assertSee('Inspect the new lot today');
+
+        $this->signIn($employee)->get('/portal/attendance/notes')->assertForbidden();
+        $this->signIn($employee)->get('/portal/attendance')
+            ->assertOk()
+            ->assertSee('clock-btn is-out', false)
+            ->assertDontSee('clock-btn is-in', false);
+    }
+
     public function test_clock_in_is_blocked_until_the_data_notice_is_accepted(): void
     {
         $employee = User::factory()->employee()->withoutNotice()->create();

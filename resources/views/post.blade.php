@@ -18,19 +18,25 @@
   <section id="blog" class="blog">
     <div class="container">
       <article class="entry entry-single">
-        @if($post->image)
-          <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->title }}" loading="eager" sizes="(max-width: 991px) calc(100vw - 32px), min(1200px, 100vw)" /></div>
-        @endif
         <h1 class="entry-title">{{ $post->title }}</h1>
-        @if($post->published_on)
-          <div class="entry-meta"><time datetime="{{ $post->published_on->toDateString() }}">{{ $post->published_on->format('j F Y') }}</time></div>
+        <div class="entry-meta">
+          <span>By Royal Indian Stones</span>
+          @if($post->published_on)
+            <span aria-hidden="true"> · </span>
+            <time datetime="{{ $post->published_on->toDateString() }}">{{ $post->published_on->format('j F Y') }}</time>
+          @endif
+          <span aria-hidden="true"> · </span>
+          <span>{{ $post->readingMinutes() }} min read</span>
+          <span aria-hidden="true"> · </span>
+          <span>{{ (int) $post->view_count }} {{ (int) $post->view_count === 1 ? 'view' : 'views' }}</span>
+        </div>
+        @if($post->image)
+          <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="eager" sizes="(max-width: 991px) calc(100vw - 32px), min(1200px, 100vw)" /></div>
         @endif
         @php
-          $studioBlocks = is_array($post->body_document['content'] ?? null) ? $post->body_document['content'] : [];
-          $studioIsPlainText = $post->isStudio()
-            && $studioBlocks !== []
-            && collect($studioBlocks)->every(fn (mixed $block): bool => is_array($block) && in_array($block['type'] ?? '', ['paragraph', 'heading'], true));
-          $showStudio = $post->isStudio() && is_array($post->body_document) && ! ($studioIsPlainText && str_contains((string) $post->body, '<img'));
+          $showStudio = $post->isStudio()
+            && is_array($post->body_document)
+            && app(\App\Services\RichContent\QualityChecker::class)->hasVisibleContent($post->body_document);
         @endphp
         <div @class(['entry-content', 'rich-content' => $showStudio])>
           @if($showStudio)
@@ -39,6 +45,28 @@
             {!! $post->body !!}
           @endif
         </div>
+        @if(is_array($post->tags) && $post->tags !== [])
+          <p class="entry-tags">
+            @foreach($post->tags as $tag)
+              <span>#{{ $tag }}</span>
+            @endforeach
+          </p>
+        @endif
+        <aside class="entry-related">
+          <h2>Recent posts</h2>
+          @forelse($recent ?? [] as $recentPost)
+            <p><a href="{{ url('/'.$recentPost->slug) }}">{{ $recentPost->title }}</a></p>
+          @empty
+            <p>No recent posts yet.</p>
+          @endforelse
+          <h2>Related</h2>
+          @forelse($related ?? [] as $relatedPost)
+            <p><a href="{{ url('/'.$relatedPost->slug) }}">{{ $relatedPost->title }}</a></p>
+          @empty
+            <p>No related blogs found.</p>
+          @endforelse
+        </aside>
+        @unless($preview ?? false)
         @if($post->comments->isNotEmpty())
           <h2>Comments</h2>
           @foreach($post->comments as $comment)
@@ -57,6 +85,7 @@
           @if(session('comment_status'))<p class="form-status is-success">{{ session('comment_status') }}</p>@endif
           <button class="ris-button" type="submit">Submit comment</button>
         </form>
+        @endunless
       </article>
     </div>
   </section>
@@ -68,5 +97,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+@if(!empty($articleSchema))
 <script type="application/ld+json">{!! json_encode($articleSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
+@endif
 @endpush

@@ -54,15 +54,36 @@ class User extends Authenticatable
         return $this->portal_role?->isCompanyAdmin() !== true;
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function portalSectionCatalog(): array
+    {
+        if ($this->portal_role?->isManagerLevel()) {
+            return config('portal.manager_sections');
+        }
+
+        if ($this->portal_role === PortalRole::Employee) {
+            return config('portal.employee_sections');
+        }
+
+        return [];
+    }
+
     public function canOpenPortalSection(string $section): bool
     {
-        if ($this->portal_role !== PortalRole::Employee) {
+        if ($this->portal_role?->isCompanyAdmin()) {
             return true;
+        }
+
+        $catalog = array_keys($this->portalSectionCatalog());
+        if (! in_array($section, $catalog, true)) {
+            return false;
         }
 
         $allowed = $this->profile?->visible_sections;
         if (! is_array($allowed)) {
-            $allowed = array_keys(config('portal.employee_sections'));
+            $allowed = $catalog;
         }
 
         return in_array($section, $allowed, true);

@@ -30,7 +30,7 @@ class AttendanceReview
      * @param  Collection<int, User>  $people
      * @return Collection<int, AttendancePunch>
      */
-    public function dayEvents(Collection $people, Carbon $day): Collection
+    public function dayEvents(Collection $people, Carbon $day, ?int $limit = 8): Collection
     {
         if ($people->isEmpty()) {
             return collect();
@@ -39,8 +39,8 @@ class AttendanceReview
         $start = $day->copy()->subDay()->startOfDay();
         $end = $day->copy()->addDay()->endOfDay();
 
-        return AttendancePunch::query()
-            ->with('user')
+        $events = AttendancePunch::query()
+            ->with('user.profile.department')
             ->whereIn('user_id', $people->modelKeys())
             ->whereNull('superseded_at')
             ->where('punched_at', '>=', $start)
@@ -52,8 +52,13 @@ class AttendanceReview
 
                 return $punch->punched_at->copy()->timezone($timezone)->toDateString() === $day->copy()->timezone($timezone)->toDateString();
             })
-            ->take(8)
             ->values();
+
+        if ($limit === null) {
+            return $events;
+        }
+
+        return $events->take($limit)->values();
     }
 
     /**

@@ -24,22 +24,30 @@
         <figure class="{{ $frame }}">
           <x-picture src="{{ $photo->path }}" alt="{{ $attrs['decorative'] ?? false ? '' : ($attrs['alt'] ?? $photo->alt) }}" loading="lazy" sizes="(max-width: 767px) calc(100vw - 32px), min(960px, 100vw)" />
           @if(filled($attrs['caption'] ?? null))<figcaption>{{ $attrs['caption'] }}</figcaption>@endif
+          @if(filled($attrs['credit'] ?? null))<figcaption>{{ $attrs['credit'] }}</figcaption>@endif
         </figure>
+      @else
+        <figure class="{{ $frame }}"><p>This photograph is unavailable.</p></figure>
       @endif
       @break
     @case('gallery')
       <div class="rich-gallery {{ $frame }} {{ ($attrs['mode'] ?? 'grid') === 'carousel' ? 'is-carousel' : 'is-grid' }}">
+        @if(($attrs['items'] ?? []) === [])
+          <p>Add photographs in the Block settings.</p>
+        @endif
         @foreach($attrs['items'] ?? [] as $item)
           @php $photo = is_array($item) ? $media->get((int) ($item['mediaId'] ?? 0)) : null; @endphp
           @if($photo)
             <x-picture src="{{ $photo->path }}" alt="{{ ($item['decorative'] ?? false) ? '' : ($item['alt'] ?? '') }}" loading="lazy" sizes="(max-width: 767px) calc(100vw - 32px), calc(50vw - 24px)" />
+          @else
+            <span class="rich-gallery-empty"></span>
           @endif
         @endforeach
       </div>
       @break
     @case('productSpotlight')
       @php $stone = $products->get((int) ($attrs['productId'] ?? 0)); @endphp
-      @if($stone)
+      @if($stone && $stone->is_published)
         <aside class="rich-stone {{ $frame }} is-{{ $attrs['presentation']['layout'] ?? 'image-left' }}">
           @if($stone->catalogueImage())
             <x-picture src="{{ $stone->catalogueImage()->path }}" alt="{{ $stone->catalogueImage()->alt ?: $stone->name }}" loading="lazy" sizes="(max-width: 767px) calc(100vw - 32px), 40vw" />
@@ -47,9 +55,14 @@
           <div>
             <p class="eyebrow">{{ $attrs['editorial']['eyebrow'] ?? $stone->category?->name }}</p>
             <h2>{{ $stone->name }}</h2>
+            @if(($attrs['presentation']['showPrice'] ?? true))<p>Price on request.</p>@endif
             @if(filled($attrs['editorial']['summary'] ?? null))<p>{{ $attrs['editorial']['summary'] }}</p>@endif
             <a href="{{ url('/'.$stone->slug) }}">{{ $attrs['presentation']['ctaLabel'] ?? 'View stone' }}</a>
           </div>
+        </aside>
+      @else
+        <aside class="rich-stone is-unavailable {{ $frame }}">
+          <p>{{ $stone ? 'This stone is not available to view.' : 'This stone could not be found.' }}</p>
         </aside>
       @endif
       @break

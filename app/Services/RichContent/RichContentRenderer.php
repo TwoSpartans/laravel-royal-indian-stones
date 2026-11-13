@@ -43,7 +43,7 @@ class RichContentRenderer
         return view('rich-content.document', [
             'blocks' => $content,
             'media' => JournalMedia::query()->whereIn('id', array_filter($mediaIds))->get()->keyBy('id'),
-            'products' => Product::query()->with(['category', 'images'])->published()->whereIn('id', array_filter($productIds))->get()->keyBy('id'),
+            'products' => Product::query()->with(['category', 'images'])->whereIn('id', array_filter($productIds))->get()->keyBy('id'),
             'frames' => $this->frames,
         ])->render();
     }

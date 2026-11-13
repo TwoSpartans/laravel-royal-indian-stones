@@ -2,6 +2,10 @@
 
 namespace App\Services\RichContent;
 
+/**
+ * Allowlisted presentation shared by the editor and the public renderer.
+ * Unknown values fall back to the defaults. Nothing here accepts raw CSS.
+ */
 class BlockFrame
 {
     public const WIDTHS = ['text', 'wide', 'full'];
@@ -43,9 +47,10 @@ class BlockFrame
     public function sanitize(mixed $frame): array
     {
         $frame = is_array($frame) ? $frame : [];
+        $defaults = $this->defaults();
         $sanitized = [];
 
-        foreach ($this->defaults() as $key => $default) {
+        foreach ($defaults as $key => $default) {
             $allowed = match ($key) {
                 'width' => self::WIDTHS,
                 'align' => self::ALIGNS,

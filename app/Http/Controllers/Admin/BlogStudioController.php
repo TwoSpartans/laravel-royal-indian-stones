@@ -9,6 +9,7 @@ use App\Models\PostCategory;
 use App\Models\Product;
 use App\Services\BlogStudio\ArticleExcerpt;
 use App\Services\BlogStudio\ArticleTemplates;
+use App\Services\BlogStudio\ClassicToStudioConverter;
 use App\Services\BlogStudio\StudioDocumentService;
 use App\Services\RichContent\BlockFrame;
 use App\Services\RichContent\BlockRegistry;
@@ -20,7 +21,9 @@ use App\Support\ServedUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -55,7 +58,7 @@ class BlogStudioController extends Controller
 
         $post = Post::query()->create([
             'title' => 'Untitled article',
-            'slug' => 'untitled-article-'.Str::lower(Str::random(6)),
+            'slug' => $this->placeholderSlug(),
             'summary' => '',
             'body' => '',
             'content_source' => 'studio',
@@ -75,59 +78,107 @@ class BlogStudioController extends Controller
         $document = $post->isLive() && $post->draft
             ? $post->draft->document
             : ($post->body_document ?: $this->validator->emptyDocument());
-        $document = $this->withMediaUrls(is_array($document) ? $document : $this->validator->emptyDocument());
-        $qualityPost = $post;
-        if ($post->isLive() && $post->draft) {
-            $qualityPost = $post->replicate();
-            $qualityPost->title = $post->draft->title;
-            $qualityPost->summary = $post->draft->excerpt;
-            $qualityPost->image = $post->draft->image ?: $post->image;
-            $qualityPost->featured_image_alt = $post->draft->featured_image_alt;
-            $qualityPost->id = $post->id;
+        $document = $this->studio->withMediaUrls(is_array($document) ? $document : $this->validator->emptyDocument());
+        $qualityPost = $this->studio->editingCopy($post);
+
+        $slug = $post->isLive() && $post->draft ? $post->draft->slug : $post->slug;
+        $featuredMediaId = $qualityPost->image
+            ? JournalMedia::query()->where('path', $qualityPost->image)->value('id')
+            : null;
+        $scheduled = $post->scheduled_for?->timezone((string) config('app.display_timezone'));
+        $conversion = null;
+        if (! $post->isStudio()) {
+            $converted = app(ClassicToStudioConverter::class)->convert($post);
+            $conversion = [
+                'summary' => [
+                    'blocks' => count(is_array($converted['content'] ?? null) ? $converted['content'] : []),
+                    'notes' => ['The classic HTML stays in place until this Studio version is published.'],
+                ],
+                'hasPreviousStudioVersion' => is_array($post->body_document) && ($post->body_document['content'] ?? []) !== [],
+            ];
         }
 
         return view('admin.posts.studio', [
+            'post' => $post,
             'bootstrap' => [
-                'post' => [
+                'blog' => [
                     'id' => $post->id,
-                    'title' => $qualityPost->title,
-                    'slug' => $post->isLive() && $post->draft ? $post->draft->slug : $post->slug,
-                    'excerpt' => $qualityPost->summary,
-                    'metaDescription' => $qualityPost->meta_description,
-                    'tags' => $qualityPost->tags ?? [],
-                    'categoryId' => $post->post_category_id,
-                    'image' => $qualityPost->image ? asset($qualityPost->image) : null,
-                    'imagePath' => $qualityPost->image,
-                    'featuredImageAlt' => $qualityPost->featured_image_alt,
-                    'status' => $post->status,
+                    'title' => (string) $qualityPost->title,
+                    'slug' => (string) $slug,
+                    'excerpt' => (string) $qualityPost->summary,
+                    'status' => $post->status ?: 'draft',
+                    'contentSource' => $post->content_source ?: 'classic',
                     'isLive' => $post->isLive(),
-                    'hasDraft' => $post->draft !== null,
+                    'hasDraftRevision' => $post->draft !== null,
+                    'publishedAt' => $post->published_on?->toDateString(),
+                    'publishedAtInput' => $scheduled?->format('Y-m-d\TH:i') ?? '',
+                    'publishedAtLabel' => $scheduled instanceof Carbon
+                        ? $scheduled->format('j M Y, g:i A').' '.config('app.display_timezone_label')
+                        : '',
+                    'savedAt' => ($post->draft?->updated_at ?? $post->updated_at)?->toIso8601String(),
                     'lockVersion' => (int) $post->lock_version,
-                    'contentSource' => $post->content_source,
-                    'scheduledFor' => optional($post->scheduled_for)?->format('Y-m-d\TH:i'),
-                    'publicUrl' => $post->isLive() ? url('/'.$post->slug) : null,
-                    'classicBody' => $post->content_source === 'classic' ? $post->body : null,
-                    'hasStudioVersion' => is_array($post->body_document),
+                    'schemaVersion' => 1,
+                    'featuredMediaId' => $featuredMediaId ? (int) $featuredMediaId : null,
+                    'featuredImageUrl' => $qualityPost->image ? asset($qualityPost->image) : null,
+                    'featuredImageAlt' => (string) $qualityPost->featured_image_alt,
+                    'metaTitle' => (string) ($qualityPost->meta_title ?: ''),
+                    'metaDescription' => (string) ($qualityPost->meta_description ?: ''),
+                    'tags' => array_values($qualityPost->tags ?? []),
+                    'categoryIds' => $qualityPost->post_category_id ? [(int) $qualityPost->post_category_id] : [],
+                    'previewUrl' => route('admin.posts.preview', $post),
+                    'publicUrl' => url('/'.$post->slug),
                 ],
+                'conversion' => $conversion,
                 'document' => $document,
                 'quality' => $this->quality->check($qualityPost, is_array($document) ? $document : $this->validator->emptyDocument()),
+                'media' => $this->mediaPayload($document),
+                'products' => [],
+                'categories' => PostCategory::query()->orderBy('name')->get()->map(fn (PostCategory $category): array => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                    'isActive' => true,
+                ])->all(),
                 'blocks' => $this->registry->blocks(),
-                'stages' => $this->registry->processStages(),
                 'templates' => $this->templates->all(),
-                'frames' => $this->frames->options(),
-                'categories' => PostCategory::query()->orderBy('name')->get(['id', 'name']),
-                'excerpt' => ['min' => ArticleExcerpt::MIN, 'max' => ArticleExcerpt::MAX],
-                'urls' => [
+                'frame' => [
+                    'defaults' => $this->frames->defaults(),
+                    'options' => $this->frames->options(),
+                ],
+                'processStages' => $this->registry->processStages(),
+                'excerptRules' => ArticleExcerpt::clientRules(),
+                'timezone' => [
+                    'label' => (string) config('app.display_timezone_label'),
+                    'nowInput' => now()->timezone((string) config('app.display_timezone'))->format('Y-m-d\TH:i'),
+                ],
+                'permissions' => [
+                    'publish' => true,
+                    'schedule' => true,
+                    'unpublish' => true,
+                    'submitForReview' => false,
+                    'convert' => true,
+                    'exportJson' => false,
+                ],
+                'routes' => [
                     'save' => route('admin.posts.studio.save', $post),
                     'preview' => route('admin.posts.studio.preview', $post),
                     'publish' => route('admin.posts.studio.publish', $post),
                     'schedule' => route('admin.posts.studio.schedule', $post),
-                    'convert' => route('admin.posts.studio.convert', $post),
-                    'media' => route('admin.posts.studio.media', $post),
+                    'cancelSchedule' => route('admin.posts.studio.schedule.cancel', $post),
+                    'submit' => route('admin.posts.studio.save', $post),
+                    'upload' => route('admin.posts.studio.media', $post),
                     'products' => route('admin.posts.studio.products'),
+                    'convert' => route('admin.posts.studio.convert', $post),
                     'back' => route('admin.posts.index'),
                     'classic' => route('admin.posts.edit', $post),
-                    'cancelSchedule' => route('admin.posts.studio.schedule.cancel', $post),
+                    'studio' => route('admin.posts.studio', $post),
+                    'productCards' => route('admin.posts.studio.product-cards'),
+                ],
+                'csrf' => csrf_token(),
+                'brand' => [
+                    'primary' => '#1A4D3E',
+                    'accent' => '#B7975B',
+                    'secondary' => '#F5F3F0',
                 ],
             ],
         ]);
@@ -145,6 +196,8 @@ class BlogStudioController extends Controller
                     'message' => $exception->getMessage(),
                     'errors' => $exception->errors(),
                     'lockVersion' => (int) $post->fresh()->lock_version,
+                    'serverVersion' => (int) $post->fresh()->lock_version,
+                    'conflict' => true,
                 ], 409);
             }
 
@@ -152,55 +205,133 @@ class BlogStudioController extends Controller
         }
     }
 
-    public function preview(Request $request, Post $post): JsonResponse
+    public function preview(Post $post): JsonResponse
     {
-        $saved = $this->studio->save($post, $request->all());
-        $post->refresh()->load('draft');
-        $document = $saved['document'];
-        $preview = $post->replicate();
-        $metadata = $request->input('metadata', []);
-        $preview->title = (string) ($metadata['title'] ?? $post->title);
-        $preview->summary = (string) ($metadata['excerpt'] ?? $post->summary);
-        $preview->image = $post->image;
-        $preview->featured_image_alt = $metadata['featuredImageAlt'] ?? $post->featured_image_alt;
-        $preview->published_on = $post->published_on ?? now();
-
         return response()->json([
-            'saved' => $saved,
-            'html' => view('admin.posts.studio-preview', [
-                'post' => $preview,
-                'html' => $this->renderer->render($preview, $document),
-            ])->render(),
+            'url' => route('admin.posts.preview', $post),
         ]);
+    }
+
+    public function previewPage(Post $post): Response
+    {
+        $post->load('draft');
+        $source = $post->isLive() && $post->draft ? $post->draft : null;
+        $article = $post->replicate();
+        $article->id = $post->id;
+        $article->exists = true;
+        if ($source !== null) {
+            $article->title = $source->title;
+            $article->summary = $source->excerpt;
+            $article->meta_description = $source->meta_description;
+            $article->featured_image_alt = $source->featured_image_alt;
+            $article->image = $source->image;
+            $article->post_category_id = $source->post_category_id;
+            $article->tags = $source->tags;
+            $article->body_document = $source->document;
+        }
+        $article->title = '[Preview] '.$article->title;
+        $article->setRelation('comments', collect());
+        $article->setRelation('postCategory', $post->postCategory);
+
+        return response()
+            ->view('post', [
+                'post' => $article,
+                'related' => collect(),
+                'recent' => collect(),
+                'preview' => true,
+                'active' => 'blog',
+                'title' => $article->title.' | Royal Indian Stones',
+                'description' => $article->meta_description ?: $article->summary,
+                'robots' => 'noindex, nofollow',
+                'ogType' => 'article',
+                'canonical' => url('/'.$post->slug),
+                'shareImage' => $article->image ? asset($article->image) : null,
+                'articleSchema' => null,
+            ])
+            ->header('Cache-Control', 'private, no-store')
+            ->header('X-Robots-Tag', 'noindex, nofollow');
     }
 
     public function publish(Post $post): JsonResponse
     {
         $post->load('draft');
 
-        return response()->json($this->studio->publish($post));
+        try {
+            $result = $this->studio->publish($post);
+        } catch (ValidationException $exception) {
+            return $this->blocked($post, $exception->getMessage());
+        }
+
+        return response()->json([
+            'published' => true,
+            ...$result,
+        ]);
     }
 
     public function schedule(Request $request, Post $post): JsonResponse
     {
-        $data = $request->validate([
-            'scheduledFor' => ['required', 'date', 'after:now'],
-        ]);
+        $raw = $request->input('publishAt', $request->input('scheduledFor'));
+        if (! is_string($raw) || trim($raw) === '') {
+            throw ValidationException::withMessages([
+                'publishAt' => 'Choose a date and time.',
+            ]);
+        }
+        $instant = Carbon::parse($raw, (string) config('app.display_timezone'));
+        if ($instant->lessThanOrEqualTo(now())) {
+            throw ValidationException::withMessages([
+                'publishAt' => 'Choose a time in the future.',
+            ]);
+        }
         $post->load('draft');
 
-        return response()->json($this->studio->schedule($post, $data['scheduledFor']));
+        try {
+            $result = $this->studio->schedule($post, $instant->toDateTimeString());
+        } catch (ValidationException $exception) {
+            return $this->blocked($post, $exception->getMessage());
+        }
+
+        return response()->json([
+            'scheduled' => true,
+            ...$result,
+        ]);
     }
 
     public function cancelSchedule(Post $post): JsonResponse
     {
         $this->studio->cancelSchedule($post);
 
-        return response()->json(['status' => $post->refresh()->status]);
+        return response()->json([
+            'scheduled' => false,
+            ...$this->studio->statusFields($post->refresh()),
+        ]);
     }
 
     public function convert(Request $request, Post $post): JsonResponse
     {
-        return response()->json($this->studio->convert($post, $request->boolean('useExisting')));
+        if ($request->input('to') === 'classic') {
+            $post->content_source = 'classic';
+            $post->save();
+
+            return response()->json([
+                'contentSource' => 'classic',
+                'redirect' => route('admin.posts.edit', $post),
+                'message' => 'The classic editor is open again.',
+                'notes' => [],
+            ]);
+        }
+
+        $result = $this->studio->convert(
+            $post,
+            $request->boolean('restorePreviousStudioVersion') || $request->boolean('useExisting'),
+        );
+
+        return response()->json([
+            ...$result,
+            'contentSource' => 'studio',
+            'redirect' => route('admin.posts.studio', $post),
+            'message' => 'The article is ready in Blog Studio.',
+            'notes' => [],
+        ]);
     }
 
     public function media(Request $request, Post $post): JsonResponse
@@ -247,6 +378,9 @@ class BlogStudioController extends Controller
             'url' => asset($path),
             'path' => $path,
             'alt' => $media->alt,
+            'width' => $media->width,
+            'height' => $media->height,
+            'blogId' => $post->id,
         ]);
     }
 
@@ -257,27 +391,93 @@ class BlogStudioController extends Controller
 
         $products = Product::query()
             ->with(['category', 'images'])
-            ->published()
             ->when($search !== '', fn ($query) => $query->where('name', 'like', $like))
             ->orderBy('name')
-            ->limit(12)
-            ->get()
-            ->map(fn (Product $product): array => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'category' => $product->category?->name,
-                'image' => $product->catalogueImage() ? asset($product->catalogueImage()->path) : null,
-                'url' => url('/'.$product->slug),
-            ]);
+            ->paginate(12)
+            ->withQueryString();
 
-        return response()->json(['products' => $products]);
+        return response()->json([
+            'data' => $products->getCollection()->map(fn (Product $product): array => $this->productSearchItem($product))->all(),
+            'meta' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+            ],
+        ]);
+    }
+
+    public function productCards(Request $request): JsonResponse
+    {
+        $ids = array_values(array_filter(array_map(intval(...), explode(',', $request->string('ids')->toString()))));
+        $products = Product::query()->with(['category', 'images'])->whereIn('id', $ids)->get()->keyBy('id');
+        $data = [];
+        foreach ($ids as $id) {
+            $product = $products->get($id);
+            $data[] = $product instanceof Product
+                ? $this->productCard($product)
+                : [
+                    'id' => $id,
+                    'name' => 'Unavailable stone',
+                    'imageUrl' => null,
+                    'price' => null,
+                    'available' => false,
+                    'visible' => false,
+                    'health' => 'blocked',
+                    'reason' => 'This stone could not be found.',
+                    'ctaLabel' => 'View stone',
+                ];
+        }
+
+        return response()->json(['data' => $data]);
+    }
+
+    private function blocked(Post $post, string $message): JsonResponse
+    {
+        $quality = $this->studio->qualityFor($post);
+
+        return response()->json([
+            'message' => $message,
+            'problems' => collect($quality['items'])->where('state', 'blocked')->pluck('explanation')->values(),
+            'quality' => $quality,
+        ], 422);
+    }
+
+    private function isUntouched(Post $post): bool
+    {
+        if (trim((string) $post->summary) !== '' || filled($post->image) || $post->post_category_id !== null) {
+            return false;
+        }
+        $tags = is_array($post->tags) ? array_filter($post->tags, fn (mixed $tag): bool => is_string($tag) && $tag !== '') : [];
+        if ($tags !== []) {
+            return false;
+        }
+        $content = $post->body_document['content'] ?? [];
+        if (! is_array($content) || count($content) !== 1) {
+            return false;
+        }
+        $block = $content[0];
+
+        return is_array($block)
+            && ($block['type'] ?? '') === 'paragraph'
+            && (($block['content'] ?? []) === []);
+    }
+
+    private function placeholderSlug(): string
+    {
+        $slug = 'untitled-article';
+        $suffix = 2;
+        while (Post::query()->where('slug', $slug)->exists()) {
+            $slug = 'untitled-article-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
     }
 
     /**
      * @param  array<string, mixed>  $document
-     * @return array<string, mixed>
+     * @return list<array{id: int, url: string, width: int|null, height: int|null}>
      */
-    private function withMediaUrls(array $document): array
+    private function mediaPayload(array $document): array
     {
         $ids = [];
         foreach ((array) ($document['content'] ?? []) as $node) {
@@ -297,39 +497,55 @@ class BlogStudioController extends Controller
                 }
             }
         }
-        $media = JournalMedia::query()->whereIn('id', array_filter($ids))->get()->keyBy('id');
-        foreach ($document['content'] ?? [] as &$node) {
-            if (! is_array($node) || ! is_array($node['attrs'] ?? null)) {
-                continue;
-            }
-            $photo = $media->get((int) ($node['attrs']['mediaId'] ?? 0));
-            if ($photo) {
-                $node['attrs']['url'] = asset($photo->path);
-            }
-            if (($node['type'] ?? '') === 'gallery' && is_array($node['attrs']['items'] ?? null)) {
-                foreach ($node['attrs']['items'] as &$item) {
-                    $itemPhoto = is_array($item) ? $media->get((int) ($item['mediaId'] ?? 0)) : null;
-                    if ($itemPhoto) {
-                        $item['url'] = asset($itemPhoto->path);
-                    }
-                }
-            }
+        $ids = array_values(array_unique(array_filter($ids)));
+        if ($ids === []) {
+            return [];
         }
-        unset($node, $item);
 
-        return $document;
+        return JournalMedia::query()->whereIn('id', $ids)->get()->map(fn (JournalMedia $media): array => [
+            'id' => $media->id,
+            'url' => asset($media->path),
+            'width' => $media->width,
+            'height' => $media->height,
+        ])->all();
     }
 
-    private function isUntouched(Post $post): bool
+    /**
+     * @return array<string, mixed>
+     */
+    private function productSearchItem(Product $product): array
     {
-        $content = $post->body_document['content'] ?? [];
-        if (! is_array($content) || count($content) !== 1) {
-            return false;
-        }
-        $block = $content[0];
+        $image = $product->catalogueImage();
 
-        return is_array($block)
-            && ($block['type'] ?? '') === 'paragraph'
-            && (($block['content'] ?? []) === []);
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'imageUrl' => $image ? asset($image->path) : null,
+            'health' => $product->is_published ? 'ready' : 'blocked',
+            'reason' => $product->is_published ? null : 'This stone is not on the catalogue.',
+            'visible' => (bool) $product->is_published,
+            'variants' => [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function productCard(Product $product): array
+    {
+        $image = $product->catalogueImage();
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'imageUrl' => $image ? asset($image->path) : null,
+            'price' => null,
+            'available' => (bool) $product->is_published,
+            'visible' => (bool) $product->is_published,
+            'health' => $product->is_published ? 'ready' : 'blocked',
+            'reason' => $product->is_published ? 'Price on request.' : 'This stone is not on the catalogue.',
+            'ctaLabel' => 'View stone',
+        ];
     }
 }

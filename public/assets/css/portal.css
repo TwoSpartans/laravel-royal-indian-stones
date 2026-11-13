@@ -659,3 +659,9 @@ button.account-toggle {
   color: var(--muted);
 }
 .shift-notes dd { margin: 0; white-space: pre-wrap; }
+.punch-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.55rem; margin: 0.45rem 0; }
+.punch-board { display: grid; gap: 0.75rem; }
+.punch-card { padding: 0.9rem 1rem; }
+.punch-note .shift-notes { margin-top: 0.35rem; padding: 0.55rem 0.7rem; border-radius: 0.7rem; background: #f8f3ed; }
+.clock-btn.is-out { background: #2b2320; }
+.clock-btn.is-out:hover { background: #3d332e; }

@@ -1,36 +1,45 @@
 @php
   $role = auth()->user()?->portal_role;
-  $isAdmin = $role?->canAdminister() === true;
-  $isManager = $isAdmin;
+  $account = auth()->user();
+  $opens = function (array $sections) use ($account): bool {
+    foreach ($sections as $section) {
+      if ($account?->canOpenPortalSection($section)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
   $links = [
     ['portal.home', 'Home', 'bi-house'],
-    ['portal.attendance.index', 'Attendance', 'bi-clock'],
-    ['portal.leave.index', 'Leave', 'bi-calendar3'],
-    ['portal.tasks.index', 'Tasks', 'bi-list-check'],
-    ['portal.expenses.index', 'Expenses', 'bi-receipt'],
   ];
-  if ($isAdmin || $isManager) {
-    $links[] = ['portal.people.index', 'People', 'bi-people'];
-    $links[] = ['portal.reports.index', 'Reports', 'bi-bar-chart'];
+  if ($opens(['attendance', 'team_attendance'])) {
+    $links[] = ['portal.attendance.index', 'Attendance', 'bi-clock'];
   }
-  if ($isAdmin) {
-    $links[] = ['portal.payroll.index', 'Payroll', 'bi-wallet2'];
-    $links[] = ['portal.workplace.index', 'Workplace', 'bi-geo-alt'];
-  } else {
+  if ($opens(['leave', 'team_leave'])) {
+    $links[] = ['portal.leave.index', 'Leave', 'bi-calendar3'];
+  }
+  if ($opens(['tasks'])) {
+    $links[] = ['portal.tasks.index', 'Tasks', 'bi-list-check'];
+  }
+  if ($opens(['expenses', 'team_expenses'])) {
+    $links[] = ['portal.expenses.index', 'Expenses', 'bi-receipt'];
+  }
+  if ($role?->isCompanyAdmin() !== true && $opens(['payslips'])) {
     $links[] = ['portal.payslips.index', 'Payslips', 'bi-wallet2'];
   }
-  $sectionForLink = [
-    'portal.attendance.index' => 'attendance',
-    'portal.leave.index' => 'leave',
-    'portal.tasks.index' => 'tasks',
-    'portal.expenses.index' => 'expenses',
-    'portal.payslips.index' => 'payslips',
-  ];
-  $links = array_values(array_filter($links, function (array $link) use ($sectionForLink): bool {
-    $section = $sectionForLink[$link[0]] ?? null;
-
-    return $section === null || auth()->user()?->canOpenPortalSection($section);
-  }));
+  if ($opens(['people'])) {
+    $links[] = ['portal.people.index', 'People', 'bi-people'];
+  }
+  if ($opens(['reports'])) {
+    $links[] = ['portal.reports.index', 'Reports', 'bi-bar-chart'];
+  }
+  if ($opens(['payroll'])) {
+    $links[] = ['portal.payroll.index', 'Payroll', 'bi-wallet2'];
+  }
+  if ($opens(['workplace'])) {
+    $links[] = ['portal.workplace.index', 'Workplace', 'bi-geo-alt'];
+  }
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -44,7 +53,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-<link href="{{ asset('assets/css/portal.css') }}?v=32" rel="stylesheet">
+<link href="{{ asset('assets/css/portal.css') }}?v=34" rel="stylesheet">
 </head>
 <body class="portal">
 <a class="skip" href="#portal-main">Skip to content</a>

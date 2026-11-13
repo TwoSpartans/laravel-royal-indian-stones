@@ -42,7 +42,7 @@
   </section>
 </div>
 
-@if ($person->portal_role === \App\Enums\PortalRole::Employee)
+@if ($person->portalSectionCatalog() !== [])
 <section class="card" style="margin-top:0.9rem">
   <div class="card-head">
     <h2>Sections they can open</h2>
@@ -51,10 +51,10 @@
     @endif
   </div>
   <ul class="section-access">
-    @foreach (config('portal.employee_sections') as $key => $label)
+    @foreach ($person->portalSectionCatalog() as $key => $label)
       <li>
         <span class="badge {{ $person->canOpenPortalSection($key) ? 'badge-good' : 'badge-wait' }}">{{ $person->canOpenPortalSection($key) ? 'Open' : 'Closed' }}</span>
-        <span><strong>{{ $label }}</strong><small>{{ config('portal.employee_section_notes.'.$key) }}</small></span>
+        <span><strong>{{ $label }}</strong><small>{{ $person->portal_role?->isManagerLevel() ? config('portal.manager_section_notes.'.$key) : config('portal.employee_section_notes.'.$key) }}</small></span>
       </li>
     @endforeach
   </ul>
@@ -62,14 +62,9 @@
     @if ($person->profile?->sections_set_at)
       Last changed {{ \App\Support\PortalTime::format($person->profile->sections_set_at, $person) }}.
     @else
-      All five stay open until this record saves a chosen list.
+      Every section for this role stays open until this record saves a chosen list.
     @endif
   </p>
-</section>
-@elseif ($person->portal_role?->isManagerLevel())
-<section class="card" style="margin-top:0.9rem">
-  <h2>Access</h2>
-  <p>Manager / HR keeps People, Reports, Workplace, Payroll, and the team tools. Section boxes apply to an employee.</p>
 </section>
 @elseif ($person->portal_role?->isCompanyAdmin())
 <section class="card" style="margin-top:0.9rem">

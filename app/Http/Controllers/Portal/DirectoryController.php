@@ -33,7 +33,7 @@ class DirectoryController extends PortalController
     public function index(Request $request): View
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canBrowseDirectory($actor), 403);
+        abort_unless($this->access->canBrowseDirectory($actor) && $actor->canOpenPortalSection('people'), 403);
 
         $search = trim($request->string('q')->toString());
         $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
@@ -66,7 +66,7 @@ class DirectoryController extends PortalController
 
     public function create(Request $request): View
     {
-        abort_unless($this->access->canAdminister($this->actor($request)), 403);
+        abort_unless($this->access->canAdminister($this->actor($request)) && $this->actor($request)->canOpenPortalSection('people'), 403);
 
         return view('portal.people.form', $this->formData($request, null));
     }
@@ -74,7 +74,7 @@ class DirectoryController extends PortalController
     public function store(Request $request, ProvisionEmployee $provision): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('people'), 403);
         $requestedRole = PortalRole::tryFrom($request->string('portal_role')->toString());
         abort_unless($requestedRole instanceof PortalRole && $this->access->canAssignRole($actor, $requestedRole), 403);
         $data = $this->validated($request, null);
@@ -220,7 +220,7 @@ class DirectoryController extends PortalController
     {
         $actor = $this->actor($request);
         $person = $this->person($actor, $member);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('people'), 403);
         abort_if($person->portal_role?->isManagerLevel() === true && $actor->portal_role?->isCompanyAdmin() !== true, 403);
 
         $person->forceFill(['deactivated_at' => null])->save();
@@ -358,7 +358,7 @@ class DirectoryController extends PortalController
     public function balance(Request $request, int $member, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('people'), 403);
         $person = $this->person($actor, $member);
         $data = $request->validate([
             'leave_type_id' => ['required', 'integer', 'exists:leave_types,id'],
@@ -442,7 +442,7 @@ class DirectoryController extends PortalController
             'identity_document_label' => ['nullable', 'string', 'max:80'],
             'identity_document_number' => ['nullable', 'string', 'max:80'],
             'visible_sections' => ['nullable', 'array'],
-            'visible_sections.*' => ['string', Rule::in(array_keys(config('portal.employee_sections')))],
+            'visible_sections.*' => ['string', Rule::in(array_keys(config('portal.employee_sections') + config('portal.manager_sections')))],
         ], [
             'email.unique' => 'A staff account with this email already exists.',
             'manager_id.required' => 'Choose the manager for this employee.',
@@ -467,7 +467,7 @@ class DirectoryController extends PortalController
      */
     private function applySections(EmployeeProfile $profile, PortalRole $role, array $data): void
     {
-        if ($role !== PortalRole::Employee) {
+        if ($role->isCompanyAdmin()) {
             $profile->visible_sections = null;
             $profile->sections_set_at = null;
 
@@ -478,7 +478,8 @@ class DirectoryController extends PortalController
             return;
         }
 
-        $next = array_values($data['visible_sections']);
+        $catalog = array_keys($role->isManagerLevel() ? config('portal.manager_sections') : config('portal.employee_sections'));
+        $next = array_values(array_intersect($data['visible_sections'], $catalog));
         $current = array_values($profile->visible_sections ?? []);
         $sortedNext = $next;
         $sortedCurrent = $current;

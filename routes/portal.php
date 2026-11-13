@@ -66,6 +66,7 @@ Route::middleware(NoindexAdminResponses::class)->prefix('portal')->name('portal.
                 Route::post('people/{member}/balances', [DirectoryController::class, 'balance'])->whereNumber('member')->name('people.balances.update');
 
                 Route::get('attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+                Route::get('attendance/notes', [AttendanceController::class, 'notes'])->name('attendance.notes');
                 Route::get('attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
                 Route::get('attendance/compare', [AttendanceController::class, 'compare'])->name('attendance.compare');
                 Route::get('attendance/exceptions', [AttendanceController::class, 'exceptions'])->name('attendance.exceptions');

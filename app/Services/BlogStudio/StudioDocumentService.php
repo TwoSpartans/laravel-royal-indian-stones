@@ -2,12 +2,16 @@
 
 namespace App\Services\BlogStudio;
 
+use App\Models\JournalMedia;
 use App\Models\Post;
+use App\Models\PostCategory;
 use App\Models\PostDraft;
 use App\Models\PostReference;
 use App\Services\RichContent\DocumentValidator;
 use App\Services\RichContent\QualityChecker;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class StudioDocumentService
@@ -26,30 +30,25 @@ class StudioDocumentService
     {
         $this->guardStudio($post);
         $this->guardVersion($post, (int) ($payload['baseVersion'] ?? 0));
+        if (array_key_exists('schemaVersion', $payload) && (int) $payload['schemaVersion'] !== 1) {
+            throw ValidationException::withMessages([
+                'schemaVersion' => 'This editor only saves document schema version 1.',
+            ]);
+        }
 
-        $checked = $this->validator->validate($payload['document'] ?? null);
+        $checked = $this->validator->validate($payload['content'] ?? $payload['document'] ?? null);
         if (! $checked['valid']) {
             throw ValidationException::withMessages([
                 'document' => $checked['errors'],
             ]);
         }
 
-        $metadata = is_array($payload['metadata'] ?? null) ? $payload['metadata'] : [];
-        $slug = $this->text($metadata['slug'] ?? '', 200);
-        if ($slug !== '' && Post::query()->where('slug', $slug)->whereKeyNot($post->id)->exists()) {
-            throw ValidationException::withMessages([
-                'slug' => 'Another article already uses that address.',
-            ]);
-        }
+        $metadata = $this->prepareMetadata($post, is_array($payload['metadata'] ?? null) ? $payload['metadata'] : []);
 
         return DB::transaction(function () use ($post, $checked, $metadata): array {
             $post->lock_version = ((int) $post->lock_version) + 1;
 
             if ($post->isLive()) {
-                if (array_key_exists('categoryId', $metadata)) {
-                    $categoryId = $metadata['categoryId'];
-                    $post->post_category_id = $categoryId === null || $categoryId === '' ? null : (int) $categoryId;
-                }
                 $post->save();
                 $draft = $this->writeDraft($post, $checked['document'], $metadata);
 
@@ -85,10 +84,12 @@ class StudioDocumentService
                 'title' => $source->title,
                 'slug' => $source->slug,
                 'excerpt' => $source->summary,
+                'metaTitle' => $source->meta_title,
                 'metaDescription' => $source->meta_description,
                 'tags' => $source->tags ?? [],
                 'featuredImageAlt' => $source->featured_image_alt,
                 'image' => $source->image,
+                'categoryId' => $source->post_category_id,
             ]);
             $post->body_document = $document;
             $post->status = 'published';
@@ -195,11 +196,13 @@ class StudioDocumentService
                 'document' => $document,
                 'title' => $this->text($metadata['title'] ?? $post->title, 200),
                 'slug' => $this->text($metadata['slug'] ?? $post->slug, 200),
-                'excerpt' => $this->text($metadata['excerpt'] ?? $post->summary, 200),
-                'meta_description' => $this->nullable($metadata['metaDescription'] ?? $post->meta_description, 2000),
+                'excerpt' => $this->text($metadata['excerpt'] ?? $post->summary, 255),
+                'meta_title' => $this->nullable($metadata['metaTitle'] ?? $post->meta_title, 60),
+                'meta_description' => $this->nullable($metadata['metaDescription'] ?? $post->meta_description, 160),
                 'tags' => $this->tags($metadata['tags'] ?? $post->tags ?? []),
                 'featured_image_alt' => $this->nullable($metadata['featuredImageAlt'] ?? $post->featured_image_alt, 180),
-                'image' => $post->image,
+                'image' => array_key_exists('image', $metadata) ? $metadata['image'] : $post->image,
+                'post_category_id' => $this->categoryId($metadata, $post),
             ],
         );
     }
@@ -216,10 +219,13 @@ class StudioDocumentService
             $post->slug = $this->text($metadata['slug'], 200);
         }
         if (array_key_exists('excerpt', $metadata)) {
-            $post->summary = $this->text($metadata['excerpt'], 200);
+            $post->summary = $this->text($metadata['excerpt'], 255);
+        }
+        if (array_key_exists('metaTitle', $metadata)) {
+            $post->meta_title = $this->nullable($metadata['metaTitle'], 60);
         }
         if (array_key_exists('metaDescription', $metadata)) {
-            $post->meta_description = $this->nullable($metadata['metaDescription'], 2000);
+            $post->meta_description = $this->nullable($metadata['metaDescription'], 160);
         }
         if (array_key_exists('tags', $metadata)) {
             $post->tags = $this->tags($metadata['tags']);
@@ -282,13 +288,122 @@ class StudioDocumentService
     {
         return [
             'lockVersion' => (int) $post->lock_version,
+            'version' => (int) $post->lock_version,
+            'savedAt' => now()->toIso8601String(),
+            'slug' => (string) ($qualityPost->slug ?: $post->slug),
             'status' => $post->status,
             'isLive' => $post->isLive(),
             'hasDraft' => $hasDraft,
-            'document' => $document,
+            'hasDraftRevision' => $hasDraft,
+            'document' => $this->withMediaUrls($document),
             'quality' => $this->quality->check($qualityPost, $document),
-            'publicUrl' => $post->isLive() ? url('/'.$post->slug) : null,
+            'publicUrl' => url('/'.$post->slug),
+            'url' => url('/'.$post->slug),
+            ...$this->statusFields($post, $hasDraft),
         ];
+    }
+
+    /**
+     * @return array{status: string|null, isLive: bool, hasDraftRevision: bool, publishedAt: string|null, publishedAtInput: string, publishedAtLabel: string, version: int}
+     */
+    public function statusFields(Post $post, ?bool $hasDraft = null): array
+    {
+        $post->loadMissing('draft');
+        $scheduled = $post->scheduled_for?->timezone((string) config('app.display_timezone'));
+        $draft = $hasDraft ?? $post->draft !== null;
+
+        return [
+            'status' => $post->status,
+            'isLive' => $post->isLive(),
+            'hasDraftRevision' => $draft,
+            'publishedAt' => $post->published_on?->toDateString(),
+            'publishedAtInput' => $scheduled?->format('Y-m-d\TH:i') ?? '',
+            'publishedAtLabel' => $scheduled instanceof Carbon
+                ? $scheduled->format('j M Y, g:i A').' '.config('app.display_timezone_label')
+                : '',
+            'version' => (int) $post->lock_version,
+        ];
+    }
+
+    public function editingCopy(Post $post): Post
+    {
+        $post->loadMissing('draft');
+
+        return $this->editingPost($post);
+    }
+
+    /**
+     * @return array{ready: int, attention: int, blocked: int, items: list<array<string, mixed>>}
+     */
+    public function qualityFor(Post $post): array
+    {
+        $post->loadMissing('draft');
+
+        return $this->quality->check($this->editingPost($post), $this->editingDocument($post));
+    }
+
+    /**
+     * @param  array<string, mixed>  $document
+     * @return array<string, mixed>
+     */
+    public function withMediaUrls(array $document): array
+    {
+        $content = is_array($document['content'] ?? null) ? array_values($document['content']) : [];
+        $ids = [];
+        foreach ($content as $node) {
+            if (! is_array($node)) {
+                continue;
+            }
+            $attrs = is_array($node['attrs'] ?? null) ? $node['attrs'] : [];
+            if (! empty($attrs['mediaId'])) {
+                $ids[] = (int) $attrs['mediaId'];
+            }
+            foreach ((array) ($attrs['mediaIds'] ?? []) as $id) {
+                $ids[] = (int) $id;
+            }
+            foreach ((array) ($attrs['items'] ?? []) as $item) {
+                if (is_array($item) && ! empty($item['mediaId'])) {
+                    $ids[] = (int) $item['mediaId'];
+                }
+            }
+        }
+
+        $media = JournalMedia::query()->whereIn('id', array_values(array_unique(array_filter($ids))))->get()->keyBy('id');
+        foreach ($content as $index => $node) {
+            if (! is_array($node) || ! is_array($node['attrs'] ?? null)) {
+                continue;
+            }
+            $photo = $media->get((int) ($node['attrs']['mediaId'] ?? 0));
+            if ($photo instanceof JournalMedia) {
+                $node['attrs']['url'] = asset($photo->path);
+            }
+            if (($node['type'] ?? '') === 'gallery' && is_array($node['attrs']['items'] ?? null)) {
+                foreach ($node['attrs']['items'] as $itemIndex => $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+                    $itemPhoto = $media->get((int) ($item['mediaId'] ?? 0));
+                    if ($itemPhoto instanceof JournalMedia) {
+                        $item['url'] = asset($itemPhoto->path);
+                        $node['attrs']['items'][$itemIndex] = $item;
+                    }
+                }
+            }
+            if (($node['type'] ?? '') === 'workshopStory') {
+                $photos = [];
+                foreach ((array) ($node['attrs']['mediaIds'] ?? []) as $id) {
+                    $itemPhoto = $media->get((int) $id);
+                    if ($itemPhoto instanceof JournalMedia) {
+                        $photos[] = ['mediaId' => (int) $id, 'url' => asset($itemPhoto->path)];
+                    }
+                }
+                $node['attrs']['photos'] = $photos;
+            }
+            $content[$index] = $node;
+        }
+        $document['content'] = $content;
+
+        return $document;
     }
 
     private function editingDocument(Post $post): array
@@ -310,10 +425,12 @@ class StudioDocumentService
         $copy->title = $post->draft->title;
         $copy->slug = $post->draft->slug;
         $copy->summary = $post->draft->excerpt;
+        $copy->meta_title = $post->draft->meta_title;
         $copy->meta_description = $post->draft->meta_description;
         $copy->tags = $post->draft->tags;
         $copy->featured_image_alt = $post->draft->featured_image_alt;
-        $copy->image = $post->draft->image ?: $post->image;
+        $copy->image = $post->draft->image;
+        $copy->post_category_id = $post->draft->post_category_id;
         $copy->id = $post->id;
 
         return $copy;
@@ -323,13 +440,111 @@ class StudioDocumentService
     {
         $copy = $post->replicate();
         $copy->title = $draft->title;
+        $copy->slug = $draft->slug;
         $copy->summary = $draft->excerpt;
+        $copy->meta_title = $draft->meta_title;
         $copy->meta_description = $draft->meta_description;
         $copy->featured_image_alt = $draft->featured_image_alt;
-        $copy->image = $draft->image ?: $post->image;
+        $copy->image = $draft->image;
+        $copy->post_category_id = $draft->post_category_id;
         $copy->id = $post->id;
 
         return $copy;
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function prepareMetadata(Post $post, array $metadata): array
+    {
+        if (array_key_exists('categoryIds', $metadata) && ! array_key_exists('categoryId', $metadata)) {
+            $ids = array_values(array_filter(array_map(intval(...), (array) $metadata['categoryIds']), fn (int $id): bool => $id > 0));
+            $metadata['categoryId'] = $ids[0] ?? null;
+        }
+        if (array_key_exists('categoryId', $metadata) && $metadata['categoryId'] !== null && $metadata['categoryId'] !== '') {
+            $categoryId = (int) $metadata['categoryId'];
+            if (! PostCategory::query()->whereKey($categoryId)->exists()) {
+                throw ValidationException::withMessages([
+                    'categoryIds' => 'Choose a category that exists.',
+                ]);
+            }
+            $metadata['categoryId'] = $categoryId;
+        }
+        if (array_key_exists('featuredMediaId', $metadata)) {
+            $mediaId = (int) $metadata['featuredMediaId'];
+            $media = $mediaId > 0 ? JournalMedia::query()->find($mediaId) : null;
+            if ($mediaId > 0 && ! $media instanceof JournalMedia) {
+                throw ValidationException::withMessages([
+                    'featuredMediaId' => 'Choose a photograph from the library.',
+                ]);
+            }
+            $metadata['image'] = $media?->path;
+        }
+        if (! empty($metadata['removeFeaturedImage'])) {
+            $metadata['image'] = null;
+        }
+
+        $metadata['slug'] = $this->resolveSlug($post, $metadata);
+
+        return $metadata;
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    private function resolveSlug(Post $post, array $metadata): string
+    {
+        $title = array_key_exists('title', $metadata) ? $this->text($metadata['title'], 255) : (string) $post->title;
+        $current = (string) $post->slug;
+        $requested = array_key_exists('slug', $metadata) && trim((string) $metadata['slug']) !== ''
+            ? (Str::slug((string) $metadata['slug']) ?: $current)
+            : $current;
+        $frozen = $post->published_on !== null
+            || $post->is_published
+            || in_array((string) $post->status, ['published', 'scheduled'], true);
+        $followsTitle = ! $frozen
+            && $requested === $current
+            && preg_match('/^untitled-article(-\d+)?$/', $current) === 1
+            && Str::lower($title) !== 'untitled article';
+
+        if ($followsTitle || $requested === '') {
+            return $this->uniqueSlug($title !== '' ? $title : 'Untitled article', $post->id);
+        }
+        if ($requested !== $current && Post::query()->where('slug', $requested)->whereKeyNot($post->id)->exists()) {
+            return $this->uniqueSlug($requested, $post->id);
+        }
+
+        return $requested;
+    }
+
+    private function uniqueSlug(string $value, int $ignoreId): string
+    {
+        $base = Str::slug($value);
+        if ($base === '') {
+            $base = 'untitled-article';
+        }
+        $slug = $base;
+        $suffix = 2;
+        while (Post::query()->where('slug', $slug)->whereKeyNot($ignoreId)->exists()) {
+            $slug = $base.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    private function categoryId(array $metadata, Post $post): ?int
+    {
+        if (! array_key_exists('categoryId', $metadata)) {
+            return $post->post_category_id;
+        }
+        $categoryId = $metadata['categoryId'];
+
+        return $categoryId === null || $categoryId === '' ? null : (int) $categoryId;
     }
 
     private function guardStudio(Post $post): void
@@ -370,7 +585,7 @@ class StudioDocumentService
         $items = is_array($value) ? $value : explode(',', (string) $value);
         $tags = [];
         foreach ($items as $item) {
-            $tag = $this->text($item, 40);
+            $tag = Str::lower($this->text($item, 40));
             if ($tag !== '') {
                 $tags[] = $tag;
             }

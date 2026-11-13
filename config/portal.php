@@ -46,6 +46,51 @@ return [
         ],
     ],
 
+    'manager_sections' => [
+        'attendance' => 'Own attendance',
+        'leave' => 'Own leave',
+        'tasks' => 'Tasks',
+        'expenses' => 'Own expenses',
+        'payslips' => 'Own payslips',
+        'team_attendance' => 'Team attendance',
+        'team_leave' => 'Team leave',
+        'team_expenses' => 'Team expenses',
+        'people' => 'People',
+        'reports' => 'Reports',
+        'workplace' => 'Workplace',
+        'payroll' => 'Payroll',
+    ],
+
+    'manager_section_notes' => [
+        'attendance' => 'Their own clock-in, corrections, and overtime',
+        'leave' => 'Their own leave balance and requests',
+        'tasks' => 'Tasks they can add and assign',
+        'expenses' => 'Expense claims they submit',
+        'payslips' => 'Their own published payslips',
+        'team_attendance' => 'Roster, comparison, exceptions, and approvals',
+        'team_leave' => 'Approving leave for the team',
+        'team_expenses' => 'Deciding expense claims',
+        'people' => 'The roster, invitations, and employment records',
+        'reports' => 'Exports for attendance, leave, expenses, and tasks',
+        'workplace' => 'Devices, remote work, holidays, and the office network',
+        'payroll' => 'Payroll administration. Calculations stay off until a reviewer enables them',
+    ],
+
+    'manager_section_presets' => [
+        'personal' => [
+            'label' => 'Personal',
+            'sections' => ['attendance', 'leave', 'tasks', 'expenses', 'payslips'],
+        ],
+        'team' => [
+            'label' => 'Team',
+            'sections' => ['attendance', 'leave', 'tasks', 'expenses', 'payslips', 'team_attendance', 'team_leave', 'team_expenses'],
+        ],
+        'full' => [
+            'label' => 'Full management',
+            'sections' => ['attendance', 'leave', 'tasks', 'expenses', 'payslips', 'team_attendance', 'team_leave', 'team_expenses', 'people', 'reports', 'workplace', 'payroll'],
+        ],
+    ],
+
     /*
     | Explicit proxy addresses for staff IP checks. "*" is ignored.
     | Leave empty to use only the direct connection address.

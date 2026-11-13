@@ -35,14 +35,17 @@ class ExpenseController extends PortalController
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        abort_unless($this->actor($request)->canOpenPortalSection('expenses'), 403);
+
         return view('portal.expenses.form');
     }
 
     public function store(Request $request): RedirectResponse
     {
         $actor = $this->actor($request);
+        abort_unless($actor->canOpenPortalSection('expenses'), 403);
         $data = $request->validate([
             'category' => ['required', Rule::in(array_keys(config('portal.expense_categories')))],
             'amount' => ['required', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],
@@ -137,7 +140,9 @@ class ExpenseController extends PortalController
 
     private function scoped(User $actor): Builder
     {
-        $ids = $this->access->peopleQuery($actor)->pluck('id');
+        $ids = $actor->canOpenPortalSection('team_expenses')
+            ? $this->access->peopleQuery($actor)->pluck('id')
+            : collect([$actor->id]);
         if (! $ids->contains($actor->id)) {
             $ids->push($actor->id);
         }

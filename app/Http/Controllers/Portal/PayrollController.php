@@ -19,7 +19,7 @@ class PayrollController extends PortalController
     public function index(Request $request): View
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('payroll'), 403);
         $people = $this->access->peopleQuery($actor)->with('profile')->orderBy('name')->get();
 
         return view('portal.payroll.index', [
@@ -33,7 +33,7 @@ class PayrollController extends PortalController
     public function structure(Request $request, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('payroll'), 403);
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
             'effective_on' => ['required', 'date'],
@@ -72,7 +72,7 @@ class PayrollController extends PortalController
     public function adjustment(Request $request, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('payroll'), 403);
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
             'period' => ['required', 'date_format:Y-m'],
@@ -103,7 +103,7 @@ class PayrollController extends PortalController
     public function prepare(Request $request, PayslipPreparer $preparer): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('payroll'), 403);
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
             'period' => ['required', 'date_format:Y-m'],
@@ -120,7 +120,7 @@ class PayrollController extends PortalController
     public function publish(Request $request, Payslip $payslip, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('payroll'), 403);
         abort_unless(in_array($payslip->status, ['draft', 'review_required'], true), 403);
         $payslip->forceFill([
             'status' => 'published',
@@ -134,11 +134,10 @@ class PayrollController extends PortalController
     public function show(Request $request, Payslip $payslip, AuditWriter $audit): View
     {
         $actor = $this->actor($request);
-        abort_unless($actor->canOpenPortalSection('payslips'), 404);
         $owner = User::query()->find($payslip->user_id);
         $allowed = $owner instanceof User && (
-            $this->access->canAdminister($actor)
-            || ($actor->is($owner) && $payslip->status === 'published')
+            ($this->access->canAdminister($actor) && $actor->canOpenPortalSection('payroll'))
+            || ($actor->is($owner) && $payslip->status === 'published' && $actor->canOpenPortalSection('payslips'))
         );
         abort_unless($allowed, 404);
         $audit->write($actor, 'payroll.payslip_viewed', $payslip, [], $request->ip());

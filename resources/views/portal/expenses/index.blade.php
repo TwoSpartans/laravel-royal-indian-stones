@@ -3,7 +3,9 @@
 @section('content')
 <header class="page-head">
   <div><p class="eyebrow">Reimbursements</p><h1>Expenses</h1></div>
-  <a class="btn" href="{{ route('portal.expenses.create') }}">New claim</a>
+  @if (auth()->user()->canOpenPortalSection('expenses'))
+    <a class="btn" href="{{ route('portal.expenses.create') }}">New claim</a>
+  @endif
 </header>
 <form class="filters" method="get">
   <div class="field"><label for="status">Status</label>

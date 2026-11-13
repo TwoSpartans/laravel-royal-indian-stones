@@ -251,6 +251,7 @@
     }
     state.saving = true;
     paintStatus('Saving');
+    var sentDocument = JSON.stringify(state.document);
     return fetch(boot.urls.save, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
@@ -272,9 +273,12 @@
         render();
         return;
       }
-      keepPreviews(result.body.document);
+      var changedWhileSaving = JSON.stringify(state.document) !== sentDocument;
       state.lockVersion = result.body.lockVersion;
-      state.document = result.body.document;
+      if (!changedWhileSaving) {
+        keepPreviews(result.body.document);
+        state.document = result.body.document;
+      }
       state.quality = result.body.quality;
       state.hasDraft = result.body.hasDraft;
       state.isLive = result.body.isLive;
@@ -284,7 +288,7 @@
       paintStatus(state.notice);
       paintQuality();
       saveWaiters.splice(0).forEach(function (resolve) { resolve(result); });
-      if (state.queued) {
+      if (state.queued || changedWhileSaving) {
         state.queued = false;
         return save();
       }
@@ -363,6 +367,7 @@
           meta.imagePath = result.body.path;
         } else if (role === 'gallery') {
           var gallery = blocks()[state.selected];
+          if (!gallery || gallery.type !== 'gallery') return;
           gallery.attrs.items = gallery.attrs.items || [];
           if (gallery.attrs.items.length >= 12) {
             state.notice = 'A gallery holds 12 photographs.';
@@ -371,9 +376,15 @@
           }
           gallery.attrs.items.push({ mediaId: result.body.id, alt: '', decorative: false, url: result.body.url });
         } else if (role === 'workshop') {
-          blocks()[state.selected].attrs.mediaIds.push(result.body.id);
+          var workshop = blocks()[state.selected];
+          if (!workshop || workshop.type !== 'workshopStory') return;
+          workshop.attrs.mediaIds = workshop.attrs.mediaIds || [];
+          workshop.attrs.photos = workshop.attrs.photos || [];
+          workshop.attrs.mediaIds.push(result.body.id);
+          workshop.attrs.photos.push({ mediaId: result.body.id, url: result.body.url });
         } else {
           var image = blocks()[state.selected];
+          if (!image || image.type !== 'image') return;
           image.attrs.mediaId = result.body.id;
           image.attrs.url = result.body.url;
         }
@@ -422,6 +433,8 @@
   }
 
   function render() {
+    var scroller = root.querySelector('.studio-canvas');
+    var scrollTop = scroller ? scroller.scrollTop : 0;
     if (post.contentSource !== 'studio') {
       root.innerHTML = '<main class="studio-convert"><p><a class="studio-link" href="' + boot.urls.back + '"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to articles</a></p><h1>' + escapeHtml(post.title || 'This article') + '</h1><p>Studio will turn the saved article into blocks. The original text stays stored, so the classic version remains.</p>' + (post.isLive ? '<p>Readers will see the Studio version as soon as conversion finishes.</p>' : '') + (post.hasStudioVersion ? '<label><input type="radio" name="studio-source" value="fresh" checked> Build a new Studio version</label><label><input type="radio" name="studio-source" value="existing"> Go back to the earlier Studio version</label>' : '') + '<label><input type="checkbox" data-confirm-convert> ' + (post.isLive ? 'I understand readers will see the Studio version immediately.' : 'I understand this article will open in Blog Studio.') + '</label><p class="studio-hint" data-convert-error></p><button class="studio-publish" type="button" data-convert disabled>Convert to Blog Studio</button><p><a href="' + boot.urls.classic + '">Keep using the Classic editor</a></p></main>';
       return;
@@ -432,7 +445,7 @@
       + '<div class="studio-shell' + (state.focus ? ' is-focus' : '') + '">'
       + '<header class="studio-top"><div class="studio-identity"><a class="studio-icon" href="' + boot.urls.back + '" aria-label="Back to articles"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a> <strong>Blog Studio</strong></div>'
       + '<div class="studio-modes"><button type="button" data-mode="write"' + pressed(state.mode === 'write') + '>Write</button><button type="button" data-mode="design"' + pressed(state.mode === 'design') + '>Design</button><button type="button" data-mode="optimize"' + pressed(state.mode === 'optimize') + '>Optimize</button></div>'
-      + '<div class="studio-actions"><button class="studio-icon" type="button" data-drawer="rail" aria-label="Blocks" aria-expanded="' + (state.drawer === 'rail' ? 'true' : 'false') + '"><i class="fa-solid fa-plus" aria-hidden="true"></i></button><button class="studio-icon" type="button" data-drawer="inspector" aria-label="Settings" aria-expanded="' + (state.drawer === 'inspector' ? 'true' : 'false') + '"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button><button class="studio-icon" type="button" data-undo aria-label="Undo"' + (history.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-left" aria-hidden="true"></i></button><button class="studio-icon" type="button" data-redo aria-label="Redo"' + (future.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button>' + statusChip() + '<span class="studio-save ' + saveClass() + '" data-status>' + escapeHtml(state.notice || 'Saved') + '</span><button type="button" data-preview>Preview</button><button type="button" data-schedule>Schedule</button><button type="button" data-save>' + (state.isLive ? 'Save draft' : 'Save') + '</button><button class="studio-publish" type="button" data-publish>' + (state.isLive ? 'Republish' : 'Publish') + '</button><button class="studio-icon" type="button" data-focus aria-label="' + (state.focus ? 'Show panels' : 'Focus on the article') + '"><i class="fa-solid ' + (state.focus ? 'fa-compress' : 'fa-expand') + '" aria-hidden="true"></i></button><details class="studio-more"><summary>More</summary><div class="studio-more-menu"><button type="button" data-save>Save now</button>' + (post.publicUrl ? '<button type="button" data-copy-link>Copy public link</button>' : '') + '<a href="' + boot.urls.classic + '">Open the classic editor</a></div></details></div></header>'
+      + '<div class="studio-actions"><button class="studio-icon studio-drawer-toggle" type="button" data-drawer="rail" aria-label="Insert" aria-expanded="' + (state.drawer === 'rail' ? 'true' : 'false') + '"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Insert</span></button><button class="studio-icon studio-drawer-toggle" type="button" data-drawer="inspector" aria-label="Inspector" aria-expanded="' + (state.drawer === 'inspector' ? 'true' : 'false') + '"><i class="fa-solid fa-sliders" aria-hidden="true"></i><span>Inspector</span></button><button class="studio-icon" type="button" data-undo aria-label="Undo"' + (history.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-left" aria-hidden="true"></i></button><button class="studio-icon" type="button" data-redo aria-label="Redo"' + (history.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button>' + statusChip() + '<span class="studio-save ' + saveClass() + '" data-status>' + escapeHtml(state.notice || 'Saved') + '</span><button type="button" data-preview>Preview</button><button type="button" data-schedule>Schedule</button><button type="button" data-save>' + (state.isLive ? 'Save draft' : 'Save') + '</button><button class="studio-publish" type="button" data-publish>' + (state.isLive ? 'Republish' : 'Publish') + '</button><button class="studio-icon studio-focus" type="button" data-focus aria-label="' + (state.focus ? 'Show panels' : 'Focus on the article') + '"><i class="fa-solid ' + (state.focus ? 'fa-compress' : 'fa-expand') + '" aria-hidden="true"></i><span>' + (state.focus ? 'Panels' : 'Focus') + '</span></button><details class="studio-more"><summary>More</summary><div class="studio-more-menu"><button type="button" data-preview>Preview</button><button type="button" data-schedule>Schedule</button><button type="button" data-save>Save now</button>' + (post.publicUrl ? '<button type="button" data-copy-link>Copy public link</button>' : '') + '<a href="' + boot.urls.classic + '">Open the classic editor</a></div></details></div></header>'
       + '<nav class="studio-path"><button type="button" data-rail="templates"' + on(state.rail === 'templates') + '>Template</button><button type="button" data-mode="write">Build</button><button type="button" data-mode="design">Design</button><button type="button" data-mode="optimize">Optimize</button><button type="button" data-publish>Publish</button></nav>'
       + (state.notice ? '<p class="studio-banner ' + bannerClass() + '">' + escapeHtml(state.notice) + (state.serverLock ? ' <button type="button" data-reload>Load the latest version</button> <button type="button" data-overwrite>Keep my version</button>' : '') + ' <button class="studio-icon" type="button" data-dismiss aria-label="Dismiss"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></p>' : '')
       + (state.recovery ? '<p class="studio-banner is-warning">A copy from this browser was not saved. <button type="button" data-restore>Restore</button> <button type="button" data-discard>Discard</button></p>' : '')
@@ -447,6 +460,25 @@
       + '<div class="studio-body' + (state.drawer === 'rail' ? ' is-rail' : '') + (state.drawer === 'inspector' ? ' is-inspector' : '') + '"><button class="studio-backdrop" type="button" data-drawer="" aria-label="Close panel"></button><aside class="studio-rail">' + rail(selected) + '</aside><main class="studio-canvas"><article class="studio-article rich-content">' + canvas(selected) + '</article></main><aside class="studio-inspector">' + inspector(selected) + '</aside></div></div>'
       + overlay();
     growTitle(root.querySelector('.studio-title'));
+    var nextScroller = root.querySelector('.studio-canvas');
+    if (nextScroller) {
+      nextScroller.scrollTop = scrollTop;
+      window.requestAnimationFrame(function () {
+        if (nextScroller.isConnected) nextScroller.scrollTop = scrollTop;
+      });
+    }
+  }
+
+  function chooseBlock(index, reveal) {
+    markSelected(index);
+    root.querySelectorAll('.studio-layer-row').forEach(function (row, rowIndex) {
+      row.classList.toggle('is-current', rowIndex === index);
+    });
+    var pane = root.querySelector('.studio-inspector');
+    if (pane) pane.innerHTML = inspector(blocks()[index] || null);
+    if (!reveal) return;
+    var block = root.querySelector('.studio-block.is-selected');
+    if (block) block.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
   function insertButtons() {
@@ -472,7 +504,7 @@
   }
 
   function rail() {
-    var tabs = '<div class="studio-tabs"><button type="button" data-rail="insert"' + on(state.rail === 'insert') + '>Insert</button><button type="button" data-rail="layers"' + on(state.rail === 'layers') + '>Layers</button><button type="button" data-rail="templates"' + on(state.rail === 'templates') + '>Templates</button></div>';
+    var tabs = '<button class="studio-drawer-close" type="button" data-drawer="">Close</button><div class="studio-tabs"><button type="button" data-rail="insert"' + on(state.rail === 'insert') + '>Insert</button><button type="button" data-rail="layers"' + on(state.rail === 'layers') + '>Layers</button><button type="button" data-rail="templates"' + on(state.rail === 'templates') + '>Templates</button></div>';
     if (state.rail === 'layers') {
       return tabs + blocks().map(function (block, index) {
         var name = (boot.blocks.find(function (item) { return item.type === block.type; }) || {}).name || block.type;
@@ -489,6 +521,13 @@
     return tabs + '<input data-search placeholder="Search blocks" value="' + escapeHtml(state.query) + '"><p class="studio-hint">' + (state.selected == null ? 'Enter adds the first match at the end.' : 'Enter adds the first match after the selected block.') + '</p><div data-insert-list>' + buttons + '</div>';
   }
 
+  function markSelected(index) {
+    state.selected = index;
+    root.querySelectorAll('.studio-block').forEach(function (block, blockIndex) {
+      block.classList.toggle('is-selected', blockIndex === index);
+    });
+  }
+
   function canvas(selected) {
     var hero = meta.image
       ? '<figure class="studio-hero"><img src="' + escapeHtml(meta.image) + '" alt="' + escapeHtml(meta.featuredImageAlt) + '"></figure>'
@@ -497,7 +536,7 @@
     var excerptOutside = meta.excerpt.length < boot.excerpt.min || meta.excerpt.length > boot.excerpt.max;
     var excerpt = '<label class="studio-excerpt-label">Excerpt<textarea class="studio-excerpt" data-field="excerpt" maxlength="200" aria-label="Excerpt"' + (excerptOutside ? ' aria-invalid="true"' : '') + '>' + escapeHtml(meta.excerpt) + '</textarea><span class="studio-hint' + (excerptOutside ? ' is-error' : '') + '">' + (excerptOutside ? 'Use between ' + boot.excerpt.min + ' and ' + boot.excerpt.max + ' characters. ' : '') + meta.excerpt.length + ' / ' + boot.excerpt.max + '</span></label>';
     var body = blocks().map(function (block, index) {
-      return '<section class="studio-block' + (index === state.selected ? ' is-selected' : '') + '" data-select="' + index + '">' + blockView(block) + '</section>';
+      return '<section class="studio-block' + (index === state.selected ? ' is-selected' : '') + '" data-select="' + index + '">' + blockToolbar(index) + blockView(block) + '</section>';
     }).join('');
     var empty = blocks().length === 1 && blocks()[0].type === 'paragraph' && textOf(blocks()[0]) === '';
     var offers = empty ? '<div>' + boot.blocks.filter(function (block) { return block.type !== 'paragraph' && block.type !== 'heading'; }).map(function (block) {
@@ -506,9 +545,13 @@
     var blocked = (state.quality.items || []).filter(function (item) { return item.state === 'blocked'; }).length;
     var attention = (state.quality.items || []).filter(function (item) { return item.state === 'attention'; }).length;
     var dock = '<button class="studio-dock" type="button" data-mode="optimize">' + (blocked ? blocked + ' checks block publishing' : attention ? attention + ' to review' : 'All checks pass') + '</button>';
-    var atStart = state.selected === 0;
-    var atEnd = state.selected == null || state.selected >= blocks().length - 1;
-    return hero + title + excerpt + dock + '<div class="studio-toolbar" role="toolbar" aria-label="Formatting"><button type="button" data-undo aria-label="Undo"' + (history.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-left" aria-hidden="true"></i></button><button type="button" data-redo aria-label="Redo"' + (future.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button><button type="button" data-format="bold" aria-label="Bold"><i class="fa-solid fa-bold" aria-hidden="true"></i></button><button type="button" data-format="italic" aria-label="Italic"><i class="fa-solid fa-italic" aria-hidden="true"></i></button><button type="button" data-format="link" aria-label="Link"><i class="fa-solid fa-link" aria-hidden="true"></i></button><button type="button" data-format="p">Text</button><button type="button" data-format="h2">H2</button><button type="button" data-format="h3">H3</button><button type="button" data-open-insert>Insert</button><button type="button" data-move="-1" aria-label="Move block up"' + (atStart ? ' disabled' : '') + '><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button><button type="button" data-move="1" aria-label="Move block down"' + (atEnd ? ' disabled' : '') + '><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button><button type="button" data-duplicate aria-label="Duplicate block"><i class="fa-solid fa-clone" aria-hidden="true"></i></button><button class="is-danger" type="button" data-delete aria-label="Delete block"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></div>' + body + offers;
+    return hero + title + excerpt + dock + body + offers;
+  }
+
+  function blockToolbar(index) {
+    var atStart = index === 0;
+    var atEnd = index >= blocks().length - 1;
+    return '<div class="studio-toolbar" role="toolbar" aria-label="Block ' + (index + 1) + '"><button type="button" data-undo aria-label="Undo"' + (history.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-left" aria-hidden="true"></i></button><button type="button" data-redo aria-label="Redo"' + (future.length ? '' : ' disabled') + '><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button><button type="button" data-format="bold" aria-label="Bold"><i class="fa-solid fa-bold" aria-hidden="true"></i></button><button type="button" data-format="italic" aria-label="Italic"><i class="fa-solid fa-italic" aria-hidden="true"></i></button><button type="button" data-format="link" aria-label="Link"><i class="fa-solid fa-link" aria-hidden="true"></i></button><button type="button" data-format="p">Text</button><button type="button" data-format="h2">H2</button><button type="button" data-format="h3">H3</button><button type="button" data-open-insert>Insert</button><button type="button" data-move="-1" aria-label="Move block up"' + (atStart ? ' disabled' : '') + '><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button><button type="button" data-move="1" aria-label="Move block down"' + (atEnd ? ' disabled' : '') + '><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button><button type="button" data-duplicate aria-label="Duplicate block"><i class="fa-solid fa-clone" aria-hidden="true"></i></button><button class="is-danger" type="button" data-delete aria-label="Delete block"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></div>';
   }
 
   function blockView(block) {
@@ -516,7 +559,8 @@
       return '<div class="studio-text" contenteditable="true" data-text data-placeholder="Write, or type / to insert a block.">' + contentToHtml(block.content) + '</div>';
     }
     if (block.type === 'image') {
-      return '<p class="studio-atom-label">Image</p>' + (block.attrs.url || block.attrs.mediaId ? '<figure class="studio-atom-image"><img alt="' + escapeHtml(block.attrs.alt || '') + '" src="' + escapeHtml(block.attrs.url || '') + '"><figcaption class="' + (block.attrs.alt ? '' : 'is-empty') + '">' + escapeHtml(block.attrs.caption || block.attrs.alt || 'Add alt text in the inspector') + '</figcaption></figure><button class="studio-upload" type="button" data-upload="block"><i class="fa-solid fa-upload" aria-hidden="true"></i> Replace photograph</button>' : '<button class="studio-upload is-primary" type="button" data-upload="block"><i class="fa-solid fa-upload" aria-hidden="true"></i> Add a photograph</button>');
+      var imageUrl = block.attrs.url || '';
+      return '<p class="studio-atom-label">Image</p>' + (imageUrl ? '<figure class="studio-atom-image"><img alt="' + escapeHtml(block.attrs.alt || '') + '" src="' + escapeHtml(imageUrl) + '"><figcaption class="' + (block.attrs.caption || block.attrs.alt ? '' : 'is-empty') + '">' + escapeHtml(block.attrs.caption || block.attrs.alt || 'Add a caption in the inspector') + '</figcaption></figure><button class="studio-upload" type="button" data-upload="block"><i class="fa-solid fa-upload" aria-hidden="true"></i> Replace photograph</button>' : '<button class="studio-upload is-primary" type="button" data-upload="block"><i class="fa-solid fa-upload" aria-hidden="true"></i> Add a photograph</button>');
     }
     if (block.type === 'gallery') {
       var photos = (block.attrs.items || []).map(function (item) { return item.url ? '<img src="' + escapeHtml(item.url) + '" alt="">' : '<span>Photo</span>'; }).join('');
@@ -524,12 +568,17 @@
       return '<p class="studio-atom-label">Gallery</p><div class="studio-atom-gallery' + (block.attrs.mode === 'carousel' ? ' is-carousel' : '') + (photos ? '' : ' is-empty-well') + '">' + (photos || addPhoto) + '</div>' + (photos ? addPhoto : '');
     }
     if (block.type === 'productSpotlight') return '<p class="studio-atom-label">Product Spotlight</p><aside class="studio-atom-product is-' + escapeHtml((block.attrs.presentation && block.attrs.presentation.layout) || 'image-left') + '"><div class="studio-atom-photo">' + (block.attrs.productImage ? '<img src="' + escapeHtml(block.attrs.productImage) + '" alt="">' : '') + '</div><div><p class="studio-eyebrow">' + escapeHtml((block.attrs.editorial && block.attrs.editorial.eyebrow) || 'Stone') + '</p><strong>' + escapeHtml(block.attrs.productName || 'Choose a stone') + '</strong><p>' + escapeHtml((block.attrs.editorial && block.attrs.editorial.summary) || 'Add a short summary') + '</p></div></aside>';
-    if (block.type === 'workshopStory') return '<p class="studio-atom-label">Quarry story</p><section class="studio-atom-workshop"><p class="studio-eyebrow">' + escapeHtml(block.attrs.processStage || 'selection') + '</p><strong>' + escapeHtml(block.attrs.title || 'Add a title') + '</strong><p>' + escapeHtml(block.attrs.body || 'Add the story') + '</p></section><button class="studio-upload" type="button" data-upload="workshop"><i class="fa-solid fa-upload" aria-hidden="true"></i> Add process photograph</button>';
+    if (block.type === 'workshopStory') {
+      var shots = (block.attrs.photos || []).filter(function (photo) { return photo && photo.url; }).map(function (photo) {
+        return '<img src="' + escapeHtml(photo.url) + '" alt="">';
+      }).join('');
+      return '<p class="studio-atom-label">Quarry story</p><section class="studio-atom-workshop"><p class="studio-eyebrow">' + escapeHtml(block.attrs.processStage || 'selection') + '</p><strong>' + escapeHtml(block.attrs.title || 'Add a title') + '</strong><p>' + escapeHtml(block.attrs.body || 'Add the story') + '</p></section>' + (shots ? '<div class="studio-atom-gallery">' + shots + '</div>' : '') + '<button class="studio-upload" type="button" data-upload="workshop"><i class="fa-solid fa-upload" aria-hidden="true"></i> Add process photograph</button>';
+    }
     return '<p class="studio-atom-label">Call to action</p><aside class="studio-atom-cta"><strong>' + escapeHtml(block.attrs.title || 'Add a heading') + '</strong><p>' + escapeHtml(block.attrs.body || 'Add a supporting line') + '</p><span>' + escapeHtml(block.attrs.buttonText || 'Button') + '</span></aside>';
   }
 
   function inspector(selected) {
-    var tabs = '<div class="studio-tabs"><button type="button" data-tab="content"' + on(state.tab === 'content') + '>Content</button><button type="button" data-tab="style"' + on(state.tab === 'style') + '>Style</button><button type="button" data-tab="advanced"' + on(state.tab === 'advanced') + '>Advanced</button><button type="button" data-tab="checks"' + on(state.tab === 'checks') + '>Checks</button></div>';
+    var tabs = '<button class="studio-drawer-close" type="button" data-drawer="">Close</button><div class="studio-tabs"><button type="button" data-tab="content"' + on(state.tab === 'content') + '>Content</button><button type="button" data-tab="style"' + on(state.tab === 'style') + '>Style</button><button type="button" data-tab="advanced"' + on(state.tab === 'advanced') + '>Advanced</button><button type="button" data-tab="checks"' + on(state.tab === 'checks') + '>Checks</button></div>';
     if (state.tab === 'checks' || state.mode === 'optimize') {
       return tabs + (state.quality.items || []).map(function (item) {
         return '<button class="studio-check is-' + item.state + '" type="button" data-jump="' + (item.blockIndex == null ? '' : item.blockIndex) + '" data-target="' + escapeHtml(item.target || '') + '"><strong>' + item.title + '</strong><small>' + item.explanation + '</small></button>';
@@ -557,13 +606,13 @@
       + '<label>Category<select data-field="categoryId"><option value="">None</option>' + boot.categories.map(function (category) {
         return '<option value="' + category.id + '"' + (String(meta.categoryId) === String(category.id) ? ' selected' : '') + '>' + escapeHtml(category.name) + '</option>';
       }).join('') + '</select></label>'
-      + '<label>Featured image alt<input data-field="featuredImageAlt" maxlength="140" value="' + escapeHtml(meta.featuredImageAlt) + '"></label><button type="button" data-upload="featured"><i class="fa-solid fa-upload" aria-hidden="true"></i> ' + (meta.image ? 'Replace image' : 'Upload image') + '</button>' + (meta.image ? '<button type="button" data-remove-hero>Remove</button>' : '')
+      + '<label>Featured image alt<input data-field="featuredImageAlt" maxlength="140" value="' + escapeHtml(meta.featuredImageAlt) + '"></label><div class="studio-media-actions"><button type="button" data-upload="featured"><i class="fa-solid fa-upload" aria-hidden="true"></i> ' + (meta.image ? 'Replace image' : 'Upload image') + '</button>' + (meta.image ? '<button type="button" data-remove-hero>Remove</button>' : '') + '</div>'
       + blockFields(selected);
   }
 
   function blockFields(selected) {
     if (!selected) return '';
-    if (selected.type === 'image') return '<label>Alt text<input data-attr="alt" value="' + escapeHtml(selected.attrs.alt || '') + '"></label><label><input type="checkbox" data-attr="decorative"' + (selected.attrs.decorative ? ' checked' : '') + '> Decorative</label><label>Caption<input data-attr="caption" value="' + escapeHtml(selected.attrs.caption || '') + '"></label>';
+    if (selected.type === 'image') return '<label>Alt text<input data-attr="alt" value="' + escapeHtml(selected.attrs.alt || '') + '"></label><label class="studio-choice"><input type="checkbox" data-attr="decorative"' + (selected.attrs.decorative ? ' checked' : '') + '> Decorative image</label><label>Caption<input data-attr="caption" value="' + escapeHtml(selected.attrs.caption || '') + '"></label>';
     if (selected.type === 'productSpotlight') return '<button type="button" data-products>Choose a stone</button><label>Eyebrow<input data-editorial="eyebrow" value="' + escapeHtml(selected.attrs.editorial.eyebrow || '') + '"></label><label>Summary<textarea data-editorial="summary">' + escapeHtml(selected.attrs.editorial.summary || '') + '</textarea></label>';
     if (selected.type === 'workshopStory') return '<label>Title<input data-attr="title" value="' + escapeHtml(selected.attrs.title || '') + '"></label><label>Stage<select data-attr="processStage">' + boot.stages.map(function (stage) { return '<option' + (selected.attrs.processStage === stage ? ' selected' : '') + '>' + stage + '</option>'; }).join('') + '</select></label><label>Story<textarea data-attr="body">' + escapeHtml(selected.attrs.body || '') + '</textarea></label><button type="button" data-upload="workshop">Add process photograph</button>';
     if (selected.type === 'cta') return '<label>Heading<input data-attr="title" value="' + escapeHtml(selected.attrs.title || '') + '"></label><label>Support<textarea data-attr="body">' + escapeHtml(selected.attrs.body || '') + '</textarea></label><label>Button<input data-attr="buttonText" value="' + escapeHtml(selected.attrs.buttonText || '') + '"></label><label>Link<input data-attr="buttonUrl" value="' + escapeHtml(selected.attrs.buttonUrl || '') + '"></label>';
@@ -616,6 +665,25 @@
     return '';
   }
 
+  var pointerScroll = null;
+
+  root.addEventListener('pointerdown', function (event) {
+    var canvas = event.target.closest ? event.target.closest('.studio-canvas') : null;
+    if (!canvas) return;
+    pointerScroll = canvas.scrollTop;
+  });
+
+  root.addEventListener('focusin', function () {
+    var canvas = root.querySelector('.studio-canvas');
+    if (!canvas || pointerScroll == null) return;
+    var saved = pointerScroll;
+    pointerScroll = null;
+    canvas.scrollTop = saved;
+    window.requestAnimationFrame(function () {
+      if (canvas.isConnected) canvas.scrollTop = saved;
+    });
+  });
+
   root.addEventListener('mousedown', function (event) {
     if (event.target.closest('.studio-toolbar button')) event.preventDefault();
   });
@@ -635,17 +703,15 @@
 
   root.addEventListener('click', function (event) {
     var target = event.target.closest('button');
+    if (target && target.closest('.studio-toolbar')) {
+      var owned = target.closest('[data-select]');
+      if (owned) state.selected = Number(owned.getAttribute('data-select'));
+    }
     if (!target) {
       var section = event.target.closest('[data-select]');
       if (section) {
         state.selected = Number(section.getAttribute('data-select'));
-        if (event.target.closest('[data-text]')) {
-          root.querySelectorAll('.studio-block').forEach(function (block, index) {
-            block.classList.toggle('is-selected', index === state.selected);
-          });
-          return;
-        }
-        render();
+        chooseBlock(state.selected, false);
       }
       return;
     }
@@ -654,7 +720,7 @@
       state.tab = state.mode === 'design' ? 'style' : (state.mode === 'optimize' ? 'checks' : 'content');
       if (state.mode === 'write') state.rail = 'insert';
       if (state.mode === 'optimize') state.rail = 'layers';
-      state.drawer = target.classList.contains('studio-dock') && window.matchMedia('(max-width: 1024px)').matches ? 'inspector' : '';
+      state.drawer = target.classList.contains('studio-dock') && window.matchMedia('(max-width: 1180px)').matches ? 'inspector' : '';
       render();
     }
     if (target.hasAttribute('data-drawer')) {
@@ -728,25 +794,19 @@
     if (target.hasAttribute('data-rail')) { state.rail = target.getAttribute('data-rail'); render(); }
     if (target.hasAttribute('data-tab')) { state.tab = target.getAttribute('data-tab'); render(); }
     if (target.hasAttribute('data-insert')) {
-      if (window.matchMedia('(max-width: 1024px)').matches) state.drawer = '';
+      if (window.matchMedia('(max-width: 1180px)').matches) state.drawer = '';
       insert(target.getAttribute('data-insert'));
     }
     if (target.hasAttribute('data-open-insert')) {
       state.mode = 'write';
       state.rail = 'insert';
-      state.drawer = window.matchMedia('(max-width: 1024px)').matches ? 'rail' : '';
+      state.drawer = window.matchMedia('(max-width: 1180px)').matches ? 'rail' : '';
       render();
       var search = root.querySelector('[data-search]');
       if (search) search.focus();
     }
     if (target.hasAttribute('data-select')) {
-      var nextIndex = Number(target.getAttribute('data-select'));
-      if (target.hasAttribute('data-text') || target.closest('[data-text]')) {
-        state.selected = nextIndex;
-        return;
-      }
-      state.selected = nextIndex;
-      render();
+      chooseBlock(Number(target.getAttribute('data-select')), !!target.closest('.studio-rail'));
     }
     if (target.hasAttribute('data-move')) move(Number(target.getAttribute('data-move')));
     if (target.hasAttribute('data-duplicate')) duplicate();
@@ -758,10 +818,16 @@
       else { state.pendingTemplate = template; state.dialog = 'template'; render(); }
     }
     if (target.hasAttribute('data-upload')) {
+      var ownedBlock = target.closest('[data-select]');
+      var uploadIndex = ownedBlock ? Number(ownedBlock.getAttribute('data-select')) : state.selected;
+      if (ownedBlock) state.selected = uploadIndex;
       var input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/jpeg,image/png,image/webp';
-      input.onchange = function () { upload(input.files[0], target.getAttribute('data-upload')); };
+      input.onchange = function () {
+        state.selected = uploadIndex;
+        upload(input.files[0], target.getAttribute('data-upload'));
+      };
       input.click();
     }
     if (target.hasAttribute('data-products')) { state.dialog = 'products'; render(); searchProducts(''); }
@@ -896,7 +962,7 @@
       try { localStorage.removeItem(key); } catch (error) {}
       render();
     }
-    if (target.hasAttribute('data-format')) format(target.getAttribute('data-format'));
+    if (target.hasAttribute('data-format')) format(target.getAttribute('data-format'), target.closest('.studio-block'));
   });
 
   root.addEventListener('input', function (event) {
@@ -932,7 +998,7 @@
       var section = event.target.closest('[data-select]');
       var block = section ? blocks()[Number(section.getAttribute('data-select'))] : blocks()[state.selected];
       if (!block) return;
-      state.selected = section ? Number(section.getAttribute('data-select')) : state.selected;
+      markSelected(section ? Number(section.getAttribute('data-select')) : state.selected);
       var raw = event.target.textContent || '';
       if (raw.trim().charAt(0) === '/') showSlash(raw.trim().slice(1), event.target);
       else hideSlash();
@@ -973,9 +1039,9 @@
     }
   });
 
-  function format(kind) {
+  function format(kind, section) {
     var block = blocks()[state.selected];
-    var editor = root.querySelector('.studio-block.is-selected [data-text]');
+    var editor = section ? section.querySelector('[data-text]') : root.querySelector('.studio-block.is-selected [data-text]');
     if (!block) return;
     if ((kind === 'bold' || kind === 'italic' || kind === 'link') && editor) {
       editor.focus();

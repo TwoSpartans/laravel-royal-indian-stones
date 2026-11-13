@@ -50,16 +50,34 @@ class QualityChecker
         $hasBody = $this->hasVisibleContent($document);
         $items[] = $this->item('body', $hasBody ? 'ready' : 'blocked', 'Publish', 'Article body', $hasBody ? 'The article has body content.' : 'Write at least one paragraph or add a block before publishing.', null);
 
+        $headingLevels = [];
+        foreach ((array) ($document['content'] ?? []) as $node) {
+            if (is_array($node) && ($node['type'] ?? '') === 'heading') {
+                $headingLevels[] = (int) data_get($node, 'attrs.level', 2);
+            }
+        }
+        $hierarchyState = 'ready';
+        $hierarchyExplanation = 'Body headings stay at H2 and H3.';
+        if (in_array(1, $headingLevels, true)) {
+            $hierarchyState = 'blocked';
+            $hierarchyExplanation = 'The article title is the only H1. Change body headings to H2 or H3.';
+        } elseif ($headingLevels !== [] && $headingLevels[0] === 3) {
+            $hierarchyState = 'attention';
+            $hierarchyExplanation = 'Start the body with an H2 before using H3.';
+        }
+        $items[] = $this->item('headings', $hierarchyState, 'Content', 'Heading hierarchy', $hierarchyExplanation, 'headings');
+
         $alt = trim((string) $post->featured_image_alt);
-        $hasImage = filled($post->image);
-        $items[] = $this->item(
-            'featured-alt',
-            ! $hasImage || $alt !== '' ? 'ready' : 'blocked',
-            'Accessibility',
-            'Featured image',
-            ! $hasImage ? 'Add a featured photograph when the article is ready to lead the blog.' : ($alt === '' ? 'Describe the featured photograph. It is part of the story, not decoration.' : 'The featured photograph has alt text.'),
-            'featured',
-        );
+        if (filled($post->image)) {
+            $items[] = $this->item(
+                'featured-alt',
+                $alt !== '' ? 'ready' : 'blocked',
+                'Accessibility',
+                'Featured image',
+                $alt === '' ? 'Describe the featured photograph. It is part of the story, not decoration.' : 'The featured photograph has alt text.',
+                'featured',
+            );
+        }
     }
 
     /**
@@ -226,13 +244,13 @@ class QualityChecker
     /**
      * @param  array<string, mixed>  $document
      */
-    private function hasVisibleContent(array $document): bool
+    public function hasVisibleContent(array $document): bool
     {
         foreach ((array) ($document['content'] ?? []) as $node) {
             if (! is_array($node)) {
                 continue;
             }
-            if (in_array($node['type'] ?? '', ['image', 'gallery', 'productSpotlight', 'workshopStory', 'cta'], true)) {
+            if (in_array($node['type'] ?? '', ['image', 'productSpotlight', 'workshopStory', 'cta'], true)) {
                 return true;
             }
             foreach ((array) ($node['content'] ?? []) as $child) {
@@ -250,6 +268,16 @@ class QualityChecker
      */
     private function item(string $id, string $state, string $section, string $title, string $explanation, ?string $target, ?int $blockIndex = null): array
     {
-        return compact('id', 'state', 'section', 'title', 'explanation', 'target', 'blockIndex');
+        return [
+            'id' => $id,
+            'state' => $state,
+            'section' => $section,
+            'title' => $title,
+            'explanation' => $explanation,
+            'action' => $target,
+            'target' => $target,
+            'blockId' => $blockIndex !== null ? $target : null,
+            'blockIndex' => $blockIndex,
+        ];
     }
 }

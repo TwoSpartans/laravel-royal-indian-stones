@@ -31,10 +31,12 @@ class AttendanceController extends PortalController
     public function index(Request $request, AttendanceBoard $board, AttendanceReview $review): View
     {
         $actor = $this->actor($request);
-        $people = $this->rosterPeople($actor);
-        if ($actor->portal_role?->canAdminister() === true) {
-            return $this->overview($request, $review, $board, $actor, $people);
+        if ($actor->portal_role?->canAdminister() === true && $actor->canOpenPortalSection('team_attendance')) {
+            return $this->overview($request, $review, $board, $actor, $this->rosterPeople($actor));
         }
+
+        abort_unless($actor->recordsOwnAttendance() && $actor->canOpenPortalSection('attendance'), 403);
+        $people = new \Illuminate\Database\Eloquent\Collection([$actor]);
 
         $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString()) : now();
         $selected = $people->firstWhere('id', $request->integer('user_id')) ?? $people->first();
@@ -79,7 +81,7 @@ class AttendanceController extends PortalController
     public function clock(Request $request, AttendanceClock $clock): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($actor->recordsOwnAttendance(), 403);
+        abort_unless($actor->recordsOwnAttendance() && $actor->canOpenPortalSection('attendance'), 403);
         $clockingOut = $request->input('punch_type') === 'out';
         $data = $request->validate([
             'punch_type' => ['required', Rule::in(['in', 'out'])],
@@ -110,7 +112,7 @@ class AttendanceController extends PortalController
     public function correct(Request $request): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($actor->recordsOwnAttendance(), 403);
+        abort_unless($actor->recordsOwnAttendance() && $actor->canOpenPortalSection('attendance'), 403);
         $data = $request->validate([
             'work_date' => ['required', 'date', 'before_or_equal:today'],
             'requested_in' => ['nullable', 'date_format:H:i', 'required_without:requested_out'],
@@ -161,7 +163,7 @@ class AttendanceController extends PortalController
     public function overtime(Request $request): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($actor->recordsOwnAttendance(), 403);
+        abort_unless($actor->recordsOwnAttendance() && $actor->canOpenPortalSection('attendance'), 403);
         $data = $request->validate([
             'work_date' => ['required', 'date', 'before_or_equal:today'],
             'minutes' => ['required', 'integer', 'min:15', 'max:480'],
@@ -213,10 +215,31 @@ class AttendanceController extends PortalController
         return back()->with('status', 'Overtime request '.$data['decision'].'.');
     }
 
+    public function notes(Request $request, AttendanceReview $review): View
+    {
+        $actor = $this->actor($request);
+        abort_unless($actor->portal_role?->canAdminister() === true && $actor->canOpenPortalSection('team_attendance'), 403);
+        $day = $request->filled('date') ? Carbon::parse($request->string('date')->toString())->startOfDay() : now()->startOfDay();
+        $people = $this->narrow($request, $this->rosterPeople($actor));
+
+        return view('portal.attendance.notes', [
+            'date' => $day->toDateString(),
+            'query' => $request->string('q')->toString(),
+            'departmentId' => $request->integer('department_id'),
+            'shiftId' => $request->integer('shift_id'),
+            'locationId' => $request->integer('location_id'),
+            'events' => $review->dayEvents($people, $day, null),
+            'departments' => Department::query()->orderBy('name')->get(),
+            'shifts' => Shift::query()->orderBy('name')->get(),
+            'locations' => WorkLocation::query()->orderBy('name')->get(),
+            'timezone' => PortalTime::timezone($actor),
+        ]);
+    }
+
     public function report(Request $request, AttendanceReview $review): View
     {
         $actor = $this->actor($request);
-        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        abort_unless($actor->portal_role?->canAdminister() === true && $actor->canOpenPortalSection('team_attendance'), 403);
         [$from, $to] = $this->window($request);
         $people = $this->rosterPeople($actor);
         $person = $this->chosen($request, $people);
@@ -237,7 +260,7 @@ class AttendanceController extends PortalController
     public function compare(Request $request, AttendanceReview $review): View
     {
         $actor = $this->actor($request);
-        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        abort_unless($actor->portal_role?->canAdminister() === true && $actor->canOpenPortalSection('team_attendance'), 403);
         [$from, $to] = $this->window($request);
         $people = $this->rosterPeople($actor);
         $chosen = $this->chosenMany($request, $people);
@@ -266,7 +289,7 @@ class AttendanceController extends PortalController
     public function exceptions(Request $request): View
     {
         $actor = $this->actor($request);
-        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        abort_unless($actor->portal_role?->canAdminister() === true && $actor->canOpenPortalSection('team_attendance'), 403);
         $people = $this->rosterPeople($actor);
         $status = $request->string('status')->toString();
         if (! in_array($status, ['pending', 'approved', 'rejected', ''], true)) {
@@ -305,7 +328,7 @@ class AttendanceController extends PortalController
     public function export(Request $request, AttendanceReview $review): StreamedResponse
     {
         $actor = $this->actor($request);
-        abort_unless($actor->portal_role?->canAdminister() === true, 403);
+        abort_unless($actor->portal_role?->canAdminister() === true && $actor->canOpenPortalSection('team_attendance'), 403);
         [$from, $to] = $this->window($request);
         $people = $this->rosterPeople($actor);
         $kind = $request->string('kind')->toString();
@@ -556,7 +579,7 @@ class AttendanceController extends PortalController
 
     private function canDecide(User $actor, ?User $subject): bool
     {
-        if ($subject === null || $actor->is($subject)) {
+        if ($subject === null || $actor->is($subject) || ! $actor->canOpenPortalSection('team_attendance')) {
             return false;
         }
 

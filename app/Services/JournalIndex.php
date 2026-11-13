@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\PostCategory;
 use App\Services\BlogStudio\StudioDocumentService;
 use App\Support\JournalDestination;
+use App\Support\ResponsivePicture;
 use App\Support\ServedUpload;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,11 +21,13 @@ final class JournalIndex
 {
     private const PER_PAGE = 6;
 
+    private const ARCHIVE_PER_PAGE = 12;
+
     private const PREVIEW_STORY_LIMIT = 3;
 
     private const COVER = 'assets/img/slide/slide-1.jpg';
 
-    public function __construct(private ServedUpload $uploads) {}
+    public function __construct(private ServedUpload $uploads, private ResponsivePicture $pictures) {}
 
     public function respond(Request $request): View|RedirectResponse
     {
@@ -45,59 +48,69 @@ final class JournalIndex
         app(StudioDocumentService::class)->publishDue();
 
         $page = max(1, $request->integer('page'));
-        $explicitArchive = $request->boolean('stories');
         $publishedTotal = Post::query()->published()->count();
-        $browsing = $search !== '' || $category instanceof PostCategory || $explicitArchive;
         $settings = JournalSetting::current();
-        $featured = $publishedTotal > 0 && ! $browsing ? $this->featuredPost($settings) : null;
+        $isLanding = $publishedTotal > 0 && $search === '' && ! $category instanceof PostCategory && $page === 1;
+        $unfiltered = $search === '' && ! $category instanceof PostCategory;
+        [$edit, $closer, $reserved] = $unfiltered && $publishedTotal > 0
+            ? $this->landingGroups($settings)
+            : [new Collection, new Collection, []];
+        $exclude = array_values(array_unique([...$edit->modelKeys(), ...$closer->modelKeys(), ...$reserved]));
         $posts = null;
 
-        if ($publishedTotal > 0) {
-            $query = $this->filtered($category, $search);
-            if ($featured instanceof Post) {
-                $query->whereKeyNot($featured->id);
+        if ($publishedTotal > 0 && ! ($isLanding && $edit->isEmpty() && $closer->isEmpty())) {
+            $query = $this->matching($category, $search);
+            if ($unfiltered && $exclude !== []) {
+                $query->whereNotIn((new Post)->getQualifiedKeyName(), $exclude);
             }
-            $posts = $query->paginate(self::PER_PAGE)->withQueryString();
-            if ($posts->currentPage() > $posts->lastPage()) {
+            $posts = $query->paginate(self::ARCHIVE_PER_PAGE)->withQueryString();
+            if ($posts->currentPage() > max(1, $posts->lastPage())) {
                 return redirect()->to($posts->url(max(1, $posts->lastPage())));
             }
+        } elseif ($publishedTotal > 0) {
+            $posts = $this->matching($category, $search)->paginate(self::ARCHIVE_PER_PAGE)->withQueryString();
         }
 
-        $showFeature = $featured instanceof Post && $page === 1;
-        $mode = $publishedTotal === 0 ? 'empty' : ($showFeature ? 'landing' : 'archive');
+        $editCards = $isLanding ? $edit->map(fn (Post $post): array => $this->card($post))->all() : [];
+        $closerCards = $isLanding ? $closer->map(fn (Post $post): array => $this->card($post))->all() : [];
+        $storyCards = $posts instanceof LengthAwarePaginator
+            ? $posts->getCollection()->map(fn (Post $post): array => $this->card($post))->all()
+            : [];
+        $totalShown = $posts instanceof LengthAwarePaginator ? $posts->total() : 0;
+        $indexable = $search === '' && ! ($category instanceof PostCategory && $totalShown === 0);
+        $cover = $this->coverPicture($settings);
         $listed = new SupportCollection;
+        if ($isLanding) {
+            $listed = $edit->concat($closer);
+        }
         if ($posts instanceof LengthAwarePaginator) {
-            $listed = new SupportCollection($posts->getCollection()->all());
+            $listed = $listed->concat($posts->getCollection());
         }
-        if ($showFeature) {
-            $listed->prepend($featured);
-        }
-        $cover = $this->cover($settings);
-        $featureImage = $featured instanceof Post ? $this->existingImage($featured->image) : null;
 
         return view('journal', [
-            'settings' => $settings,
-            'copy' => $this->copy($settings),
+            'isLanding' => $isLanding && $publishedTotal > 0 || ($publishedTotal === 0 && $search === '' && ! $category instanceof PostCategory),
+            'hasStories' => $publishedTotal > 0,
             'cover' => $cover,
-            'featured' => $showFeature ? $featured : null,
-            'featureImage' => $featureImage,
-            'topics' => PostCategory::query()->orderBy('name')->get(['id', 'name', 'slug']),
-            'category' => $category,
+            'breadcrumbs' => $this->breadcrumbs($category, $search, $page),
+            'topics' => PostCategory::query()->whereHas('posts', fn (Builder $query) => $query->published())->orderBy('name')->get(['id', 'name', 'slug']),
+            'topic' => $category,
             'search' => $search,
-            'mode' => $mode,
-            'posts' => $posts,
-            'pageNumbers' => $posts instanceof LengthAwarePaginator ? $this->pageNumbers($posts->currentPage(), $posts->lastPage()) : [],
-            'resultSummary' => $mode === 'archive' && $posts instanceof LengthAwarePaginator ? $this->summary($posts, $search) : null,
-            'resetUrl' => $this->resetUrl($mode, $category, $search, $explicitArchive, $page),
-            'resetLabel' => $search !== '' ? 'Clear search' : ($category instanceof PostCategory ? 'All stories' : 'Back to the journal'),
-            'publishedTotal' => $publishedTotal,
+            'editCards' => $editCards,
+            'closerLookCards' => $closerCards,
+            'storyCards' => $storyCards,
+            'maker' => $isLanding ? $this->publicMaker($settings) : null,
+            'stories' => $posts,
+            'pagination' => $posts instanceof LengthAwarePaginator ? $this->paginationLinks($posts) : null,
+            'previousPageUrl' => $posts?->previousPageUrl(),
+            'nextPageUrl' => $posts?->nextPageUrl(),
+            'robots' => $indexable ? 'index,follow' : 'noindex,follow',
             'active' => 'blog',
             'bodyClass' => 'journal-page',
-            'title' => $this->title($mode, $category, $search, $page),
-            'description' => $this->description($mode, $settings, $category, $search),
-            'canonical' => $this->canonical($category, $search, $explicitArchive, $page, $mode),
-            'shareImage' => asset($featureImage ?: $cover['path']),
-            'listingSchema' => $this->schema($mode, $category, $search, $listed),
+            'title' => $this->publicTitle($category, $search, $page),
+            'description' => $this->publicDescription($category, $search, $page, $posts),
+            'canonical' => $this->canonical($category, $search, false, $page, $publishedTotal === 0 ? 'empty' : ($isLanding ? 'landing' : 'archive')),
+            'shareImage' => $cover['src'],
+            'listingSchema' => $this->schema($isLanding ? 'landing' : 'archive', $category, $search, $indexable ? $listed : new SupportCollection),
         ]);
     }
 
@@ -186,6 +199,317 @@ final class JournalIndex
             'category' => is_string($category) && $category !== '' ? $category : null,
             'url' => url('/'.$post->slug),
         ];
+    }
+
+    /**
+     * @return array{0: Collection<int, Post>, 1: Collection<int, Post>, 2: list<int>}
+     */
+    private function landingGroups(JournalSetting $settings): array
+    {
+        $reserved = [];
+        $makerId = (int) $settings->maker_post_id;
+        if ($makerId > 0 && $this->publishedStories()->whereKey($makerId)->exists()) {
+            $reserved[] = $makerId;
+        }
+
+        $closer = new Collection;
+        $closerIds = array_values(array_filter(
+            array_slice($this->ids($settings->closer_post_ids), 0, 2),
+            fn (int $id): bool => ! in_array($id, $reserved, true),
+        ));
+        if ($closerIds !== []) {
+            $found = $this->publishedStories()->whereIn('id', $closerIds)->get()->keyBy('id');
+            foreach ($closerIds as $id) {
+                $post = $found->get($id);
+                if ($post instanceof Post) {
+                    $closer->push($post);
+                }
+            }
+        }
+
+        $categoryId = (int) $settings->getAttribute('closer_category_id');
+        if ($closer->count() < 2 && $categoryId > 0) {
+            $skip = array_values(array_unique([...$closer->modelKeys(), ...$reserved]));
+            $more = $this->publishedStories()
+                ->where('post_category_id', $categoryId)
+                ->when($skip !== [], fn (Builder $query) => $query->whereNotIn('id', $skip))
+                ->limit(2 - $closer->count())
+                ->get();
+            $closer = $closer->concat($more);
+        }
+
+        $edit = new Collection;
+        $blocked = array_values(array_unique([...$closer->modelKeys(), ...$reserved]));
+        foreach (array_slice($this->ids($settings->edit_post_ids), 0, 3) as $id) {
+            if (in_array($id, $blocked, true) || $edit->count() >= 3) {
+                continue;
+            }
+            $post = $this->publishedStories()->whereKey($id)->first();
+            if ($post instanceof Post) {
+                $edit->push($post);
+            }
+        }
+        if ($edit->count() < 3) {
+            $except = array_values(array_unique([...$blocked, ...$edit->modelKeys()]));
+            $edit = $edit->concat(
+                $this->publishedStories()
+                    ->when($except !== [], fn (Builder $query) => $query->whereNotIn('id', $except))
+                    ->limit(3 - $edit->count())
+                    ->get(),
+            );
+        }
+
+        return [$edit->values(), $closer->values(), $reserved];
+    }
+
+    /**
+     * @return Builder<Post>
+     */
+    private function publishedStories(): Builder
+    {
+        return Post::query()
+            ->published()
+            ->with('postCategory:id,name,slug')
+            ->orderByDesc('published_on')
+            ->orderByDesc('id');
+    }
+
+    /**
+     * @return Builder<Post>
+     */
+    private function matching(?PostCategory $category, string $search): Builder
+    {
+        $stories = $this->publishedStories();
+        if ($category instanceof PostCategory) {
+            $stories->where('post_category_id', $category->id);
+        }
+        if ($search !== '') {
+            $like = '%'.addcslashes($search, '%_\\').'%';
+            $stories->where(function (Builder $query) use ($like): void {
+                $query->whereLike('title', $like, false)
+                    ->orWhereLike('summary', $like, false)
+                    ->orWhereLike('meta_description', $like, false)
+                    ->orWhereLike('body', $like, false)
+                    ->orWhereLike('body_document', $like, false);
+            });
+        }
+
+        return $stories;
+    }
+
+    /**
+     * @return array{url: string, title: string, excerpt: string, category: ?string, publishedAt: string, publishedLabel: string, readTime: int, image: ?array<string, mixed>}
+     */
+    private function card(Post $post): array
+    {
+        $path = $this->existingImage($post->image);
+        $alt = trim((string) $post->featured_image_alt);
+
+        return [
+            'url' => url('/'.$post->slug),
+            'title' => $post->title,
+            'excerpt' => trim((string) $post->summary),
+            'category' => $post->postCategory?->name,
+            'publishedAt' => $post->published_on?->toDateString() ?? '',
+            'publishedLabel' => $post->published_on?->format('j M Y') ?? '',
+            'readTime' => $post->readingMinutes(),
+            'image' => $path !== null ? $this->pictureFromPath($path, $alt !== '' ? $alt : $post->title) : null,
+        ];
+    }
+
+    /**
+     * @return array{src: string, alt: string, width: ?int, height: ?int, avifSrcset: ?string, srcset: ?string, caption: string}
+     */
+    private function coverPicture(JournalSetting $settings): array
+    {
+        $defaults = JournalSetting::defaults();
+        $alt = $this->text($settings->cover_image_alt, 'A home with character, a story in every detail.');
+        if ($alt === $defaults['cover_image_alt']) {
+            $alt = 'A home with character, a story in every detail.';
+        }
+        $caption = trim((string) $settings->caption);
+        if ($caption === '' || $caption === $defaults['caption']) {
+            $caption = 'A home with character, a story in every detail.';
+        }
+        $custom = $this->existingImage($settings->cover_image);
+        $picture = $custom !== null
+            ? $this->pictureFromPath($custom, $alt)
+            : $this->handoffPicture('heritage-interior', $alt, [480, 768, 1024]);
+        $picture['caption'] = $caption;
+
+        return $picture;
+    }
+
+    /**
+     * @return array{src: string, alt: string, width: ?int, height: ?int, avifSrcset: ?string, srcset: ?string}
+     */
+    private function pictureFromPath(string $path, string $alt): array
+    {
+        $sources = $this->pictures->sources($path);
+
+        return [
+            'src' => $sources['fallback'],
+            'alt' => $alt,
+            'width' => $sources['width'],
+            'height' => $sources['height'],
+            'avifSrcset' => $sources['avif'],
+            'srcset' => $sources['webp'],
+        ];
+    }
+
+    /**
+     * @param  list<int>  $widths
+     * @return array{src: string, alt: string, width: ?int, height: ?int, avifSrcset: ?string, srcset: ?string}
+     */
+    private function handoffPicture(string $name, string $alt, array $widths): array
+    {
+        $base = 'assets/img/journal/handoff/'.$name;
+        $avif = [];
+        $webp = [];
+        foreach ($widths as $width) {
+            $avif[] = asset($base.'-'.$width.'.avif').' '.$width.'w';
+            $webp[] = asset($base.'-'.$width.'.webp').' '.$width.'w';
+        }
+
+        return [
+            'src' => asset($base.'.jpg'),
+            'alt' => $alt,
+            'width' => null,
+            'height' => null,
+            'avifSrcset' => implode(', ', $avif),
+            'srcset' => implode(', ', $webp),
+        ];
+    }
+
+    /**
+     * @return array{heading: string, text: string, buttonLabel: string, url: string, image: array<string, mixed>}|null
+     */
+    private function publicMaker(JournalSetting $settings): ?array
+    {
+        if ($settings->getAttribute('maker_enabled') === false) {
+            return null;
+        }
+
+        $band = $this->maker($settings);
+        if ($band !== null) {
+            return $this->makerView($band);
+        }
+        if (trim((string) $settings->maker_path) !== '' || (int) $settings->maker_post_id > 0) {
+            return null;
+        }
+        if (! JournalDestination::exists('/aboutus')) {
+            return null;
+        }
+
+        return $this->makerView([
+            'heading' => 'The hands behind the details.',
+            'body' => 'The masons, cutters, and finishers in Jodhpur who turn a block of stone into a floor, a wall, or a courtyard.',
+            'label' => 'Meet the makers',
+            'url' => url('/aboutus'),
+            'image' => null,
+            'alt' => 'Stone masons at work in Jodhpur',
+        ]);
+    }
+
+    /**
+     * @param  array{heading: string, body: string, label: string, url: string, image: ?string, alt: string}  $band
+     * @return array{heading: string, text: string, buttonLabel: string, url: string, image: array<string, mixed>}
+     */
+    private function makerView(array $band): array
+    {
+        $image = is_string($band['image']) && $band['image'] !== ''
+            ? $this->pictureFromPath($band['image'], $band['alt'])
+            : $this->handoffPicture('workshop', $band['alt'], [480, 960, 1264]);
+
+        return [
+            'heading' => $band['heading'],
+            'text' => $band['body'],
+            'buttonLabel' => $band['label'],
+            'url' => $band['url'],
+            'image' => $image,
+        ];
+    }
+
+    /**
+     * @return array{previous: ?string, next: ?string, pages: list<array{number: ?int, url: ?string, current: bool}>}|null
+     */
+    private function paginationLinks(LengthAwarePaginator $posts): ?array
+    {
+        if ($posts->lastPage() <= 1) {
+            return null;
+        }
+
+        $current = $posts->currentPage();
+        $last = $posts->lastPage();
+        $window = range(max(1, $current - 2), min($last, $current + 2));
+        $pages = [];
+        if ($window[0] > 1) {
+            $pages[] = ['number' => 1, 'url' => $posts->url(1), 'current' => false];
+            if ($window[0] > 2) {
+                $pages[] = ['number' => null, 'url' => null, 'current' => false];
+            }
+        }
+        foreach ($window as $number) {
+            $pages[] = ['number' => $number, 'url' => $posts->url($number), 'current' => $number === $current];
+        }
+        $end = $window[array_key_last($window)];
+        if ($end < $last) {
+            if ($end < $last - 1) {
+                $pages[] = ['number' => null, 'url' => null, 'current' => false];
+            }
+            $pages[] = ['number' => $last, 'url' => $posts->url($last), 'current' => false];
+        }
+
+        return [
+            'previous' => $posts->previousPageUrl(),
+            'next' => $posts->nextPageUrl(),
+            'pages' => $pages,
+        ];
+    }
+
+    private function publicTitle(?PostCategory $category, string $search, int $page): string
+    {
+        $pageSuffix = $page > 1 ? ' — Page '.$page : '';
+        if ($search !== '') {
+            return 'Search results for “'.$search.'”'.($category instanceof PostCategory ? ' in '.$category->name : '').' — The Journal | Royal Indian Stones';
+        }
+        if ($category instanceof PostCategory) {
+            return $category->name.' Stories & Blogs'.$pageSuffix.' | Royal Indian Stones';
+        }
+
+        return 'The Journal: Craft Stories & Blogs'.$pageSuffix.' | Royal Indian Stones';
+    }
+
+    private function publicDescription(?PostCategory $category, string $search, int $page, ?LengthAwarePaginator $stories): string
+    {
+        if ($search !== '') {
+            $description = 'Stories from the Royal Indian Stones Journal matching “'.$search.'”.';
+        } elseif ($category instanceof PostCategory) {
+            $description = 'Stories about '.$category->name.' from the Royal Indian Stones Journal: stone, finishes, and how surfaces are made in Jodhpur.';
+        } else {
+            $description = 'Craft stories, stone and finish guides, and notes from the Jodhpur yard — written for homeowners, designers, and trade buyers.';
+        }
+        if ($page > 1 && $stories instanceof LengthAwarePaginator) {
+            $description = 'Page '.$page.' of '.$stories->lastPage().'. '.$description;
+        }
+
+        return $description;
+    }
+
+    /**
+     * @return list<array{name: string, url?: string}>
+     */
+    private function breadcrumbs(?PostCategory $category, string $search, int $page): array
+    {
+        $crumbs = [['name' => 'Home', 'url' => url('/')]];
+        if ($category instanceof PostCategory || $search !== '' || $page > 1) {
+            $crumbs[] = ['name' => 'The Journal', 'url' => url('/blog')];
+            $crumbs[] = ['name' => $search !== '' ? 'Search results' : ($category->name ?? 'Page '.$page)];
+        } else {
+            $crumbs[] = ['name' => 'The Journal'];
+        }
+
+        return $crumbs;
     }
 
     private function featuredPost(JournalSetting $settings): ?Post
@@ -434,7 +758,7 @@ final class JournalIndex
     {
         $search = trim(preg_replace('/\s+/u', ' ', $request->string('q')->toString()) ?? '');
 
-        return mb_substr($search, 0, 120);
+        return mb_substr($search, 0, 100);
     }
 
     private function summary(LengthAwarePaginator $posts, string $search): ?string

@@ -57,8 +57,7 @@
 <section class="card" style="margin-top:0.9rem">
   <h2>Punches on {{ \Illuminate\Support\Carbon::parse($date)->format('d M Y') }} for {{ $selected?->name }}</h2>
   @forelse ($punches as $punch)
-    <p>{{ \App\Support\PortalTime::format($punch->punched_at, $selected, $punch->timezone) }} · {{ str_replace('_', ' ', $punch->punch_type) }} @if($punch->is_correction)<span class="badge">Correction</span>@endif</p>
-    @include('portal.attendance.partials.shift-notes', ['punch' => $punch])
+    @include('portal.attendance.partials.punch-note', ['punch' => $punch, 'personName' => $selected?->name])
   @empty
     <div class="empty"><strong>No punches for this date</strong>@if (auth()->user()->recordsOwnAttendance())<p>Use clock in when the shift starts.</p>@endif</div>
   @endforelse

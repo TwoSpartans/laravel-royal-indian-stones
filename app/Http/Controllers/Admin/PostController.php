@@ -24,6 +24,7 @@ class PostController extends Controller
     {
         $search = trim($request->string('q')->toString());
         $categoryId = $request->integer('category');
+        $status = $request->string('status')->toString();
         $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
 
         return view('admin.posts.index', [
@@ -36,12 +37,16 @@ class PostController extends Controller
                     });
                 })
                 ->when($categoryId > 0, fn ($query) => $query->where('post_category_id', $categoryId))
+                ->when($status === 'published', fn ($query) => $query->published())
+                ->when($status === 'draft', fn ($query) => $query->where('status', 'draft'))
+                ->when(in_array($status, ['scheduled', 'schedule_failed'], true), fn ($query) => $query->where('status', $status))
                 ->orderByDesc('published_on')
                 ->orderBy('title')
                 ->get(),
             'categories' => PostCategory::query()->orderBy('name')->get(),
             'search' => $search,
             'categoryId' => $categoryId,
+            'status' => $status,
         ]);
     }
 

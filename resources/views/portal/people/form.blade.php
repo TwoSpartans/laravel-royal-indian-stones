@@ -43,46 +43,89 @@
       <div class="field"><label for="identity_document_label">Identity document</label><input id="identity_document_label" name="identity_document_label" value="{{ old('identity_document_label', $person?->profile?->identity_document_label) }}"></div>
       <div class="field"><label for="identity_document_number">Document number</label><input id="identity_document_number" name="identity_document_number" autocomplete="off" placeholder="Leave blank to keep the saved number"></div>
     @endif
-    <fieldset class="span-2" id="employee-sections">
+    <input type="hidden" name="sections_chosen" value="1">
+    @php
+      $savedSections = old('visible_sections', $person?->profile?->visible_sections);
+    @endphp
+    <fieldset class="span-2" id="employee-sections" data-section-role="employee">
       <legend>Sections this employee can open</legend>
-      <input type="hidden" name="sections_chosen" value="1">
-      <div class="section-presets" role="group" aria-label="Section presets">
+      <div class="section-presets" role="group" aria-label="Employee presets">
         @foreach (config('portal.employee_section_presets') as $presetKey => $preset)
-          <button type="button" class="btn-secondary" data-section-preset="{{ $presetKey }}">{{ $preset['label'] }}</button>
+          <button type="button" class="btn-secondary" data-section-preset="{{ $presetKey }}" data-preset-for="employee">{{ $preset['label'] }}</button>
         @endforeach
       </div>
-      @php
-        $chosen = old('visible_sections', $person?->profile?->visible_sections ?? array_keys(config('portal.employee_sections')));
-      @endphp
       <div class="section-choices">
         @foreach (config('portal.employee_sections') as $key => $label)
-          <label class="check" for="section-{{ $key }}">
-            <input id="section-{{ $key }}" data-employee-section type="checkbox" name="visible_sections[]" value="{{ $key }}" @checked(in_array($key, $chosen, true))>
+          <label class="check" for="section-employee-{{ $key }}">
+            <input id="section-employee-{{ $key }}" data-section-box type="checkbox" name="visible_sections[]" value="{{ $key }}" @checked(in_array($key, $savedSections ?? array_keys(config('portal.employee_sections')), true))>
             <span><strong>{{ $label }}</strong><small>{{ config('portal.employee_section_notes.'.$key) }}</small></span>
           </label>
         @endforeach
       </div>
-      <p class="help">Yard opens attendance and leave. Office adds tasks and expenses. All five also opens payslips. Manager / HR and the employer keep their own access.</p>
+      <p class="help">Yard opens attendance and leave. Office adds tasks and expenses. All five also opens payslips.</p>
+    </fieldset>
+    <fieldset class="span-2" id="manager-sections" data-section-role="manager">
+      <legend>Sections this Manager / HR account can open</legend>
+      <div class="section-presets" role="group" aria-label="Manager presets">
+        @foreach (config('portal.manager_section_presets') as $presetKey => $preset)
+          <button type="button" class="btn-secondary" data-section-preset="{{ $presetKey }}" data-preset-for="manager">{{ $preset['label'] }}</button>
+        @endforeach
+      </div>
+      <div class="section-choices">
+        @foreach (config('portal.manager_sections') as $key => $label)
+          <label class="check" for="section-manager-{{ $key }}">
+            <input id="section-manager-{{ $key }}" data-section-box type="checkbox" name="visible_sections[]" value="{{ $key }}" @checked(in_array($key, $savedSections ?? array_keys(config('portal.manager_sections')), true))>
+            <span><strong>{{ $label }}</strong><small>{{ config('portal.manager_section_notes.'.$key) }}</small></span>
+          </label>
+        @endforeach
+      </div>
+      <p class="help">Personal keeps their own work. Team adds roster, leave, and expense decisions. Full management also opens People, Reports, Workplace, and Payroll. Manager and HR use this same list.</p>
     </fieldset>
   </div>
   <button type="submit">{{ $person ? 'Save record' : 'Create invitation' }}</button>
 </form>
 <script>
 (() => {
-  const presets = @json(collect(config('portal.employee_section_presets'))->map(fn (array $preset): array => $preset['sections']));
-  const role = document.getElementById('portal_role');
-  const box = document.getElementById('employee-sections');
-  const sync = () => {
-    if (box && role) {
-      box.hidden = role.value !== 'employee';
-    }
+  const presets = {
+    employee: @json(collect(config('portal.employee_section_presets'))->map(fn (array $preset): array => $preset['sections'])),
+    manager: @json(collect(config('portal.manager_section_presets'))->map(fn (array $preset): array => $preset['sections'])),
   };
-  role?.addEventListener('change', sync);
+  const role = document.getElementById('portal_role');
+  const boxes = {
+    employee: document.getElementById('employee-sections'),
+    manager: document.getElementById('manager-sections'),
+  };
+  const kind = () => (role && (role.value === 'manager' || role.value === 'admin_hr')) ? 'manager' : (role && role.value === 'employee' ? 'employee' : null);
+  const setBox = (box, on) => {
+    if (!box) {
+      return;
+    }
+    box.hidden = !on;
+    box.querySelectorAll('input, button').forEach((control) => {
+      control.disabled = !on;
+    });
+  };
+  const sync = () => {
+    const active = kind();
+    setBox(boxes.employee, active === 'employee');
+    setBox(boxes.manager, active === 'manager');
+  };
+  role?.addEventListener('change', () => {
+    sync();
+    const active = kind();
+    if (!active || !boxes[active]) {
+      return;
+    }
+    boxes[active].querySelectorAll('[data-section-box]').forEach((input) => {
+      input.checked = true;
+    });
+  });
   sync();
   document.querySelectorAll('[data-section-preset]').forEach((button) => {
     button.addEventListener('click', () => {
-      const keys = presets[button.dataset.sectionPreset] ?? [];
-      document.querySelectorAll('[data-employee-section]').forEach((input) => {
+      const group = button.dataset.presetFor;
+      const keys = presets[group]?.[button.dataset.sectionPreset] ?? [];
+      boxes[group]?.querySelectorAll('[data-section-box]').forEach((input) => {
         input.checked = keys.includes(input.value);
       });
     });

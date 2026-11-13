@@ -2,7 +2,7 @@
 @section('title', 'Leave')
 @section('content')
 <header class="page-head"><div><p class="eyebrow">Leave</p><h1>Requests and team calendar</h1></div></header>
-@if (auth()->user()->recordsOwnAttendance())
+@if (auth()->user()->recordsOwnAttendance() && auth()->user()->canOpenPortalSection('leave'))
 <section class="card">
   <h2>Your balance</h2>
   @if ($balance)

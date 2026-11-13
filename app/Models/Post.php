@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['slug', 'title', 'meta_description', 'published_on', 'image', 'summary', 'body', 'post_category_id', 'is_published', 'body_document', 'content_source', 'lock_version', 'status', 'scheduled_for', 'tags', 'featured_image_alt'])]
+#[Fillable(['slug', 'title', 'meta_title', 'meta_description', 'published_on', 'image', 'summary', 'body', 'post_category_id', 'is_published', 'body_document', 'content_source', 'lock_version', 'status', 'scheduled_for', 'tags', 'featured_image_alt', 'view_count'])]
 class Post extends Model
 {
     public function postCategory(): BelongsTo
@@ -84,6 +84,7 @@ class Post extends Model
             'tags' => 'array',
             'scheduled_for' => 'datetime',
             'reading_minutes' => 'integer',
+            'view_count' => 'integer',
         ];
     }
 }

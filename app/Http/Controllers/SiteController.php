@@ -176,10 +176,17 @@ class SiteController extends Controller
                 return redirect('/'.$post->slug, 301);
             }
 
+            Post::query()->whereKey($post->id)->increment('view_count');
+            $post->view_count = (int) $post->view_count + 1;
+
             return view('post', [
                 'post' => $post,
+                'related' => $this->relatedPosts($post),
+                'recent' => Post::query()->published()->whereKeyNot($post->id)->orderByDesc('published_on')->orderByDesc('id')->limit(5)->get(),
+                'preview' => false,
                 'active' => 'blog',
-                'title' => $post->title.' | Royal Indian Stones',
+                'ogType' => 'article',
+                'title' => ($post->meta_title ?: $post->title).' | Royal Indian Stones',
                 'description' => $post->meta_description ?: $post->summary,
                 'shareImage' => $post->image ? asset($post->image) : null,
                 'articleSchema' => $this->articleSchema($post),
@@ -276,6 +283,51 @@ class SiteController extends Controller
         ])->all();
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, Post>
+     */
+    private function relatedPosts(Post $post): \Illuminate\Support\Collection
+    {
+        $related = collect();
+        if ($post->post_category_id) {
+            $related = Post::query()->published()
+                ->where('post_category_id', $post->post_category_id)
+                ->whereKeyNot($post->id)
+                ->orderByDesc('published_on')
+                ->orderByDesc('id')
+                ->limit(4)
+                ->get();
+        }
+        $tags = array_values(array_filter((array) $post->tags, fn (mixed $tag): bool => is_string($tag) && $tag !== ''));
+        if ($related->count() < 4 && $tags !== []) {
+            $more = Post::query()->published()
+                ->whereKeyNot($post->id)
+                ->whereNotIn('id', $related->pluck('id'))
+                ->where(function ($query) use ($tags): void {
+                    foreach (array_slice($tags, 0, 5) as $tag) {
+                        $query->orWhereJsonContains('tags', $tag);
+                    }
+                })
+                ->orderByDesc('view_count')
+                ->limit(4 - $related->count())
+                ->get();
+            $related = $related->concat($more);
+        }
+        if ($related->count() < 4) {
+            $related = $related->concat(
+                Post::query()->published()
+                    ->whereKeyNot($post->id)
+                    ->whereNotIn('id', $related->pluck('id'))
+                    ->orderByDesc('view_count')
+                    ->orderByDesc('published_on')
+                    ->limit(4 - $related->count())
+                    ->get(),
+            );
+        }
+
+        return $related->values();
+    }
+
     private function readablePageTitle(string $title): string
     {
         if (mb_strtoupper($title, 'UTF-8') !== $title) {
@@ -318,7 +370,7 @@ class SiteController extends Controller
     {
         $posting = array_filter([
             '@type' => 'BlogPosting',
-            'headline' => $post->title,
+            'headline' => $post->meta_title ?: $post->title,
             'datePublished' => $post->published_on?->toDateString(),
             'dateModified' => $post->updated_at?->toDateString(),
             'description' => $post->meta_description ?: $post->summary,

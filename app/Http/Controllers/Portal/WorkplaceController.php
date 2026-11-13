@@ -23,7 +23,7 @@ class WorkplaceController extends PortalController
     public function index(Request $request): View
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('workplace'), 403);
 
         return view('portal.workplace.index', [
             'locations' => WorkLocation::query()->with('networks')->orderBy('name')->get(),
@@ -41,7 +41,7 @@ class WorkplaceController extends PortalController
     public function network(Request $request, IpRange $ranges, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('workplace'), 403);
         $data = $request->validate([
             'work_location_id' => ['required', 'integer', 'exists:work_locations,id'],
             'label' => ['required', 'string', 'max:120'],
@@ -66,7 +66,7 @@ class WorkplaceController extends PortalController
     public function destroyNetwork(Request $request, OfficeNetwork $network, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('workplace'), 403);
         $audit->write($actor, 'network.removed', $network, ['cidr' => $network->cidr], $request->ip());
         $network->delete();
 
@@ -75,7 +75,7 @@ class WorkplaceController extends PortalController
 
     public function holiday(Request $request): RedirectResponse
     {
-        abort_unless($this->access->canAdminister($this->actor($request)), 403);
+        abort_unless($this->access->canAdminister($this->actor($request)) && $this->actor($request)->canOpenPortalSection('workplace'), 403);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'holiday_on' => ['required', 'date'],
@@ -93,7 +93,7 @@ class WorkplaceController extends PortalController
 
     public function leaveType(Request $request, LeaveType $leaveType): RedirectResponse
     {
-        abort_unless($this->access->canAdminister($this->actor($request)), 403);
+        abort_unless($this->access->canAdminister($this->actor($request)) && $this->actor($request)->canOpenPortalSection('workplace'), 403);
         $data = $request->validate([
             'annual_allowance' => ['required', 'numeric', 'min:0', 'max:365'],
             'is_active' => ['required', 'boolean'],
@@ -108,7 +108,7 @@ class WorkplaceController extends PortalController
     public function device(Request $request, RegisteredDevice $device, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('workplace'), 403);
         $data = $request->validate([
             'decision' => ['required', Rule::in(['approved', 'revoked'])],
             'label' => ['nullable', 'string', 'max:80'],
@@ -129,7 +129,7 @@ class WorkplaceController extends PortalController
     public function remote(Request $request, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('workplace'), 403);
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
             'starts_on' => ['required', 'date'],
@@ -156,7 +156,7 @@ class WorkplaceController extends PortalController
     public function review(Request $request, AccessEvent $event, AuditWriter $audit): RedirectResponse
     {
         $actor = $this->actor($request);
-        abort_unless($this->access->canAdminister($actor), 403);
+        abort_unless($this->access->canAdminister($actor) && $actor->canOpenPortalSection('workplace'), 403);
         $data = $request->validate([
             'review_decision' => ['required', Rule::in(['confirmed_expected', 'needs_follow_up'])],
             'review_note' => ['required', 'string', 'max:500'],

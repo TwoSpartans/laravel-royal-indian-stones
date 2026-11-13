@@ -87,6 +87,8 @@ class ProvisionEmployee
      */
     public function profile(User $user, array $attributes, EmploymentStatus $status): EmployeeProfile
     {
+        $sections = $this->sectionsFor($user, $attributes);
+
         return EmployeeProfile::query()->create([
             'user_id' => $user->id,
             'employee_code' => $this->nextCode(),
@@ -99,13 +101,28 @@ class ProvisionEmployee
             'joined_on' => $attributes['joined_on'] ?? null,
             'probation_ends_on' => $attributes['probation_ends_on'] ?? null,
             'phone' => $attributes['phone'] ?? null,
-            'visible_sections' => $user->portal_role === PortalRole::Employee && is_array($attributes['visible_sections'] ?? null)
-                ? array_values($attributes['visible_sections'])
-                : null,
-            'sections_set_at' => $user->portal_role === PortalRole::Employee && is_array($attributes['visible_sections'] ?? null)
-                ? now()
-                : null,
+            'visible_sections' => $sections,
+            'sections_set_at' => $sections === null ? null : now(),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return list<string>|null
+     */
+    private function sectionsFor(User $user, array $attributes): ?array
+    {
+        if (! is_array($attributes['visible_sections'] ?? null)) {
+            return null;
+        }
+
+        if ($user->portal_role?->isCompanyAdmin()) {
+            return null;
+        }
+
+        $catalog = array_keys($user->portalSectionCatalog());
+
+        return array_values(array_intersect($attributes['visible_sections'], $catalog));
     }
 
     public function balances(User $user): void

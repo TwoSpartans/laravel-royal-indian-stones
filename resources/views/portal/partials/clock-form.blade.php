@@ -24,6 +24,6 @@
     <label for="planned_work">{{ $clockedIn ? 'What will you be doing tomorrow' : 'What will you work on today' }}</label>
     <textarea id="planned_work" name="planned_work" required maxlength="2000">{{ $restore ? old('planned_work') : '' }}</textarea>
   </div>
-  <button class="clock-btn" type="submit">{{ $clockedIn ? 'Clock out' : 'Clock in' }}</button>
+  <button class="clock-btn {{ $clockedIn ? 'is-out' : 'is-in' }}" type="submit">{{ $clockedIn ? 'Clock out' : 'Clock in' }}</button>
   <p class="help">Last punch: {{ $lastPunch ? \App\Support\PortalTime::format($lastPunch->punched_at, auth()->user(), $lastPunch->timezone).' · '.str_replace('_', ' ', $lastPunch->punch_type) : 'none yet' }}</p>
 </form>

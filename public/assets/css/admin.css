@@ -4954,6 +4954,86 @@ html.journal-editor-enhanced .journal-preview-dialog .journal-preview-more[hidde
   }
 }
 
+.blog-catalogue-count {
+  margin: 0 0 0.65rem;
+  color: #7c776e;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.blog-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem 0.7rem;
+}
+
+.blog-row-actions form {
+  margin: 0;
+}
+
+.blog-row-actions a,
+.blog-row-actions button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1a4d3e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.blog-row-actions a:hover,
+.blog-row-actions button:hover,
+.blog-row-actions a:focus-visible,
+.blog-row-actions button:focus-visible {
+  text-decoration: underline;
+}
+
+.blog-row-actions .is-danger {
+  color: #9f1239;
+}
+
+.blog-catalogue-table tbody tr[data-blog-row]:hover,
+.blog-catalogue-table tbody tr[data-blog-row]:focus-within {
+  background: #f3faf6;
+}
+
+.blog-catalogue-table td:nth-child(2),
+.blog-catalogue-table td:nth-child(3),
+.blog-catalogue-table td:nth-child(5) {
+  color: #4e5852;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .blog-catalogue-table {
+    min-width: 0;
+  }
+
+  .blog-catalogue-table thead {
+    display: none;
+  }
+
+  .blog-catalogue-table tr[data-blog-row] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+    padding: 0.75rem;
+    border-bottom: 1px solid #f3f0ea;
+  }
+
+  .blog-catalogue-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .blog-row-actions {
+    justify-content: flex-start;
+  }
+}
+
 .product-preview,
 .product-studio-overlay {
   position: fixed;

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
 
-#[Fillable(['eyebrow', 'heading_lead', 'heading_emphasis', 'introduction', 'caption', 'cover_image', 'cover_image_alt', 'edit_kicker', 'edit_heading', 'edit_post_ids', 'closer_kicker', 'closer_heading', 'closer_post_ids', 'maker_post_id', 'maker_eyebrow', 'maker_heading', 'maker_body', 'maker_label', 'maker_path', 'maker_image', 'maker_image_alt'])]
+#[Fillable(['eyebrow', 'heading_lead', 'heading_emphasis', 'introduction', 'caption', 'cover_image', 'cover_image_alt', 'edit_kicker', 'edit_heading', 'edit_post_ids', 'closer_kicker', 'closer_heading', 'closer_post_ids', 'closer_category_id', 'maker_post_id', 'maker_enabled', 'maker_eyebrow', 'maker_heading', 'maker_body', 'maker_label', 'maker_path', 'maker_image', 'maker_image_alt'])]
 class JournalSetting extends Model
 {
     public const CACHE_KEY = 'journal.settings';
@@ -71,6 +71,7 @@ class JournalSetting extends Model
         return [
             'edit_post_ids' => 'array',
             'closer_post_ids' => 'array',
+            'maker_enabled' => 'boolean',
         ];
     }
 }
