@@ -234,7 +234,7 @@
 }
 
 .journal-page #main .journal-browse {
-  padding: clamp(2rem, 4vw, 3rem) 0 clamp(4rem, 6vw, 5.5rem);
+  padding: 24px 0;
 }
 
 .journal-browse-bar {

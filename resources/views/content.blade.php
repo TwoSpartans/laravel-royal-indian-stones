@@ -13,7 +13,7 @@
       </div>
     </div>
   </section>
-  <div class="page-body">
+  <div @class(['page-body', 'directors-message' => $page->slug === 'directors-message'])>
     {!! app(\App\Support\ResponsivePicture::class)->rewriteHtml(preg_replace(['/\sstyle="[^"]*(?:height\s*:\s*100%|webkit-fill-available)[^"]*"/i', '/\ssizes="[^"]*"/i'], '', $page->body) ?? '') !!}
   </div>
 </main>
