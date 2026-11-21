@@ -179,10 +179,28 @@ class SiteController extends Controller
             Post::query()->whereKey($post->id)->increment('view_count');
             $post->view_count = (int) $post->view_count + 1;
 
+            $recent = Post::query()->published()->whereKeyNot($post->id)->orderByDesc('published_on')->orderByDesc('id')->limit(4)->get();
+            $related = $this->relatedPosts($post)
+                ->reject(fn (Post $item): bool => $recent->contains('id', $item->id))
+                ->take(4)
+                ->values();
+            if ($related->count() < 4) {
+                $exclude = $recent->pluck('id')->merge($related->pluck('id'));
+                $related = $related->concat(
+                    Post::query()->published()
+                        ->whereKeyNot($post->id)
+                        ->when($exclude->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $exclude))
+                        ->orderByDesc('published_on')
+                        ->orderByDesc('id')
+                        ->limit(4 - $related->count())
+                        ->get(),
+                )->values();
+            }
+
             return view('post', [
                 'post' => $post,
-                'related' => $this->relatedPosts($post),
-                'recent' => Post::query()->published()->whereKeyNot($post->id)->orderByDesc('published_on')->orderByDesc('id')->limit(5)->get(),
+                'related' => $related,
+                'recent' => $recent,
                 'preview' => false,
                 'active' => 'blog',
                 'ogType' => 'article',

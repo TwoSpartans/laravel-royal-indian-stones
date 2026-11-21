@@ -52,6 +52,37 @@ class Post extends Model
         return ReadingTime::minutesFor($this);
     }
 
+    /**
+     * A card description made of complete sentences, never a clipped fragment.
+     */
+    public function cardExcerpt(int $limit = 280): string
+    {
+        $summary = trim(preg_replace('/\s+/u', ' ', (string) $this->summary) ?? '');
+        if ($summary === '') {
+            $summary = trim(preg_replace('/\s+/u', ' ', (string) $this->meta_description) ?? '');
+        }
+        if ($summary === '') {
+            return '';
+        }
+
+        preg_match_all('/.*?[.!?](?:\s|$)/u', $summary, $matches);
+        $sentences = $matches[0] ?? [];
+        if ($sentences === []) {
+            return $summary;
+        }
+
+        $excerpt = '';
+        foreach ($sentences as $sentence) {
+            $next = trim($excerpt.' '.$sentence);
+            if ($excerpt !== '' && mb_strlen($next) > $limit) {
+                break;
+            }
+            $excerpt = $next;
+        }
+
+        return trim($excerpt);
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query

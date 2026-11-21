@@ -43,12 +43,12 @@ class JournalPageTest extends TestCase
         $response = $this->get('/blog');
 
         $response->assertOk()
-            ->assertSee('Stories with')
-            ->assertSee('an Indian soul.')
+            ->assertSee('Blogs')
+            ->assertDontSee('Journal')
             ->assertSee('Choosing sandstone for floors')
-            ->assertSee('2 min read')
-            ->assertSee('01 / The edit')
-            ->assertSee('Read story')
+            ->assertDontSee('min read')
+            ->assertSee('Search stories')
+            ->assertSee('Read the story')
             ->assertDontSee('Unpublished quarry note')
             ->assertDontSee('Future quarry note')
             ->assertDontSee('Draft still hidden')
@@ -69,7 +69,7 @@ class JournalPageTest extends TestCase
         $this->get('/blog')
             ->assertOk()
             ->assertSee('Only one courtyard note')
-            ->assertSee('1 min read')
+            ->assertDontSee('min read')
             ->assertDontSee('Know the materials. Love the details.');
     }
 
@@ -176,9 +176,9 @@ class JournalPageTest extends TestCase
         $landing = $this->get('/blog');
         $landing->assertOk()
             ->assertSee('Guide day 14')
-            ->assertSee('01 / The edit')
-            ->assertSee('Guide day 1')
-            ->assertSee('The hands behind the details.');
+            ->assertDontSee('The Royal Journal')
+            ->assertSee('Guide day 2')
+            ->assertDontSee('The hands behind the details.');
 
         $page = $this->get('/blog?category=guides&page=2');
         $page->assertOk()
@@ -306,8 +306,9 @@ class JournalPageTest extends TestCase
 
         $this->get('/blog')
             ->assertOk()
-            ->assertSee('Stories with')
-            ->assertSee('an Indian soul.');
+            ->assertSee('Blogs')
+            ->assertDontSee('Journal')
+            ->assertDontSee('Notes from');
 
         $hash = substr(md5((string) $settings->cover_image), 0, 16);
         foreach ([
@@ -423,7 +424,7 @@ class JournalPageTest extends TestCase
 
         $this->get('/blog')
             ->assertOk()
-            ->assertSee('Stories with')
+            ->assertDontSee('The Royal Journal')
             ->assertSee('Newer quarry note')
             ->assertSee('Older courtyard note')
             ->assertDontSee('Hidden quarry note')
@@ -481,13 +482,12 @@ class JournalPageTest extends TestCase
 
         $this->get('/blog')
             ->assertOk()
-            ->assertSee('Stories with')
-            ->assertSee('an Indian soul.')
+            ->assertDontSee('The Royal Journal')
             ->assertSee('First chosen story')
             ->assertSee('Second chosen story')
             ->assertDontSee('The yard edit')
             ->assertDontSee('Closer yard')
-            ->assertSee('Hands in the yard');
+            ->assertDontSee('Hands in the yard');
     }
 
     public function test_journal_save_stores_photographs_and_can_remove_only_the_maker_photograph(): void
@@ -518,8 +518,8 @@ class JournalPageTest extends TestCase
 
             $this->get('/blog')
                 ->assertOk()
-                ->assertSee('Stories with')
-                ->assertSee($coverPath, false)
+                ->assertDontSee('The Royal Journal')
+                ->assertDontSee($coverPath, false)
                 ->assertDontSee('Hands in the yard');
 
             $this->actingAs($admin)->put('/admin/journal', $this->journalPayload([
@@ -607,7 +607,7 @@ class JournalPageTest extends TestCase
         $blog->assertOk()
             ->assertSee('Shared courtyard note')
             ->assertSee('Later yard note')
-            ->assertSee('02 / A closer look');
+            ->assertDontSee('02 / A closer look');
         $this->assertSame(1, substr_count($blog->getContent(), 'href="'.url('/shared-courtyard-note').'"'));
         $this->assertSame(1, substr_count($blog->getContent(), 'href="'.url('/later-yard-note').'"'));
     }
@@ -632,8 +632,9 @@ class JournalPageTest extends TestCase
 
         $this->get('/blog')
             ->assertOk()
-            ->assertSee('Hands in the yard')
-            ->assertSee('Meet the makers');
+            ->assertSee('A published yard note')
+            ->assertDontSee('Hands in the yard')
+            ->assertDontSee('Meet the makers');
     }
 
     public function test_rejected_journal_save_keeps_the_draft_and_opens_the_maker_section(): void

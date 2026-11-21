@@ -50,57 +50,48 @@ final class JournalIndex
         $page = max(1, $request->integer('page'));
         $publishedTotal = Post::query()->published()->count();
         $settings = JournalSetting::current();
-        $isLanding = $publishedTotal > 0 && $search === '' && ! $category instanceof PostCategory && $page === 1;
         $unfiltered = $search === '' && ! $category instanceof PostCategory;
-        [$edit, $closer, $reserved] = $unfiltered && $publishedTotal > 0
-            ? $this->landingGroups($settings)
-            : [new Collection, new Collection, []];
-        $exclude = array_values(array_unique([...$edit->modelKeys(), ...$closer->modelKeys(), ...$reserved]));
-        $posts = null;
+        $isLanding = $publishedTotal > 0 && $unfiltered && $page === 1;
+        $featured = null;
+        if ($page === 1 && $publishedTotal > 0) {
+            $featured = $unfiltered
+                ? $this->featuredPost($settings)
+                : $this->matching($category, $search)->first();
+        }
 
-        if ($publishedTotal > 0 && ! ($isLanding && $edit->isEmpty() && $closer->isEmpty())) {
-            $query = $this->matching($category, $search);
-            if ($unfiltered && $exclude !== []) {
-                $query->whereNotIn((new Post)->getQualifiedKeyName(), $exclude);
-            }
-            $posts = $query->paginate(self::ARCHIVE_PER_PAGE)->withQueryString();
+        $grid = $this->matching($category, $search);
+        if ($featured instanceof Post) {
+            $grid->whereKeyNot($featured->id);
+        }
+        $gridTotal = (clone $grid)->count();
+        $posts = null;
+        if ($gridTotal > 0) {
+            $posts = $grid->paginate(self::ARCHIVE_PER_PAGE)->withQueryString();
             if ($posts->currentPage() > max(1, $posts->lastPage())) {
                 return redirect()->to($posts->url(max(1, $posts->lastPage())));
             }
-        } elseif ($publishedTotal > 0) {
-            $posts = $this->matching($category, $search)->paginate(self::ARCHIVE_PER_PAGE)->withQueryString();
         }
 
-        $editCards = $isLanding ? $edit->map(fn (Post $post): array => $this->card($post))->all() : [];
-        $closerCards = $isLanding ? $closer->map(fn (Post $post): array => $this->card($post))->all() : [];
-        $storyCards = $posts instanceof LengthAwarePaginator
-            ? $posts->getCollection()->map(fn (Post $post): array => $this->card($post))->all()
-            : [];
-        $totalShown = $posts instanceof LengthAwarePaginator ? $posts->total() : 0;
-        $indexable = $search === '' && ! ($category instanceof PostCategory && $totalShown === 0);
-        $cover = $this->coverPicture($settings);
+        $resultTotal = $gridTotal + ($featured instanceof Post ? 1 : 0);
+        $indexable = $search === '' && ! ($category instanceof PostCategory && $resultTotal === 0);
         $listed = new SupportCollection;
-        if ($isLanding) {
-            $listed = $edit->concat($closer);
+        if ($featured instanceof Post) {
+            $listed->push($featured);
         }
         if ($posts instanceof LengthAwarePaginator) {
             $listed = $listed->concat($posts->getCollection());
         }
+        $featureImage = $featured instanceof Post ? $this->existingImage($featured->image) : null;
+        $shareImage = $featureImage !== null ? asset($featureImage) : asset(self::COVER);
 
         return view('journal', [
-            'isLanding' => $isLanding && $publishedTotal > 0 || ($publishedTotal === 0 && $search === '' && ! $category instanceof PostCategory),
-            'hasStories' => $publishedTotal > 0,
-            'cover' => $cover,
-            'breadcrumbs' => $this->breadcrumbs($category, $search, $page),
+            'featured' => $featured,
+            'featureImage' => $featureImage,
             'topics' => PostCategory::query()->whereHas('posts', fn (Builder $query) => $query->published())->orderBy('name')->get(['id', 'name', 'slug']),
             'topic' => $category,
             'search' => $search,
-            'editCards' => $editCards,
-            'closerLookCards' => $closerCards,
-            'storyCards' => $storyCards,
-            'maker' => $isLanding ? $this->publicMaker($settings) : null,
             'stories' => $posts,
-            'pagination' => $posts instanceof LengthAwarePaginator ? $this->paginationLinks($posts) : null,
+            'resultTotal' => $resultTotal,
             'previousPageUrl' => $posts?->previousPageUrl(),
             'nextPageUrl' => $posts?->nextPageUrl(),
             'robots' => $indexable ? 'index,follow' : 'noindex,follow',
@@ -109,7 +100,7 @@ final class JournalIndex
             'title' => $this->publicTitle($category, $search, $page),
             'description' => $this->publicDescription($category, $search, $page, $posts),
             'canonical' => $this->canonical($category, $search, false, $page, $publishedTotal === 0 ? 'empty' : ($isLanding ? 'landing' : 'archive')),
-            'shareImage' => $cover['src'],
+            'shareImage' => $shareImage,
             'listingSchema' => $this->schema($isLanding ? 'landing' : 'archive', $category, $search, $indexable ? $listed : new SupportCollection),
         ]);
     }
@@ -240,13 +231,17 @@ final class JournalIndex
 
         $edit = new Collection;
         $blocked = array_values(array_unique([...$closer->modelKeys(), ...$reserved]));
-        foreach (array_slice($this->ids($settings->edit_post_ids), 0, 3) as $id) {
-            if (in_array($id, $blocked, true) || $edit->count() >= 3) {
-                continue;
-            }
-            $post = $this->publishedStories()->whereKey($id)->first();
-            if ($post instanceof Post) {
-                $edit->push($post);
+        $editIds = array_values(array_filter(
+            array_slice($this->ids($settings->edit_post_ids), 0, 3),
+            fn (int $id): bool => ! in_array($id, $blocked, true),
+        ));
+        if ($editIds !== []) {
+            $found = $this->publishedStories()->whereIn('id', $editIds)->get()->keyBy('id');
+            foreach ($editIds as $id) {
+                $post = $found->get($id);
+                if ($post instanceof Post) {
+                    $edit->push($post);
+                }
             }
         }
         if ($edit->count() < 3) {
@@ -270,6 +265,18 @@ final class JournalIndex
         return Post::query()
             ->published()
             ->with('postCategory:id,name,slug')
+            ->select([
+                'id',
+                'slug',
+                'title',
+                'summary',
+                'meta_description',
+                'image',
+                'featured_image_alt',
+                'published_on',
+                'post_category_id',
+                'reading_minutes',
+            ])
             ->orderByDesc('published_on')
             ->orderByDesc('id');
     }
@@ -289,8 +296,7 @@ final class JournalIndex
                 $query->whereLike('title', $like, false)
                     ->orWhereLike('summary', $like, false)
                     ->orWhereLike('meta_description', $like, false)
-                    ->orWhereLike('body', $like, false)
-                    ->orWhereLike('body_document', $like, false);
+                    ->orWhereLike('body', $like, false);
             });
         }
 
@@ -471,21 +477,21 @@ final class JournalIndex
     {
         $pageSuffix = $page > 1 ? ' — Page '.$page : '';
         if ($search !== '') {
-            return 'Search results for “'.$search.'”'.($category instanceof PostCategory ? ' in '.$category->name : '').' — The Journal | Royal Indian Stones';
+            return 'Search results for “'.$search.'”'.($category instanceof PostCategory ? ' in '.$category->name : '').' — Blogs | Royal Indian Stones';
         }
         if ($category instanceof PostCategory) {
-            return $category->name.' Stories & Blogs'.$pageSuffix.' | Royal Indian Stones';
+            return $category->name.' — Blogs'.$pageSuffix.' | Royal Indian Stones';
         }
 
-        return 'The Journal: Craft Stories & Blogs'.$pageSuffix.' | Royal Indian Stones';
+        return 'Blogs'.$pageSuffix.' | Royal Indian Stones';
     }
 
     private function publicDescription(?PostCategory $category, string $search, int $page, ?LengthAwarePaginator $stories): string
     {
         if ($search !== '') {
-            $description = 'Stories from the Royal Indian Stones Journal matching “'.$search.'”.';
+            $description = 'Blogs from Royal Indian Stones matching “'.$search.'”.';
         } elseif ($category instanceof PostCategory) {
-            $description = 'Stories about '.$category->name.' from the Royal Indian Stones Journal: stone, finishes, and how surfaces are made in Jodhpur.';
+            $description = 'Blogs about '.$category->name.' from Royal Indian Stones: stone, finishes, and how surfaces are made in Jodhpur.';
         } else {
             $description = 'Craft stories, stone and finish guides, and notes from the Jodhpur yard — written for homeowners, designers, and trade buyers.';
         }
@@ -546,6 +552,7 @@ final class JournalIndex
                 'slug',
                 'title',
                 'summary',
+                'meta_description',
                 'image',
                 'featured_image_alt',
                 'published_on',
@@ -886,7 +893,7 @@ final class JournalIndex
     {
         $crumbs = [
             ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => url('/')],
-            ['@type' => 'ListItem', 'position' => 2, 'name' => 'The Journal', 'item' => url('/blog')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => 'Blogs', 'item' => url('/blog')],
         ];
         if ($category instanceof PostCategory) {
             $crumbs[] = [

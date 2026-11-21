@@ -188,14 +188,10 @@
 }
 
 .journal-feature-summary {
-  display: -webkit-box;
   max-width: 36rem;
-  overflow: hidden;
   color: var(--journal-on-band);
   font-size: 1rem;
   line-height: 1.6;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
 }
 
 .journal-button {
@@ -238,7 +234,28 @@
 }
 
 .journal-page #main .journal-browse {
-  padding: clamp(3.25rem, 5.5vw, 4.75rem) 0 clamp(4rem, 6vw, 5.5rem);
+  padding: clamp(2rem, 4vw, 3rem) 0 clamp(4rem, 6vw, 5.5rem);
+}
+
+.journal-browse-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+}
+
+.journal-browse-bar .journal-pills {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.journal-browse-bar .journal-search {
+  flex: 0 1 23rem;
+  width: min(100%, 23rem);
+  max-width: 23rem;
+  margin: 0 0 0 auto;
 }
 
 .journal-browse-head {
@@ -448,10 +465,7 @@
 }
 
 .journal-card-excerpt {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  overflow: visible;
 }
 
 .journal-card-meta {

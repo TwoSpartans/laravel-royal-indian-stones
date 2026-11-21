@@ -8,7 +8,7 @@
         <h2>{{ $post->title }}</h2>
         <ol>
           <li><a href="{{ url('/') }}">Home</a></li>
-          <li><a href="{{ url('/blog') }}">Blog</a></li>
+          <li><a href="{{ url('/blog') }}">Blogs</a></li>
           <li>{{ $post->title }}</li>
         </ol>
       </div>
@@ -25,10 +25,6 @@
             <span aria-hidden="true"> · </span>
             <time datetime="{{ $post->published_on->toDateString() }}">{{ $post->published_on->format('j F Y') }}</time>
           @endif
-          <span aria-hidden="true"> · </span>
-          <span>{{ $post->readingMinutes() }} min read</span>
-          <span aria-hidden="true"> · </span>
-          <span>{{ (int) $post->view_count }} {{ (int) $post->view_count === 1 ? 'view' : 'views' }}</span>
         </div>
         @if($post->image)
           <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="eager" sizes="(max-width: 991px) calc(100vw - 32px), min(1200px, 100vw)" /></div>
@@ -52,19 +48,67 @@
             @endforeach
           </p>
         @endif
-        <aside class="entry-related">
-          <h2>Recent posts</h2>
-          @forelse($recent ?? [] as $recentPost)
-            <p><a href="{{ url('/'.$recentPost->slug) }}">{{ $recentPost->title }}</a></p>
-          @empty
-            <p>No recent posts yet.</p>
-          @endforelse
-          <h2>Related</h2>
-          @forelse($related ?? [] as $relatedPost)
-            <p><a href="{{ url('/'.$relatedPost->slug) }}">{{ $relatedPost->title }}</a></p>
-          @empty
-            <p>No related blogs found.</p>
-          @endforelse
+        <aside class="entry-stories">
+          <section aria-labelledby="recent-posts-title">
+            <h2 id="recent-posts-title">Recent posts</h2>
+            @if(($recent ?? collect())->isEmpty())
+              <p class="entry-stories-empty">No recent posts yet.</p>
+            @else
+              <ul class="entry-story-list">
+                @foreach($recent as $recentPost)
+                  <li>
+                    <a class="entry-story" href="{{ url('/'.$recentPost->slug) }}">
+                      @php
+                        $recentImage = str_replace('\\', '/', (string) $recentPost->image);
+                        $recentImage = $recentImage !== '' && ! str_contains($recentImage, '..') && is_file(public_path($recentImage)) ? $recentImage : null;
+                      @endphp
+                      @if($recentImage)
+                        <img src="{{ asset($recentImage) }}" alt="" width="112" height="84" loading="lazy" decoding="async">
+                      @else
+                        <span class="entry-story-mark" aria-hidden="true"></span>
+                      @endif
+                      <span class="entry-story-copy">
+                        <span class="entry-story-title">{{ $recentPost->title }}</span>
+                        @if($recentPost->published_on)
+                          <time datetime="{{ $recentPost->published_on->toDateString() }}">{{ $recentPost->published_on->format('j M Y') }}</time>
+                        @endif
+                      </span>
+                    </a>
+                  </li>
+                @endforeach
+              </ul>
+            @endif
+          </section>
+          <section aria-labelledby="related-posts-title">
+            <h2 id="related-posts-title">Related blogs</h2>
+            @if(($related ?? collect())->isEmpty())
+              <p class="entry-stories-empty">No related blogs found.</p>
+            @else
+              <ul class="entry-story-list">
+                @foreach($related as $relatedPost)
+                  <li>
+                    <a class="entry-story" href="{{ url('/'.$relatedPost->slug) }}">
+                      @php
+                        $relatedImage = str_replace('\\', '/', (string) $relatedPost->image);
+                        $relatedImage = $relatedImage !== '' && ! str_contains($relatedImage, '..') && is_file(public_path($relatedImage)) ? $relatedImage : null;
+                      @endphp
+                      @if($relatedImage)
+                        <img src="{{ asset($relatedImage) }}" alt="" width="112" height="84" loading="lazy" decoding="async">
+                      @else
+                        <span class="entry-story-mark" aria-hidden="true"></span>
+                      @endif
+                      <span class="entry-story-copy">
+                        <span class="entry-story-title">{{ $relatedPost->title }}</span>
+                        @if($relatedPost->published_on)
+                          <time datetime="{{ $relatedPost->published_on->toDateString() }}">{{ $relatedPost->published_on->format('j M Y') }}</time>
+                        @endif
+                      </span>
+                    </a>
+                  </li>
+                @endforeach
+              </ul>
+            @endif
+          </section>
         </aside>
         @unless($preview ?? false)
         @if($post->comments->isNotEmpty())
