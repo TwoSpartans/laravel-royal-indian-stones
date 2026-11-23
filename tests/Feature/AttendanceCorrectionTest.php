@@ -72,6 +72,38 @@ class AttendanceCorrectionTest extends TestCase
         $this->signIn($employer)->get('/portal')->assertOk()->assertDontSee('Hours worked');
     }
 
+    public function test_hours_worked_on_a_weekly_off_are_added(): void
+    {
+        $employee = User::factory()->employee()->create(['name' => 'Sunday Worker']);
+        $idle = User::factory()->employee()->create(['name' => 'Sunday Idle']);
+        $employer = User::factory()->employer()->create();
+        $this->travelTo(Carbon::parse('2026-10-25 09:00:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('in'))->assertRedirect();
+        $this->insertBreak($employee, '2026-10-25 12:00:00', '2026-10-25 12:30:00');
+        $this->travelTo(Carbon::parse('2026-10-25 18:00:00', 'Asia/Kolkata'));
+        $this->signIn($employee)->post('/portal/attendance/clock', $this->clockPayload('out'))->assertRedirect();
+
+        $this->signIn($employee)->get('/portal')->assertOk()->assertSee('Hours worked')->assertSee('8h 30m');
+        $this->signIn($employee)->get('/portal/attendance?date=2026-10-25')
+            ->assertOk()
+            ->assertSee('Weekly off')
+            ->assertSee('8h 30m');
+        $this->signIn($employer)->get('/portal/attendance?date=2026-10-25&q=Sunday+Worker')
+            ->assertOk()
+            ->assertSee('Sunday Worker')
+            ->assertSee('Weekly off')
+            ->assertSee('8h 30m');
+        $this->signIn($employer)->get('/portal/attendance?date=2026-10-25&q=Sunday+Idle')
+            ->assertOk()
+            ->assertSee('Sunday Idle')
+            ->assertSee('Weekly off')
+            ->assertDontSee('8h 30m');
+        $this->signIn($employer)->get('/portal/attendance/report?user_id='.$employee->id.'&from=2026-10-25&to=2026-10-25')
+            ->assertOk()
+            ->assertSee('Hours worked')
+            ->assertSee('8h 30m');
+    }
+
     public function test_a_day_without_clock_out_is_listed_as_unsettled(): void
     {
         $employee = User::factory()->employee()->create();

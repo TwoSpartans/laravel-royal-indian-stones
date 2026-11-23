@@ -118,7 +118,7 @@ class AttendanceBoard
         }
 
         $worked = null;
-        if (! in_array($state, ['holiday', 'weekly_off', 'leave'], true) && $punches->isNotEmpty()) {
+        if (! in_array($state, ['holiday', 'leave'], true) && $punches->isNotEmpty()) {
             $from = Carbon::parse($localDay, $timezone)->startOfDay();
             $cap = $now->toDateString() === $localDay ? $now->copy() : $from->copy()->addDay();
             $worked = $this->dayMinutes($punches, $from, $cap);
