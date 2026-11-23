@@ -219,12 +219,14 @@
 .studio-inspector {
     width: auto;
     min-width: 0;
+    min-height: 0;
     background: #fffdf9;
     border-color: var(--color-warmBorder);
 }
 
 .studio-canvas {
     min-width: 0;
+    min-height: 0;
     padding: 30px 24px 80px;
 }
 

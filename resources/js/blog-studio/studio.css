@@ -475,13 +475,16 @@
     display: flex;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
 }
 
 .studio-rail,
 .studio-inspector {
     flex-shrink: 0;
     width: 280px;
+    min-height: 0;
     overflow: auto;
+    overscroll-behavior: contain;
     background: #fff;
     border-right: 1px solid var(--color-warmBorder);
 }
@@ -490,12 +493,15 @@
     width: 320px;
     border-right: 0;
     border-left: 1px solid var(--color-warmBorder);
+    overflow-anchor: none;
 }
 
 .studio-canvas {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     overflow: auto;
+    overscroll-behavior: contain;
     padding: 2rem 1.5rem 5rem;
 }
 
@@ -598,6 +604,12 @@
     margin: 0;
     font-size: 0.95rem;
     font-weight: 600;
+}
+
+.studio-subhead--section {
+    margin-top: 1.5rem;
+    padding-top: 1.15rem;
+    border-top: 1px solid var(--color-warmBorder);
 }
 
 .studio-hint {

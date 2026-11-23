@@ -59,13 +59,13 @@ const SAFE_URI = /^(https?:\/\/|\/)/i;
 const ERROR_FIELDS: Array<{ prefix: string; id: string; tab?: InspectorTab }> = [
   { prefix: 'metadata.title', id: 'studio-title' },
   { prefix: 'metadata.excerpt', id: 'studio-excerpt' },
-  { prefix: 'metadata.slug', id: 'article-slug', tab: 'content' },
-  { prefix: 'metadata.metaTitle', id: 'article-meta-title', tab: 'content' },
-  { prefix: 'metadata.metaDescription', id: 'article-meta-description', tab: 'content' },
-  { prefix: 'metadata.featuredImageAlt', id: 'article-featured-alt', tab: 'content' },
-  { prefix: 'metadata.featuredMediaId', id: 'article-featured', tab: 'content' },
-  { prefix: 'metadata.tags', id: 'article-tags', tab: 'content' },
-  { prefix: 'metadata.categoryIds', id: 'article-categories', tab: 'content' },
+  { prefix: 'metadata.slug', id: 'article-slug', tab: 'advanced' },
+  { prefix: 'metadata.metaTitle', id: 'article-meta-title', tab: 'advanced' },
+  { prefix: 'metadata.metaDescription', id: 'article-meta-description', tab: 'advanced' },
+  { prefix: 'metadata.featuredImageAlt', id: 'article-featured-alt', tab: 'advanced' },
+  { prefix: 'metadata.featuredMediaId', id: 'article-featured', tab: 'advanced' },
+  { prefix: 'metadata.tags', id: 'article-tags', tab: 'advanced' },
+  { prefix: 'metadata.categoryIds', id: 'article-categories', tab: 'advanced' },
 ];
 
 type Notice = { tone: 'info' | 'success' | 'error'; text: string; link?: { href: string; label: string } };
@@ -340,9 +340,12 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
     selectedRef.current = next;
     setSelected(next);
 
-    const newAtom = next?.isAtom && instance.state.selection instanceof NodeSelection
-      && (previous?.index !== next.index || previous?.type !== next.type);
-    if (newAtom && mode === 'write') {
+    const blockChanged = previous?.index !== next?.index || previous?.type !== next?.type;
+    const newAtom = Boolean(next?.isAtom) && instance.state.selection instanceof NodeSelection && blockChanged;
+    if (blockChanged) {
+      document.getElementById('studio-inspector')?.scrollTo({ top: 0 });
+    }
+    if (newAtom) {
       setInspectorTab('content');
     }
     setHistory({ undo: instance.can().undo(), redo: instance.can().redo() });
@@ -885,6 +888,8 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
       focusTarget({ id: 'studio-title' });
     } else if (item.id === 'excerpt') {
       focusTarget({ id: 'studio-excerpt' });
+    } else if (item.id === 'featured-alt') {
+      focusTarget({ id: 'article-featured-alt', tab: 'advanced' });
     } else if (item.id === 'body') {
       if (compact) {
         setDrawer(null);
@@ -1453,7 +1458,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
             {meta.featuredUrl ? (
               <img src={meta.featuredUrl} alt={meta.featuredAlt} className="studio-hero" />
             ) : (
-              <button type="button" className="studio-hero-empty" onClick={() => focusTarget({ id: 'article-featured', tab: 'content' })}>
+              <button type="button" className="studio-hero-empty" onClick={() => focusTarget({ id: 'article-featured', tab: 'advanced' })}>
                 <Icon name="image" /> Add a featured image
               </button>
             )}

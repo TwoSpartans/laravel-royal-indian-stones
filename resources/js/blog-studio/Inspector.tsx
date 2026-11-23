@@ -136,12 +136,7 @@ export function Inspector(props: Props) {
         id={`inspector-panel-${props.tab}`}
         aria-labelledby={`inspector-tab-${props.tab}`}
       >
-        {props.tab === 'content' ? (
-          <>
-            <ArticleSettings {...props} />
-            <BlockSettings {...props} />
-          </>
-        ) : null}
+        {props.tab === 'content' ? <BlockSettings {...props} /> : null}
         {props.tab === 'style' ? <StyleSettings {...props} /> : null}
         {props.tab === 'advanced' ? <AdvancedSettings {...props} /> : null}
         {props.tab === 'checks' ? <ChecksPanel {...props} /> : null}
@@ -153,7 +148,6 @@ export function Inspector(props: Props) {
 function ArticleSettings({ bootstrap, meta, onMeta, uploading, onUploadFeatured, onRemoveFeatured }: Props) {
   return (
     <>
-      <p className="studio-hint">The title and excerpt are edited at the top of the page.</p>
       <Field label="URL slug" id="article-slug" hint={publicArticlePath(bootstrap.blog.publicUrl, meta.slug)}>
         <input
           id="article-slug"
@@ -597,20 +591,27 @@ function StyleSettings(props: Props) {
 
 function AdvancedSettings(props: Props) {
   const selected = props.selected;
-  if (!selected) {
-    return <p className="studio-empty">Select a block to choose where it is visible.</p>;
-  }
-  const frame = frameOf(selected.attrs, props.bootstrap);
+  const frame = selected ? frameOf(selected.attrs, props.bootstrap) : null;
 
   return (
-    <PresetField
-      id="advanced-visibility"
-      label="Show this block on"
-      value={frame.visibility}
-      options={props.bootstrap.frame.options.visibility}
-      labels={{ all: 'Every screen', desktop: 'Desktop only', tablet: 'Tablet only', mobile: 'Mobile only' }}
-      onChange={(value) => props.onUpdateBlock({ frame: { ...frame, visibility: value } })}
-    />
+    <>
+      <h2 className="studio-subhead">Article</h2>
+      <p className="studio-hint">The address, search listing, tags, and featured image. The title and excerpt stay at the top of the page.</p>
+      <ArticleSettings {...props} />
+      <h2 className="studio-subhead studio-subhead--section">This block</h2>
+      {selected && frame ? (
+        <PresetField
+          id="advanced-visibility"
+          label="Show this block on"
+          value={frame.visibility}
+          options={props.bootstrap.frame.options.visibility}
+          labels={{ all: 'Every screen', desktop: 'Desktop only', tablet: 'Tablet only', mobile: 'Mobile only' }}
+          onChange={(value) => props.onUpdateBlock({ frame: { ...frame, visibility: value } })}
+        />
+      ) : (
+        <p className="studio-empty">Select a block to choose where it is visible.</p>
+      )}
+    </>
   );
 }
 
