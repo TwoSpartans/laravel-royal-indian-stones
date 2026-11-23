@@ -44,6 +44,14 @@ class BlockRegistry
                 'nodeVersion' => 1,
             ],
             [
+                'type' => 'splitSection',
+                'name' => 'Text and image',
+                'description' => 'A heading and paragraphs beside a photograph. Place the image on either side.',
+                'group' => 'Media',
+                'icon' => 'fa-solid fa-table-columns',
+                'nodeVersion' => 1,
+            ],
+            [
                 'type' => 'productSpotlight',
                 'name' => 'Product Spotlight',
                 'description' => 'A live product card resolved from the catalog.',
@@ -83,7 +91,7 @@ class BlockRegistry
      */
     public function allowedNodeTypes(): array
     {
-        return ['doc', 'paragraph', 'heading', 'text', 'hardBreak', 'image', 'productSpotlight', 'workshopStory', 'cta', 'gallery'];
+        return ['doc', 'paragraph', 'heading', 'text', 'hardBreak', 'image', 'splitSection', 'productSpotlight', 'workshopStory', 'cta', 'gallery'];
     }
 
     /**

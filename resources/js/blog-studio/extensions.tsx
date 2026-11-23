@@ -24,6 +24,54 @@ function BlockChrome({
   );
 }
 
+function splitParagraphs(body: string): string[] {
+  return body
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph !== '');
+}
+
+function SplitView({ node, selected }: ReactNodeViewProps) {
+  const heading = String(node.attrs.heading ?? '');
+  const paragraphs = splitParagraphs(String(node.attrs.body ?? ''));
+  const imageLeft = String(node.attrs.layout ?? 'image-right') === 'image-left';
+  const mediaId = Number(node.attrs.mediaId ?? 0);
+  const alt = String(node.attrs.alt ?? '');
+  const decorative = Boolean(node.attrs.decorative);
+  const caption = String(node.attrs.caption ?? '');
+  const previewUrl = typeof node.attrs.previewUrl === 'string' ? node.attrs.previewUrl : '';
+  const url = useMediaUrl(mediaId) ?? (previewUrl !== '' ? previewUrl : null);
+
+  return (
+    <BlockChrome selected={selected} label="Text and image">
+      <div className={`studio-split ${imageLeft ? 'is-image-left' : ''}`}>
+        <div className="studio-split__copy">
+          {heading !== '' ? <p className="studio-split__heading">{heading}</p> : null}
+          {paragraphs.map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
+          {heading === '' && paragraphs.length === 0 ? (
+            <p className="studio-node__empty">Add a heading and paragraphs in the Block settings.</p>
+          ) : null}
+        </div>
+        <figure className="studio-split__media">
+          {url ? (
+            <img src={url} alt={decorative ? '' : alt} className="studio-split__photo" />
+          ) : (
+            <p className="studio-node__empty studio-split__photo">
+              {mediaId > 0 ? 'The image is saved, but its preview URL is missing. Upload it again.' : 'Upload an image in the Block settings.'}
+            </p>
+          )}
+          {caption !== '' ? <figcaption>{caption}</figcaption> : null}
+          {url && !decorative && alt === '' ? (
+            <figcaption className="studio-node__empty">Add alt text, or mark the image decorative.</figcaption>
+          ) : null}
+        </figure>
+      </div>
+    </BlockChrome>
+  );
+}
+
 function ImageView({ node, selected }: ReactNodeViewProps) {
   const mediaId = Number(node.attrs.mediaId ?? 0);
   const alt = String(node.attrs.alt ?? '');
@@ -192,6 +240,35 @@ function CtaView({ node, selected }: ReactNodeViewProps) {
     </BlockChrome>
   );
 }
+
+export const SplitSection = Node.create({
+  name: 'splitSection',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return {
+      nodeVersion: { default: 1 },
+      heading: { default: '' },
+      body: { default: '' },
+      mediaId: { default: null },
+      alt: { default: '' },
+      decorative: { default: false },
+      caption: { default: null },
+      layout: { default: 'image-right' },
+      previewUrl: { default: null },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-studio-split]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-studio-split': '' })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(SplitView);
+  },
+});
 
 export const StudioImage = Node.create({
   name: 'image',

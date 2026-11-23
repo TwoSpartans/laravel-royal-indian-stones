@@ -90,6 +90,7 @@ class DocumentValidator
             'paragraph' => ['type' => 'paragraph', 'content' => $this->inline($node['content'] ?? [], $errors)],
             'heading' => $this->heading($node, $errors),
             'image' => $this->image($node, $errors),
+            'splitSection' => $this->splitSection($node, $errors),
             'productSpotlight' => $this->product($node, $errors),
             'workshopStory' => $this->workshop($node, $errors),
             'cta' => $this->cta($node, $errors),
@@ -170,6 +171,40 @@ class DocumentValidator
                 'decorative' => $decorative,
                 'caption' => $this->nullable($attrs['caption'] ?? null, 300),
                 'credit' => $this->nullable($attrs['credit'] ?? null, 140),
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     * @param  list<string>  $errors
+     * @return array<string, mixed>
+     */
+    private function splitSection(array $node, array &$errors): array
+    {
+        $attrs = is_array($node['attrs'] ?? null) ? $node['attrs'] : [];
+        $this->forbid($attrs, ['src', 'html', 'style', 'onclick'], $errors, 'splitSection');
+        $decorative = (bool) ($attrs['decorative'] ?? false);
+        $alt = $this->plain((string) ($attrs['alt'] ?? ''), 140);
+        if ($decorative && $alt !== '') {
+            $errors[] = 'Image alt text and decorative state cannot both be set.';
+            $decorative = false;
+        }
+        $layout = (string) ($attrs['layout'] ?? 'image-right');
+        if (! in_array($layout, ['image-left', 'image-right'], true)) {
+            $layout = 'image-right';
+        }
+
+        return [
+            'type' => 'splitSection',
+            'attrs' => [
+                'heading' => $this->plain((string) ($attrs['heading'] ?? ''), 160),
+                'body' => $this->plain((string) ($attrs['body'] ?? ''), 4000),
+                'mediaId' => $this->id($attrs['mediaId'] ?? null),
+                'alt' => $decorative ? '' : $alt,
+                'decorative' => $decorative,
+                'caption' => $this->nullable($attrs['caption'] ?? null, 300),
+                'layout' => $layout,
             ],
         ];
     }

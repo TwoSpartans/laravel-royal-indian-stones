@@ -57,6 +57,7 @@ const BLOCK_NAMES: Record<string, string> = {
   paragraph: 'Paragraph',
   heading: 'Heading',
   image: 'Image',
+  splitSection: 'Text and image',
   productSpotlight: 'Product Spotlight',
   workshopStory: 'Workshop Story',
   cta: 'Call to Action',
@@ -331,6 +332,57 @@ function BlockSettings(props: Props) {
         </>
       ) : null}
 
+      {selected.type === 'splitSection' ? (
+        <>
+          <Field label="Heading" id="block-split-heading">
+            <input id="block-split-heading" value={String(attrs.heading ?? '')} maxLength={160} onChange={(event) => update({ heading: event.target.value })} />
+          </Field>
+          <Field label="Paragraphs" id="block-split-body" hint={<Counter value={String(attrs.body ?? '')} max={4000} />}>
+            <textarea
+              id="block-split-body"
+              rows={6}
+              value={String(attrs.body ?? '')}
+              maxLength={4000}
+              placeholder="Leave a blank line between paragraphs."
+              onChange={(event) => update({ body: event.target.value })}
+            />
+          </Field>
+          <ImagePreview mediaId={Number(attrs.mediaId ?? 0)} previewUrl={typeof attrs.previewUrl === 'string' ? attrs.previewUrl : ''} />
+          <FileButton
+            id="block-split-file"
+            label={Number(attrs.mediaId ?? 0) > 0 ? 'Replace image' : 'Upload image'}
+            busy={uploading === 'block'}
+            onFile={props.onUploadBlock}
+          />
+          <label className="studio-check">
+            <input
+              type="checkbox"
+              checked={Boolean(attrs.decorative)}
+              onChange={(event) => update({ decorative: event.target.checked, alt: event.target.checked ? '' : attrs.alt })}
+            />
+            Decorative (screen readers skip it)
+          </label>
+          {!attrs.decorative ? (
+            <Field label="Alt text" id="block-split-alt" hint="Describe what the photo shows for readers who cannot see it.">
+              <input id="block-split-alt" value={String(attrs.alt ?? '')} maxLength={140} onChange={(event) => update({ alt: event.target.value })} />
+            </Field>
+          ) : null}
+          <Field label="Caption" id="block-split-caption">
+            <input id="block-split-caption" value={String(attrs.caption ?? '')} maxLength={300} onChange={(event) => update({ caption: event.target.value })} />
+          </Field>
+          <Field label="Photograph side" id="block-split-layout">
+            <select
+              id="block-split-layout"
+              value={String(attrs.layout ?? 'image-right') === 'image-left' ? 'image-left' : 'image-right'}
+              onChange={(event) => update({ layout: event.target.value })}
+            >
+              <option value="image-right">Image on the right</option>
+              <option value="image-left">Image on the left</option>
+            </select>
+          </Field>
+        </>
+      ) : null}
+
       {selected.type === 'productSpotlight' ? (
         <>
           <ProductSummary productId={Number(attrs.productId ?? 0)} variantId={Number(attrs.variantId ?? 0)} />
@@ -509,6 +561,18 @@ function StyleSettings(props: Props) {
       <h2 className="studio-subhead">{BLOCK_NAMES[selected.type] ?? selected.type}</h2>
       <PresetField id="style-width" label="Block width" value={frame.width} options={props.bootstrap.frame.options.width} labels={{ text: 'Text', wide: 'Wide', full: 'Full' }} onChange={(value) => setFrame('width', value)} />
       <PresetField id="style-align" label="Alignment" value={frame.align} options={props.bootstrap.frame.options.align} onChange={(value) => setFrame('align', value)} />
+      {selected.type === 'splitSection' ? (
+        <Field label="Photograph side" id="style-split-layout">
+          <select
+            id="style-split-layout"
+            value={String(selected.attrs.layout ?? 'image-right') === 'image-left' ? 'image-left' : 'image-right'}
+            onChange={(event) => props.onUpdateBlock({ layout: event.target.value })}
+          >
+            <option value="image-right">Image on the right</option>
+            <option value="image-left">Image on the left</option>
+          </select>
+        </Field>
+      ) : null}
       {selected.type === 'productSpotlight' ? (
         <Field label="Product layout" id="style-product-layout">
           <select

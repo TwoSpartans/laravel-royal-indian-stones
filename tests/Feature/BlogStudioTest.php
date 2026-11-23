@@ -27,6 +27,7 @@ class BlogStudioTest extends TestCase
             ->assertSee('Buying Guide')
             ->assertSee('What to look for')
             ->assertSee('Workshop Story')
+            ->assertSee('Text and image')
             ->assertSee('Care Guide');
 
         $validator = app(DocumentValidator::class);
@@ -65,6 +66,145 @@ class BlogStudioTest extends TestCase
         ])->assertStatus(422);
 
         $this->assertSame(1, $post->refresh()->lock_version);
+    }
+
+    public function test_a_text_and_image_block_saves_the_heading_paragraphs_and_chosen_side(): void
+    {
+        $admin = User::factory()->create();
+        $media = JournalMedia::query()->create([
+            'path' => 'storage/journal/9/slate-face.jpg',
+            'alt' => 'Layered slate',
+        ]);
+        $post = $this->studioPost();
+
+        $saved = $this->actingAs($admin)->putJson('/admin/posts/'.$post->id.'/studio', [
+            'baseVersion' => 1,
+            'document' => $this->document([
+                ['type' => 'splitSection', 'attrs' => [
+                    'heading' => '1. The Formation of Slate: <script>alert(1)</script>',
+                    'body' => "Slate splits into thin sheets.\n\nThe rock cycle keeps the layers.",
+                    'mediaId' => $media->id,
+                    'alt' => 'Layered slate rock face',
+                    'caption' => 'Quarry face',
+                    'layout' => 'image-left',
+                ]],
+                ['type' => 'splitSection', 'attrs' => [
+                    'heading' => 'Second section',
+                    'body' => 'More stone.',
+                    'mediaId' => $media->id,
+                    'alt' => 'Another face',
+                    'layout' => 'beside',
+                ]],
+            ]),
+        ]);
+
+        $saved->assertOk();
+        $post->refresh();
+        $first = $post->body_document['content'][0]['attrs'];
+        $second = $post->body_document['content'][1]['attrs'];
+        $this->assertSame('1. The Formation of Slate: alert(1)', $first['heading']);
+        $this->assertSame("Slate splits into thin sheets.\n\nThe rock cycle keeps the layers.", $first['body']);
+        $this->assertSame($media->id, $first['mediaId']);
+        $this->assertSame('Layered slate rock face', $first['alt']);
+        $this->assertSame('Quarry face', $first['caption']);
+        $this->assertSame('image-left', $first['layout']);
+        $this->assertArrayNotHasKey('src', $first);
+        $this->assertSame('image-right', $second['layout']);
+        $this->assertStringContainsString('storage/journal/9/slate-face.jpg', (string) $saved->json('document.content.0.attrs.url'));
+
+        $this->actingAs($admin)->putJson('/admin/posts/'.$post->id.'/studio', [
+            'baseVersion' => 2,
+            'document' => $this->document([
+                ['type' => 'splitSection', 'attrs' => ['src' => 'https://example.test/slate.jpg', 'heading' => 'Kept']],
+            ]),
+        ])->assertStatus(422);
+
+        $this->assertSame('image-left', $post->refresh()->body_document['content'][0]['attrs']['layout']);
+    }
+
+    public function test_a_text_and_image_block_renders_the_photograph_beside_the_copy(): void
+    {
+        $media = JournalMedia::query()->create([
+            'path' => 'storage/journal/9/slate-face.jpg',
+            'alt' => 'Layered slate',
+        ]);
+        Post::query()->create([
+            'slug' => 'slate-formation',
+            'title' => 'The formation of slate',
+            'summary' => 'How slate splits into sheets, and why the layers stay strong enough for floors and roofs.',
+            'body' => '',
+            'content_source' => 'studio',
+            'status' => 'published',
+            'is_published' => true,
+            'body_document' => $this->document([
+                ['type' => 'splitSection', 'attrs' => [
+                    'heading' => '1. The Formation of Slate:',
+                    'body' => "Slate splits into thin sheets.\n\nThe rock cycle keeps the layers.",
+                    'mediaId' => $media->id,
+                    'alt' => 'Layered slate rock face',
+                    'caption' => 'Quarry face',
+                    'layout' => 'image-left',
+                ]],
+            ]),
+        ]);
+
+        $this->get('/slate-formation')
+            ->assertOk()
+            ->assertSee('rich-split', false)
+            ->assertSee('is-image-left', false)
+            ->assertSee('1. The Formation of Slate:')
+            ->assertSee('Slate splits into thin sheets.')
+            ->assertSee('The rock cycle keeps the layers.')
+            ->assertSee('Layered slate rock face')
+            ->assertSee('Quarry face')
+            ->assertSee('storage/journal/9/slate-face.jpg', false);
+    }
+
+    public function test_publish_stays_blocked_until_a_text_and_image_block_has_a_described_photograph(): void
+    {
+        $admin = User::factory()->create();
+        $media = JournalMedia::query()->create([
+            'path' => 'storage/journal/9/slate-face.jpg',
+            'alt' => 'Layered slate',
+        ]);
+        $post = $this->studioPost();
+        $post->title = 'Slate in the yard';
+        $post->summary = $this->readyExcerpt();
+        $post->body_document = $this->document([
+            ['type' => 'splitSection', 'attrs' => [
+                'heading' => 'The formation',
+                'body' => 'Slate splits into thin sheets.',
+            ]],
+        ]);
+        $post->save();
+
+        $missingPhoto = $this->actingAs($admin)->postJson('/admin/posts/'.$post->id.'/studio/publish');
+
+        $missingPhoto->assertStatus(422);
+        $missingPhoto->assertJsonFragment([
+            'explanation' => 'Choose a photograph from the library. A typed web address is not stored.',
+        ]);
+        $this->assertFalse($post->refresh()->is_published);
+
+        $this->actingAs($admin)->putJson('/admin/posts/'.$post->id.'/studio', [
+            'baseVersion' => 1,
+            'document' => $this->document([
+                ['type' => 'splitSection', 'attrs' => [
+                    'heading' => 'The formation',
+                    'body' => 'Slate splits into thin sheets.',
+                    'mediaId' => $media->id,
+                    'alt' => '',
+                ]],
+            ]),
+        ])->assertOk();
+
+        $missingAlt = $this->actingAs($admin)->postJson('/admin/posts/'.$post->id.'/studio/publish');
+
+        $missingAlt->assertStatus(422);
+        $missingAlt->assertJsonFragment([
+            'explanation' => 'Describe this photograph, or mark it decorative.',
+        ]);
+        $this->assertFalse($post->refresh()->is_published);
     }
 
     public function test_a_product_block_renders_the_catalogue_stone_and_its_frame(): void

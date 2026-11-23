@@ -22,7 +22,7 @@ import {
   updateProductSpotlight,
 } from './editorCommands';
 import { assignMissingBlockIds, BlockId } from './blockIds';
-import { ProductSpotlight, StudioCta, StudioGallery, StudioImage, WorkshopStory } from './extensions';
+import { ProductSpotlight, SplitSection, StudioCta, StudioGallery, StudioImage, WorkshopStory } from './extensions';
 import { useMediaQuery } from './hooks';
 import { blockIcon, Icon, type IconName } from './Icon';
 import { Inspector, type BlockAction, type InspectorTab, type MetaState, type SelectedBlock } from './Inspector';
@@ -105,7 +105,7 @@ function metadataFrom(meta: MetaState): ArticleMetadata {
 
 function documentForSave(json: JSONContent): Record<string, unknown> {
   const content = (json.content ?? []).map((node) => {
-    if (node.type !== 'image' || !node.attrs) {
+    if (!node.attrs || (node.type !== 'image' && node.type !== 'splitSection')) {
       return node;
     }
     const { previewUrl: _previewUrl, ...attrs } = node.attrs;
@@ -122,6 +122,21 @@ function contentFor(type: string): JSONContent {
   }
   if (type === 'gallery') {
     return { type: 'gallery', attrs: { nodeVersion: 2, mode: 'grid', items: [] } };
+  }
+  if (type === 'splitSection') {
+    return {
+      type: 'splitSection',
+      attrs: {
+        nodeVersion: 1,
+        heading: 'Section heading',
+        body: '',
+        mediaId: null,
+        alt: '',
+        decorative: false,
+        caption: null,
+        layout: 'image-right',
+      },
+    };
   }
 
   return { type };
@@ -565,6 +580,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
       BlockId,
       SelectionOutline,
       StudioImage,
+      SplitSection,
       ProductSpotlight,
       WorkshopStory,
       StudioCta,
@@ -787,12 +803,13 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
       return;
     }
     const original = instance.state.doc.nodeAt(target.start);
-    if (!original || !['image', 'workshopStory', 'gallery'].includes(original.type.name)) {
+    if (!original || !['image', 'splitSection', 'workshopStory', 'gallery'].includes(original.type.name)) {
       return;
     }
 
     setUploading('block');
-    const localUrl = original.type.name === 'image' ? URL.createObjectURL(file) : null;
+    const usesPreview = original.type.name === 'image' || original.type.name === 'splitSection';
+    const localUrl = usesPreview ? URL.createObjectURL(file) : null;
     if (localUrl) {
       updateBlockAttrs(instance, target.start, { previewUrl: localUrl });
     }
@@ -801,7 +818,9 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
       const uploaded = await uploadMedia(bootstrap, file);
       rememberMedia({ id: uploaded.id, url: uploaded.url, width: uploaded.width, height: uploaded.height });
       const start = localUrl
-        ? findBlockStart(instance, (node) => node.type.name === 'image' && node.attrs.previewUrl === localUrl)
+        ? findBlockStart(instance, (node) => (
+          (node.type.name === 'image' || node.type.name === 'splitSection') && node.attrs.previewUrl === localUrl
+        ))
         : findBlockStart(instance, (node) => node === original)
           ?? (instance.state.doc.nodeAt(target.start)?.type.name === 'workshopStory' ? target.start : null);
 
@@ -811,7 +830,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
         return;
       }
       const node = instance.state.doc.nodeAt(start);
-      if (node?.type.name === 'image') {
+      if (node?.type.name === 'image' || node?.type.name === 'splitSection') {
         updateBlockAttrs(instance, start, { mediaId: uploaded.id, previewUrl: null });
       } else if (node?.type.name === 'gallery') {
         const items = Array.isArray(node.attrs.items) ? (node.attrs.items as Array<Record<string, unknown>>) : [];
@@ -824,7 +843,9 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
       }
     } catch (cause) {
       if (localUrl) {
-        const start = findBlockStart(instance, (node) => node.type.name === 'image' && node.attrs.previewUrl === localUrl);
+        const start = findBlockStart(instance, (node) => (
+          (node.type.name === 'image' || node.type.name === 'splitSection') && node.attrs.previewUrl === localUrl
+        ));
         if (start !== null) {
           updateBlockAttrs(instance, start, { previewUrl: null });
         }

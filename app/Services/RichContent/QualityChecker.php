@@ -94,7 +94,7 @@ class QualityChecker
                 continue;
             }
             $attrs = is_array($node['attrs'] ?? null) ? $node['attrs'] : [];
-            if (($node['type'] ?? '') === 'image' && isset($attrs['mediaId'])) {
+            if (in_array($node['type'] ?? '', ['image', 'splitSection'], true) && isset($attrs['mediaId'])) {
                 $mediaIds[] = (int) $attrs['mediaId'];
             }
             if (($node['type'] ?? '') === 'productSpotlight' && isset($attrs['productId'])) {
@@ -120,6 +120,7 @@ class QualityChecker
             $blockId = (string) ($attrs['blockId'] ?? $index);
             match ($node['type'] ?? '') {
                 'image' => $this->imageCheck($items, $index, $blockId, $attrs, $media),
+                'splitSection' => $this->splitCheck($items, $index, $blockId, $attrs, $media),
                 'gallery' => $this->galleryCheck($items, $index, $blockId, $attrs, $media),
                 'productSpotlight' => $this->productCheck($items, $index, $blockId, $attrs, $products),
                 'workshopStory' => $this->workshopCheck($items, $index, $blockId, $attrs, $media),
@@ -148,6 +149,32 @@ class QualityChecker
             $explanation = 'Describe this photograph, or mark it decorative.';
         }
         $items[] = $this->item('image-'.$blockId, $state, 'Media', 'Image', $explanation, $blockId, $index);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @param  array<string, mixed>  $attrs
+     */
+    private function splitCheck(array &$items, int $index, string $blockId, array $attrs, mixed $media): void
+    {
+        $id = (int) ($attrs['mediaId'] ?? 0);
+        $decorative = (bool) ($attrs['decorative'] ?? false);
+        $alt = trim((string) ($attrs['alt'] ?? ''));
+        $heading = trim((string) ($attrs['heading'] ?? ''));
+        $body = trim((string) ($attrs['body'] ?? ''));
+        $state = 'ready';
+        $explanation = 'The text and photograph are ready.';
+        if ($id < 1 || ! $media->has($id)) {
+            $state = 'blocked';
+            $explanation = 'Choose a photograph from the library. A typed web address is not stored.';
+        } elseif (! $decorative && $alt === '') {
+            $state = 'blocked';
+            $explanation = 'Describe this photograph, or mark it decorative.';
+        } elseif ($heading === '' && $body === '') {
+            $state = 'attention';
+            $explanation = 'Add a heading or a paragraph beside the photograph.';
+        }
+        $items[] = $this->item('split-'.$blockId, $state, 'Media', 'Text and image', $explanation, $blockId, $index);
     }
 
     /**
@@ -250,7 +277,7 @@ class QualityChecker
             if (! is_array($node)) {
                 continue;
             }
-            if (in_array($node['type'] ?? '', ['image', 'productSpotlight', 'workshopStory', 'cta'], true)) {
+            if (in_array($node['type'] ?? '', ['image', 'splitSection', 'productSpotlight', 'workshopStory', 'cta'], true)) {
                 return true;
             }
             foreach ((array) ($node['content'] ?? []) as $child) {

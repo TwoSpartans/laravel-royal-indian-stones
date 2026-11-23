@@ -30,6 +30,7 @@ export function blockIcon(type: string): IconName {
     paragraph: 'pilcrow',
     heading: 'heading',
     image: 'image',
+    splitSection: 'columns',
     productSpotlight: 'box',
     workshopStory: 'wrench',
     cta: 'arrow-right',

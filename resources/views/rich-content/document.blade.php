@@ -18,6 +18,29 @@
         <h2 class="{{ $frame }}">{!! $inline->inline($block['content'] ?? []) !!}</h2>
       @endif
       @break
+    @case('splitSection')
+      @php
+        $photo = $media->get((int) ($attrs['mediaId'] ?? 0));
+        $layout = ($attrs['layout'] ?? 'image-right') === 'image-left' ? 'image-left' : 'image-right';
+        $paragraphs = $inline->paragraphs((string) ($attrs['body'] ?? ''));
+      @endphp
+      <section class="rich-split {{ $frame }} is-{{ $layout }}">
+        <div class="rich-split__copy">
+          @if(filled($attrs['heading'] ?? null))<h3>{{ $attrs['heading'] }}</h3>@endif
+          @foreach($paragraphs as $paragraph)
+            <p>{!! nl2br(e($paragraph)) !!}</p>
+          @endforeach
+        </div>
+        <figure class="rich-split__media">
+          @if($photo)
+            <x-picture src="{{ $photo->path }}" alt="{{ $attrs['decorative'] ?? false ? '' : ($attrs['alt'] ?? $photo->alt) }}" loading="lazy" sizes="(max-width: 991px) calc(100vw - 32px), min(560px, 46vw)" />
+            @if(filled($attrs['caption'] ?? null))<figcaption>{{ $attrs['caption'] }}</figcaption>@endif
+          @else
+            <p>This photograph is unavailable.</p>
+          @endif
+        </figure>
+      </section>
+      @break
     @case('image')
       @php $photo = $media->get((int) ($attrs['mediaId'] ?? 0)); @endphp
       @if($photo)

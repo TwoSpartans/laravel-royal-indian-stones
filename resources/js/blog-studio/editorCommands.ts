@@ -271,6 +271,11 @@ export function outlineFor(editor: Editor): OutlineItem[] {
     if (node.type.name === 'image') {
       label = String(node.attrs.alt || node.attrs.caption || 'Image');
       warning = Number(node.attrs.mediaId ?? 0) <= 0 || (!node.attrs.decorative && String(node.attrs.alt ?? '').trim() === '');
+    } else if (node.type.name === 'splitSection') {
+      const heading = String(node.attrs.heading ?? '').trim();
+      const body = String(node.attrs.body ?? '').trim();
+      label = heading || body || 'Text and image';
+      warning = Number(node.attrs.mediaId ?? 0) <= 0 || (!node.attrs.decorative && String(node.attrs.alt ?? '').trim() === '');
     } else if (node.type.name === 'productSpotlight') {
       const productId = Number(node.attrs.productId ?? 0);
       label = productId > 0 ? `Product #${productId}` : 'Product Spotlight';

@@ -386,6 +386,10 @@ p,.hero-copy>p:not(.eyebrow){font-size:var(--body);line-height:1.65}
 .rich-frame-ratio-16x9 img{aspect-ratio:16/9;object-fit:cover}
 .rich-frame-ratio-3x2 img{aspect-ratio:3/2;object-fit:cover}
 .rich-gallery.is-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.rich-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px 48px;align-items:center;margin:0 0 28px}
+.rich-split__copy,.rich-split__media{min-width:0}
+.rich-split__media{margin:0}
+.rich-split.is-image-left .rich-split__media{order:-1}
 .rich-stone{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:1.5rem;align-items:center}
 .rich-stone.is-image-right{direction:rtl}
 .rich-stone.is-image-right>*{direction:ltr}
@@ -394,10 +398,11 @@ p,.hero-copy>p:not(.eyebrow){font-size:var(--body);line-height:1.65}
 .rich-cta{padding:1.25rem;background:#f0f7f4;border-radius:16px}
 .rich-cta .ris-button{background:#1A4D3E}
 .rich-frame-show-desktop,.rich-frame-show-tablet{display:block}
+@media(max-width:991px){.rich-split{grid-template-columns:minmax(0,1fr)}.rich-split .rich-split__media{order:-1}}
 @media(max-width:767px){.rich-frame-show-desktop,.rich-frame-show-tablet{display:none}.rich-frame-show-mobile{display:block}.rich-stone,.rich-gallery.is-grid{grid-template-columns:1fr}}
 @media(min-width:768px) and (max-width:1023px){.rich-frame-show-desktop,.rich-frame-show-mobile{display:none}}
 @media(min-width:1024px){.rich-frame-show-tablet,.rich-frame-show-mobile{display:none}}
-.catalogue-card>picture,.project-card>picture,.category-card>picture,.entry-img picture,.entry-content picture,.about-story-grid picture,.portfolio-lightbox picture,.rich-stone picture,.rich-gallery picture,.rich-quarry picture{display:block;width:100%}
+.catalogue-card>picture,.project-card>picture,.category-card>picture,.entry-img picture,.entry-content picture,.about-story-grid picture,.portfolio-lightbox picture,.rich-stone picture,.rich-gallery picture,.rich-quarry picture,.rich-split picture{display:block;width:100%}
 .shop-section{padding:16px 0 24px}
 .shop-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:36px;align-items:start}
 .shop-filters{position:sticky;top:96px;max-height:calc(100vh - 112px);overflow:auto;padding:8px 0 12px;border:1px solid var(--ris-line);border-radius:16px;background:#fff}

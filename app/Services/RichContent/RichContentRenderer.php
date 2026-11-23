@@ -80,4 +80,25 @@ class RichContentRenderer
 
         return $html;
     }
+
+    /**
+     * @return list<string>
+     */
+    public function paragraphs(string $body): array
+    {
+        $body = trim($body);
+        if ($body === '') {
+            return [];
+        }
+
+        $paragraphs = [];
+        foreach (preg_split('/\R{2,}/u', $body) ?: [] as $part) {
+            $text = trim((string) $part);
+            if ($text !== '') {
+                $paragraphs[] = $text;
+            }
+        }
+
+        return $paragraphs;
+    }
 }

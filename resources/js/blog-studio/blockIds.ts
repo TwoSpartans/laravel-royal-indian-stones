@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core';
 import type { Editor } from '@tiptap/react';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 
-const BLOCK_TYPES = ['paragraph', 'heading', 'image', 'productSpotlight', 'workshopStory', 'cta', 'gallery'];
+const BLOCK_TYPES = ['paragraph', 'heading', 'image', 'splitSection', 'productSpotlight', 'workshopStory', 'cta', 'gallery'];
 
 export function createBlockId(): string {
   return crypto.randomUUID();
