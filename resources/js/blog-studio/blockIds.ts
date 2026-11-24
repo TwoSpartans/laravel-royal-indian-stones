@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core';
 import type { Editor } from '@tiptap/react';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { frameClasses } from './frameClasses';
 
 const BLOCK_TYPES = ['paragraph', 'heading', 'image', 'splitSection', 'productSpotlight', 'workshopStory', 'cta', 'gallery'];
 
@@ -25,6 +26,9 @@ export const BlockId = Extension.create({
           },
           frame: {
             default: null,
+            renderHTML: (attributes: { frame?: unknown }) => ({
+              class: frameClasses(attributes.frame),
+            }),
           },
         },
       },

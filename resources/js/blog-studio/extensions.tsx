@@ -2,20 +2,23 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 import type { ReactNodeViewProps } from '@tiptap/react';
 import type { ReactNode } from 'react';
+import { frameClasses } from './frameClasses';
 import { useMediaUrl, useProductCard, useProductName } from './mediaCache';
 
 function BlockChrome({
   selected,
   label,
+  frame,
   children,
 }: {
   selected: boolean;
   label: string;
+  frame: unknown;
   children: ReactNode;
 }) {
   return (
     <NodeViewWrapper
-      className={`studio-node ${selected ? 'is-selected' : ''}`}
+      className={`studio-node ${frameClasses(frame)} ${selected ? 'is-selected' : ''}`}
       data-type={label}
     >
       <p className="studio-node__label">{label}</p>
@@ -43,10 +46,10 @@ function SplitView({ node, selected }: ReactNodeViewProps) {
   const url = useMediaUrl(mediaId) ?? (previewUrl !== '' ? previewUrl : null);
 
   return (
-    <BlockChrome selected={selected} label="Text and image">
-      <div className={`studio-split ${imageLeft ? 'is-image-left' : ''}`}>
-        <div className="studio-split__copy">
-          {heading !== '' ? <p className="studio-split__heading">{heading}</p> : null}
+    <BlockChrome selected={selected} label="Text and image" frame={node.attrs.frame}>
+      <section className={`rich-split ${imageLeft ? 'is-image-left' : 'is-image-right'}`}>
+        <div className="rich-split__copy">
+          {heading !== '' ? <h3>{heading}</h3> : null}
           {paragraphs.map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
           ))}
@@ -54,11 +57,11 @@ function SplitView({ node, selected }: ReactNodeViewProps) {
             <p className="studio-node__empty">Add a heading and paragraphs in the Block settings.</p>
           ) : null}
         </div>
-        <figure className="studio-split__media">
+        <figure className="rich-split__media">
           {url ? (
-            <img src={url} alt={decorative ? '' : alt} className="studio-split__photo" />
+            <img src={url} alt={decorative ? '' : alt} />
           ) : (
-            <p className="studio-node__empty studio-split__photo">
+            <p className="studio-node__empty">
               {mediaId > 0 ? 'The image is saved, but its preview URL is missing. Upload it again.' : 'Upload an image in the Block settings.'}
             </p>
           )}
@@ -67,7 +70,7 @@ function SplitView({ node, selected }: ReactNodeViewProps) {
             <figcaption className="studio-node__empty">Add alt text, or mark the image decorative.</figcaption>
           ) : null}
         </figure>
-      </div>
+      </section>
     </BlockChrome>
   );
 }
@@ -81,26 +84,20 @@ function ImageView({ node, selected }: ReactNodeViewProps) {
   const url = useMediaUrl(mediaId) ?? (previewUrl !== '' ? previewUrl : null);
 
   return (
-    <BlockChrome selected={selected} label="Image">
-      <div className="studio-node__body">
-        {url ? (
-          <figure className="studio-node__figure">
-            <img
-              src={url}
-              alt={decorative ? '' : alt}
-              className="studio-node__image"
-            />
-            {caption !== '' ? <figcaption>{caption}</figcaption> : null}
-            {!decorative && alt === '' ? (
-              <figcaption className="studio-node__empty">Add alt text, or mark the image decorative.</figcaption>
-            ) : null}
-          </figure>
-        ) : (
-          <p className="studio-node__empty">
-            {mediaId > 0 ? 'The image is saved, but its preview URL is missing. Upload it again.' : 'Upload an image in the Block settings.'}
-          </p>
-        )}
-      </div>
+    <BlockChrome selected={selected} label="Image" frame={node.attrs.frame}>
+      {url ? (
+        <figure>
+          <img src={url} alt={decorative ? '' : alt} />
+          {caption !== '' ? <figcaption>{caption}</figcaption> : null}
+          {!decorative && alt === '' ? (
+            <figcaption className="studio-node__empty">Add alt text, or mark the image decorative.</figcaption>
+          ) : null}
+        </figure>
+      ) : (
+        <p className="studio-node__empty">
+          {mediaId > 0 ? 'The image is saved, but its preview URL is missing. Upload it again.' : 'Upload an image in the Block settings.'}
+        </p>
+      )}
     </BlockChrome>
   );
 }
@@ -120,31 +117,29 @@ function ProductView({ node, selected }: ReactNodeViewProps) {
   const imageRight = layout === 'image-right';
 
   return (
-    <BlockChrome selected={selected} label="Product Spotlight">
-      <div className={`studio-product ${stacked ? 'is-stacked' : ''} ${imageRight ? 'is-image-right' : ''}`}>
-        {productId > 0 && card?.imageUrl ? (
-          <img src={card.imageUrl} alt="" className="studio-product__photo" />
-        ) : null}
-        <div className="studio-product__copy">
-          <p className="studio-product__eyebrow">{eyebrow}</p>
+    <BlockChrome selected={selected} label="Product Spotlight" frame={node.attrs.frame}>
+      <aside className={`rich-stone ${stacked ? 'is-stacked' : imageRight ? 'is-image-right' : 'is-image-left'}`}>
+        {productId > 0 && card?.imageUrl ? <img src={card.imageUrl} alt="" /> : null}
+        <div>
+          <p className="eyebrow">{eyebrow}</p>
           {productId > 0 ? (
-            <p className="studio-product__name">{card?.name || name || `Product #${productId}`}</p>
+            <h2>{card?.name || name || `Product #${productId}`}</h2>
           ) : (
             <p className="studio-node__empty">Choose a product in the Block settings.</p>
           )}
-          {summary !== '' ? <p>{summary}</p> : null}
           {productId > 0 && card && !card.visible ? (
             <p className="studio-node__empty">{card.reason || 'This product is not currently available.'}</p>
           ) : null}
-          {productId > 0 && card?.visible && showPrice && card.price ? <p className="studio-product__price">{card.price}</p> : null}
+          {productId > 0 && card?.visible && showPrice && card.price ? <p>{card.price}</p> : null}
+          {summary !== '' ? <p>{summary}</p> : null}
           {productId > 0 && card?.visible && showAvailability ? (
             <p>{card.available ? 'Available' : 'Currently unavailable'}</p>
           ) : null}
           {productId > 0 && card?.visible && card.health !== 'blocked' ? (
-            <p className="studio-product__cta">{ctaLabel}</p>
+            <span className="ris-button">{ctaLabel}</span>
           ) : null}
         </div>
-      </div>
+      </aside>
     </BlockChrome>
   );
 }
@@ -152,23 +147,21 @@ function ProductView({ node, selected }: ReactNodeViewProps) {
 function WorkshopView({ node, selected }: ReactNodeViewProps) {
   const title = String(node.attrs.title ?? '');
   const body = String(node.attrs.body ?? '');
+  const stage = String(node.attrs.processStage ?? '');
   const mediaIds = Array.isArray(node.attrs.mediaIds)
     ? (node.attrs.mediaIds as unknown[]).map((id) => Number(id)).filter((id) => id > 0)
     : [];
 
   return (
-    <BlockChrome selected={selected} label="Workshop Story">
-      <div className="studio-node__body">
-        {mediaIds.length > 0 ? (
-          <div className="studio-node__gallery">
-            {mediaIds.map((id) => (
-              <WorkshopPhoto key={id} mediaId={id} />
-            ))}
-          </div>
-        ) : null}
-        <p className="font-semibold">{title || 'Untitled workshop story'}</p>
+    <BlockChrome selected={selected} label="Workshop Story" frame={node.attrs.frame}>
+      <section className="rich-quarry">
+        {stage !== '' ? <p className="eyebrow">{stage.charAt(0).toUpperCase() + stage.slice(1)}</p> : null}
+        <h2>{title || 'Untitled workshop story'}</h2>
         <p>{body || 'Add the process story in the Block settings.'}</p>
-      </div>
+        {mediaIds.map((id) => (
+          <WorkshopPhoto key={id} mediaId={id} />
+        ))}
+      </section>
     </BlockChrome>
   );
 }
@@ -180,7 +173,7 @@ function WorkshopPhoto({ mediaId }: { mediaId: number }) {
     return null;
   }
 
-  return <img src={url} alt="" className="studio-node__image" />;
+  return <img src={url} alt="" />;
 }
 
 type GalleryItem = {
@@ -195,16 +188,14 @@ function GalleryView({ node, selected }: ReactNodeViewProps) {
   const items = Array.isArray(node.attrs.items) ? (node.attrs.items as GalleryItem[]) : [];
 
   return (
-    <BlockChrome selected={selected} label="Gallery">
-      <div className="studio-node__body">
+    <BlockChrome selected={selected} label="Gallery" frame={node.attrs.frame}>
+      <div className={`rich-gallery ${mode === 'carousel' ? 'is-carousel' : 'is-grid'}`}>
         {items.length === 0 ? (
           <p className="studio-node__empty">Add photographs in the Block settings.</p>
         ) : (
-          <div className={`studio-node__gallery ${mode === 'carousel' ? 'is-carousel' : ''}`}>
-            {items.map((item, index) => (
-              <GalleryPhoto key={`${item.mediaId ?? 'empty'}-${index}`} item={item} />
-            ))}
-          </div>
+          items.map((item, index) => (
+            <GalleryPhoto key={`${item.mediaId ?? 'empty'}-${index}`} item={item} />
+          ))
         )}
       </div>
     </BlockChrome>
@@ -221,7 +212,7 @@ function GalleryPhoto({ item }: { item: GalleryItem }) {
 
   return (
     <figure>
-      <img src={url} alt={item.decorative ? '' : String(item.alt ?? '')} className="studio-node__image" />
+      <img src={url} alt={item.decorative ? '' : String(item.alt ?? '')} />
       {item.caption ? <figcaption>{item.caption}</figcaption> : null}
     </figure>
   );
@@ -229,14 +220,16 @@ function GalleryPhoto({ item }: { item: GalleryItem }) {
 
 function CtaView({ node, selected }: ReactNodeViewProps) {
   const title = String(node.attrs.title ?? '');
+  const body = String(node.attrs.body ?? '');
   const buttonText = String(node.attrs.buttonText ?? '');
 
   return (
-    <BlockChrome selected={selected} label="Call to Action">
-      <div className="studio-node__body">
-        <p className="font-semibold">{title || 'CTA heading'}</p>
-        {buttonText !== '' ? <p>{buttonText}</p> : <p className="studio-node__empty">Add a button label and link in the Block settings.</p>}
-      </div>
+    <BlockChrome selected={selected} label="Call to Action" frame={node.attrs.frame}>
+      <aside className="rich-cta">
+        <h2>{title || 'CTA heading'}</h2>
+        {body !== '' ? <p>{body}</p> : null}
+        {buttonText !== '' ? <span className="ris-button">{buttonText}</span> : <p className="studio-node__empty">Add a button label and link in the Block settings.</p>}
+      </aside>
     </BlockChrome>
   );
 }

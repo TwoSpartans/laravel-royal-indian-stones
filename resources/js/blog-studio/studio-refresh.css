@@ -473,25 +473,6 @@
 
 .studio-prose {
     font-family: var(--font-ui);
-    font-size: 16px;
-    line-height: 25px;
-}
-
-.studio-prose h2,
-.studio-prose h3 {
-    font-family: var(--font-brand);
-    font-weight: 400;
-    color: var(--color-textPrimary);
-}
-
-.studio-prose h2 {
-    font-size: 34px;
-    line-height: 38px;
-}
-
-.studio-prose h3 {
-    font-size: 28px;
-    line-height: 32px;
 }
 
 .studio-prose h2.is-current-block,
@@ -664,11 +645,6 @@
         line-height: 38px;
     }
 
-    .studio-prose h2 {
-        font-size: 28px;
-        line-height: 32px;
-    }
-
     .studio-icon-btn,
     .studio-btn,
     .studio-toolbar button,
@@ -680,4 +656,42 @@
     .studio-toolbar button {
         min-width: 44px;
     }
+
+}
+
+.studio-prose > .react-renderer:has(> .rich-frame) { margin-top: 0; }
+.studio-prose .studio-node h2,
+.studio-prose .studio-node h3 { margin-top: 0; }
+.studio-prose .studio-node .rich-split { margin: 0; }
+.studio-prose .studio-node.rich-frame-bg-ivory { background: #F5F3F0; }
+.studio-prose .studio-node.rich-frame-bg-sand { background: #EADFCF; }
+.studio-prose .studio-node.rich-frame-bg-gold { background: #D4A843; }
+.studio-prose .studio-node.rich-frame-bg-forest { background: #1A4D3E; color: #F5F3F0; }
+.studio-prose .studio-node.rich-frame-bg-forest .studio-node__label { color: #F5F3F0; }
+.studio-prose .studio-node.rich-frame-radius-none { border-radius: 0; }
+.studio-prose .studio-node.rich-frame-radius-soft { border-radius: 0.85rem; }
+.studio-prose .studio-node.rich-frame-radius-round { border-radius: 1.5rem; }
+.studio-prose .rich-frame-show-desktop,
+.studio-prose .rich-frame-show-tablet,
+.studio-prose .rich-frame-show-mobile { display: block; }
+
+.studio-prose .rich-frame-show-desktop::after,
+.studio-prose .rich-frame-show-tablet::after,
+.studio-prose .rich-frame-show-mobile::after {
+    content: "Desktop only";
+    display: block;
+    margin-top: 0.4rem;
+    color: inherit;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+}
+
+.studio-prose .rich-frame-show-tablet::after {
+    content: "Tablet only";
+}
+
+.studio-prose .rich-frame-show-mobile::after {
+    content: "Mobile only";
 }

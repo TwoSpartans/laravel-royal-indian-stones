@@ -16,6 +16,7 @@ use App\Services\RichContent\BlockRegistry;
 use App\Services\RichContent\DocumentValidator;
 use App\Services\RichContent\QualityChecker;
 use App\Services\RichContent\RichContentRenderer;
+use App\Support\ArticleReadingLists;
 use App\Support\ResponsivePicture;
 use App\Support\ServedUpload;
 use Illuminate\Http\JsonResponse;
@@ -232,12 +233,13 @@ class BlogStudioController extends Controller
         $article->title = '[Preview] '.$article->title;
         $article->setRelation('comments', collect());
         $article->setRelation('postCategory', $post->postCategory);
+        $lists = ArticleReadingLists::forArticle($article);
 
         return response()
             ->view('post', [
                 'post' => $article,
-                'related' => collect(),
-                'recent' => collect(),
+                'related' => $lists['related'],
+                'recent' => $lists['recent'],
                 'preview' => true,
                 'active' => 'blog',
                 'title' => $article->title.' | Royal Indian Stones',

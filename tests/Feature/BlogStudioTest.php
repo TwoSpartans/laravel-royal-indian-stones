@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\JournalMedia;
 use App\Models\Post;
 use App\Models\PostCategory;
+use App\Models\PostDraft;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\BlogStudio\ArticleTemplates;
@@ -496,6 +497,60 @@ class BlogStudioTest extends TestCase
 
         $this->get('/future-stone-note')->assertOk()->assertSee('The crate is not ready.');
         $this->assertSame('published', Post::query()->where('slug', 'future-stone-note')->value('status'));
+    }
+
+    public function test_preview_shows_a_recent_story_and_the_draft_text_and_image_block(): void
+    {
+        $admin = User::factory()->create();
+        Post::query()->create([
+            'slug' => 'makrana-yard-notes',
+            'title' => 'Makrana yard notes',
+            'summary' => 'A short note from the yard.',
+            'body' => 'The recent story body.',
+            'content_source' => 'classic',
+            'status' => 'published',
+            'is_published' => true,
+            'published_on' => '2026-11-01',
+            'view_count' => 4,
+        ]);
+        $post = Post::query()->create([
+            'slug' => 'granite-elegance-draft',
+            'title' => 'Granite elegance',
+            'summary' => 'The published summary stays on the live article.',
+            'body' => '',
+            'content_source' => 'studio',
+            'status' => 'published',
+            'is_published' => true,
+            'published_on' => '2026-10-01',
+            'view_count' => 7,
+            'body_document' => $this->document([
+                ['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'Published quarry note that preview must not show']]],
+            ]),
+        ]);
+        PostDraft::query()->create([
+            'post_id' => $post->id,
+            'title' => 'Granite elegance',
+            'slug' => 'granite-elegance-draft',
+            'excerpt' => 'A draft excerpt for the preview.',
+            'document' => $this->document([
+                ['type' => 'splitSection', 'attrs' => [
+                    'heading' => 'Draft split beside the photograph',
+                    'body' => 'The draft places the photograph beside this paragraph.',
+                    'layout' => 'image-right',
+                ]],
+            ]),
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/posts/'.$post->id.'/preview')
+            ->assertOk()
+            ->assertSee('[Preview] Granite elegance')
+            ->assertSee('Makrana yard notes')
+            ->assertSee('rich-split', false)
+            ->assertSee('Draft split beside the photograph')
+            ->assertDontSee('Published quarry note that preview must not show');
+
+        $this->assertSame(7, $post->refresh()->view_count);
     }
 
     private function readyExcerpt(): string

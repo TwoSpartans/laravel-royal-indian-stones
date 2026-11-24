@@ -594,7 +594,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
     content: bootstrap.document as JSONContent,
     editorProps: {
       attributes: {
-        class: 'studio-prose',
+        class: 'studio-prose rich-content',
         'aria-label': 'Article body',
         'aria-multiline': 'true',
         role: 'textbox',
