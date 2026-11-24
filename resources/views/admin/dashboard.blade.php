@@ -81,7 +81,7 @@
     </div>
     <div class="admin-list">
       @forelse($recentPosts as $post)
-        <a class="admin-list-row" href="{{ route('admin.posts.edit', $post) }}">
+        <a class="admin-list-row" href="{{ route('admin.posts.studio', $post) }}">
           <span class="admin-list-mark">{{ strtoupper(mb_substr($post->title, 0, 1)) }}</span>
           <span class="admin-list-copy">
             <strong>{{ $post->title }}</strong>

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\BlogStudioController;
+use App\Http\Controllers\Admin\CatalogueController as AdminCatalogueController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
@@ -70,12 +72,28 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
     Route::put('/journal', [JournalSettingController::class, 'update'])->name('journal.update');
     Route::get('/home', [HomePageController::class, 'edit'])->name('home.edit');
     Route::put('/home/{section}', [HomePageController::class, 'update'])->where('section', 'hero|supplier|explore|stones|journal|enquiry')->name('home.update');
+    Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');
+    Route::post('/categories/reorder', [AdminCategoryController::class, 'reorder'])->name('categories.reorder');
+    Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
+    Route::match(['put', 'patch'], '/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::get('/catalogues', [AdminCatalogueController::class, 'index'])->name('catalogues.index');
+    Route::get('/catalogues/create', [AdminCatalogueController::class, 'create'])->name('catalogues.create');
+    Route::post('/catalogues/reorder', [AdminCatalogueController::class, 'reorder'])->name('catalogues.reorder');
+    Route::post('/catalogues', [AdminCatalogueController::class, 'store'])->name('catalogues.store');
+    Route::get('/catalogues/{catalogue}/edit', [AdminCatalogueController::class, 'edit'])->name('catalogues.edit');
+    Route::match(['put', 'patch'], '/catalogues/{catalogue}', [AdminCatalogueController::class, 'update'])->name('catalogues.update');
+    Route::delete('/catalogues/{catalogue}', [AdminCatalogueController::class, 'destroy'])->name('catalogues.destroy');
+    Route::get('/catalogue-pdf', fn () => redirect()->route('admin.catalogues.index'));
     Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create');
     Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');
     Route::get('/products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
     Route::post('/products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
+    Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->name('products.destroy');
     Route::get('/outreach', [OutreachController::class, 'index'])->name('outreach.index');
     Route::post('/outreach/warnings/ignore', [OutreachController::class, 'ignore'])->name('outreach.warnings.ignore');
     Route::delete('/outreach/warnings/ignore', [OutreachController::class, 'restore'])->name('outreach.warnings.restore');
@@ -101,7 +119,8 @@ Route::middleware([NoindexAdminResponses::class, 'auth', 'site.admin'])->prefix(
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/products', CatalogueController::class)->name('catalogue');
-Route::get('/e-catalogue', ECatalogueController::class)->name('e-catalogue');
+Route::get('/e-catalogue', [ECatalogueController::class, '__invoke'])->name('e-catalogue');
+Route::get('/e-catalogue/preview/{catalogue:slug}', [ECatalogueController::class, 'preview'])->name('e-catalogue.preview');
 Route::get('/contact', ContactController::class)->name('contact');
 Route::post('/contact', EnquiryController::class)->name('enquiry.store');
 Route::post('/newsletter', NewsletterController::class)->name('newsletter.store');

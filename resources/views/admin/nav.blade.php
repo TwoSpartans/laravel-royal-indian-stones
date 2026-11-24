@@ -1,6 +1,8 @@
 @php
   $messagesActive = request()->routeIs('admin.enquiries', 'admin.enquiries.*');
   $productsActive = request()->routeIs('admin.products.*');
+  $catalogueCategoriesActive = request()->routeIs('admin.categories.*');
+  $cataloguePdfActive = request()->routeIs('admin.catalogues.*');
   $postsActive = request()->routeIs('admin.posts.*');
   $journalActive = request()->routeIs('admin.journal.*');
   $homeActive = request()->routeIs('admin.home.*');
@@ -41,6 +43,14 @@
       <a href="{{ route('admin.products.index') }}" class="admin-nav-link {{ $productsActive ? 'is-active' : '' }}" @if($productsActive) aria-current="page" @endif>
         <i class="bi bi-box-seam"></i>
         <span>Products</span>
+      </a>
+      <a href="{{ route('admin.categories.index') }}" class="admin-nav-link {{ $catalogueCategoriesActive ? 'is-active' : '' }}" @if($catalogueCategoriesActive) aria-current="page" @endif>
+        <i class="bi bi-grid"></i>
+        <span>Categories</span>
+      </a>
+      <a href="{{ route('admin.catalogues.index') }}" class="admin-nav-link {{ $cataloguePdfActive ? 'is-active' : '' }}" @if($cataloguePdfActive) aria-current="page" @endif>
+        <i class="bi bi-file-earmark-pdf"></i>
+        <span>PDF catalogues</span>
       </a>
     </div>
   </details>

@@ -883,6 +883,15 @@
     dirty = false;
   });
 
+  document.querySelector('[data-delete-form]')?.addEventListener('submit', function (event) {
+    if (!window.confirm('Delete this stone? It will leave the catalogue. Photographs that no other stone uses are removed too.')) {
+      event.preventDefault();
+      return;
+    }
+    submitting = true;
+    dirty = false;
+  });
+
   window.addEventListener('hashchange', function () {
     var next = location.hash.replace(/^#/, '');
     if (sections.indexOf(next) !== -1) showSection(next, false);

@@ -14,6 +14,16 @@ class Category extends Model
         return $this->hasMany(Product::class);
     }
 
+    public function catalogueSummary(): string
+    {
+        $introduction = trim((string) $this->introduction);
+        if ($introduction !== '') {
+            return $introduction;
+        }
+
+        return trim((string) $this->description);
+    }
+
     public function searchDescription(): string
     {
         $summary = trim((string) $this->description);

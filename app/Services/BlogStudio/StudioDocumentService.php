@@ -95,6 +95,7 @@ class StudioDocumentService
             $post->status = 'published';
             $post->is_published = true;
             $post->scheduled_for = null;
+            $post->schedule_failure_reason = null;
             $post->published_on = $post->published_on ?? now()->toDateString();
             $post->lock_version = ((int) $post->lock_version) + 1;
             $post->save();
@@ -121,6 +122,7 @@ class StudioDocumentService
         $post->status = 'scheduled';
         $post->scheduled_for = $when;
         $post->is_published = false;
+        $post->schedule_failure_reason = null;
         $post->save();
 
         return $this->payload($post, $this->editingDocument($post), $this->editingPost($post), $post->draft !== null);
@@ -131,6 +133,7 @@ class StudioDocumentService
         $post->status = 'draft';
         $post->scheduled_for = null;
         $post->is_published = false;
+        $post->schedule_failure_reason = null;
         $post->save();
     }
 
@@ -147,6 +150,7 @@ class StudioDocumentService
                 $report = $this->quality->check($this->editingPost($post), $this->editingDocument($post));
                 if ($report['blocked'] > 0) {
                     $post->status = 'schedule_failed';
+                    $post->schedule_failure_reason = $this->failureReason($report);
                     $post->save();
 
                     return;
@@ -159,29 +163,102 @@ class StudioDocumentService
     }
 
     /**
-     * @return array<string, mixed>
+     * Copy a classic article into a Studio document.
+     * A second run leaves an article that is already Studio unchanged.
+     * A dry run writes nothing.
+     *
+     * @return array{action: string, id: int, title: string, blocks: int, images: int, missingImages: int}
      */
-    public function convert(Post $post, bool $useExistingStudio = false): array
+    public function migrateClassic(Post $post, bool $dryRun = false, bool $force = false): array
     {
-        $originalBody = (string) $post->body;
-        $document = $useExistingStudio && is_array($post->body_document)
-            ? $post->body_document
-            : $this->converter->convert($post);
-
-        $post->content_source = 'studio';
-        $post->body_document = $document;
-        $post->body = $originalBody;
-        $post->lock_version = ((int) $post->lock_version) + 1;
-        if ($post->isLive()) {
-            $post->save();
-        } else {
-            $post->status = 'draft';
-            $post->is_published = false;
-            $post->save();
+        if ($post->isStudio() && ! $force) {
+            return $this->migrationSummary($post, 'skipped', 0, 0);
         }
-        $this->syncReferences($post, $document);
+        if ($force && $post->isStudio() && trim((string) $post->classic_body_backup) === '' && trim((string) $post->body) === '') {
+            return $this->migrationSummary($post, 'skipped', 0, 0);
+        }
 
-        return $this->payload($post->refresh(), $document, $post, false);
+        try {
+            return DB::transaction(function () use ($post, $dryRun): array {
+                $summary = $this->writeMigration($post);
+                if ($dryRun) {
+                    throw new ClassicMigrationDryRun($summary);
+                }
+
+                return $summary;
+            });
+        } catch (ClassicMigrationDryRun $dryRunResult) {
+            $summary = $dryRunResult->summary;
+            $summary['action'] = 'dry-run';
+
+            return $summary;
+        }
+    }
+
+    /**
+     * @return array{action: string, id: int, title: string, blocks: int, images: int, missingImages: int}
+     */
+    private function writeMigration(Post $post): array
+    {
+        $html = $post->isStudio() && trim((string) $post->classic_body_backup) !== ''
+            ? (string) $post->classic_body_backup
+            : null;
+        $converted = $this->converter->convert($post, $html);
+        $checked = $this->validator->validate($converted['document']);
+        if (! $checked['valid']) {
+            throw ValidationException::withMessages([
+                'document' => $checked['errors'],
+            ]);
+        }
+        if (trim((string) $post->classic_body_backup) === '') {
+            $post->classic_body_backup = (string) $post->body;
+        }
+        $post->body_document = $checked['document'];
+        $post->content_source = 'studio';
+        if (! in_array((string) $post->status, ['draft', 'scheduled', 'schedule_failed', 'published'], true)) {
+            $post->status = $post->is_published ? 'published' : 'draft';
+        }
+        $this->converter->registerCover($post);
+        $post->lock_version = ((int) $post->lock_version) + 1;
+        $post->save();
+        $this->syncReferences($post, $checked['document']);
+
+        return $this->migrationSummary($post, 'migrated', $converted['images'], $converted['missingImages']);
+    }
+
+    /**
+     * @return array{action: string, id: int, title: string, blocks: int, images: int, missingImages: int}
+     */
+    private function migrationSummary(Post $post, string $action, int $images, int $missingImages): array
+    {
+        $content = is_array($post->body_document) ? ($post->body_document['content'] ?? []) : [];
+
+        return [
+            'action' => $action,
+            'id' => $post->id,
+            'title' => (string) $post->title,
+            'blocks' => is_array($content) ? count($content) : 0,
+            'images' => $images,
+            'missingImages' => $missingImages,
+        ];
+    }
+
+    /**
+     * @param  array{items: list<array<string, mixed>>}  $report
+     */
+    private function failureReason(array $report): string
+    {
+        $reasons = [];
+        foreach ($report['items'] as $item) {
+            if (($item['state'] ?? '') === 'blocked') {
+                $reason = trim((string) ($item['explanation'] ?? ''));
+                if ($reason !== '') {
+                    $reasons[] = $reason;
+                }
+            }
+        }
+
+        return mb_substr(implode(' ', $reasons), 0, 2000);
     }
 
     /**
@@ -304,7 +381,7 @@ class StudioDocumentService
     }
 
     /**
-     * @return array{status: string|null, isLive: bool, hasDraftRevision: bool, publishedAt: string|null, publishedAtInput: string, publishedAtLabel: string, version: int}
+     * @return array{status: string|null, isLive: bool, hasDraftRevision: bool, publishedAt: string|null, publishedAtInput: string, publishedAtLabel: string, version: int, scheduleFailureReason: string}
      */
     public function statusFields(Post $post, ?bool $hasDraft = null): array
     {
@@ -322,6 +399,7 @@ class StudioDocumentService
                 ? $scheduled->format('j M Y, g:i A').' '.config('app.display_timezone_label')
                 : '',
             'version' => (int) $post->lock_version,
+            'scheduleFailureReason' => (string) ($post->schedule_failure_reason ?? ''),
         ];
     }
 

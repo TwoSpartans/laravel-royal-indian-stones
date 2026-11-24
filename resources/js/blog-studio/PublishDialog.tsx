@@ -66,10 +66,11 @@ export default function PublishDialog(props: Props) {
         ) : null}
 
         {status.status === 'schedule_failed' ? (
-          <p className="studio-hint">
-            This article missed its schedule because it failed the publishing checks. It will not be retried on its own.
-            Fix the checks, then schedule it again or publish it now.
-          </p>
+          <div className="studio-callout is-blocked">
+            <p className="font-semibold">This article missed its schedule and was not published.</p>
+            <p>{status.scheduleFailureReason || 'It failed the publishing checks. It will not be retried on its own.'}</p>
+            <p>Fix the checks below, then publish it now or choose a new time.</p>
+          </div>
         ) : null}
 
         {canPublish && status.isLive ? (

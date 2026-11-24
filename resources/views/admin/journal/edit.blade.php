@@ -175,7 +175,7 @@ document.documentElement.classList.add('journal-editor-enhanced');
             <span class="home-index">01</span>
             <div>
               <h2>Cover</h2>
-              <p>This wording is the introduction at the top of the public journal. The story photograph comes from the featured article.</p>
+              <p>The public journal does not print this introduction. Visitors see the featured story and the article list. These fields stay saved for the editor preview.</p>
             </div>
           </div>
         </div>

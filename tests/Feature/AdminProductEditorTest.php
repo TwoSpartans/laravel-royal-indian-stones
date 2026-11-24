@@ -21,6 +21,7 @@ class AdminProductEditorTest extends TestCase
         $this->get('/admin/products/create')->assertRedirect('/admin/login');
         $this->get('/admin/products/'.$product->id.'/edit')->assertRedirect('/admin/login');
         $this->post('/admin/products/'.$product->id.'/duplicate')->assertRedirect('/admin/login');
+        $this->delete('/admin/products/'.$product->id)->assertRedirect('/admin/login');
     }
 
     public function test_admin_can_add_a_stone_with_a_spec_and_a_photo(): void
@@ -381,6 +382,153 @@ class AdminProductEditorTest extends TestCase
         $this->assertTrue($product->fresh()->is_published);
         $this->assertSame('Source photo', $copy->images()->first()?->alt);
         $this->assertSame('India', $copy->specs()->first()?->value);
+    }
+
+    public function test_deleting_a_stone_removes_its_photograph_when_nothing_else_uses_it(): void
+    {
+        $admin = User::factory()->create();
+        $category = $this->sandstone();
+        $directory = storage_path('app/public/products/sandstone/delete-me');
+
+        try {
+            $this->actingAs($admin)->post('/admin/products', [
+                'name' => 'Delete Me',
+                'slug' => 'delete-me',
+                'category_id' => $category->id,
+                'is_published' => '1',
+                'specs' => [
+                    ['label' => 'Origin', 'value' => 'Rajasthan'],
+                ],
+                'photos' => [
+                    UploadedFile::fake()->image('delete-me.jpg', 320, 240),
+                ],
+            ])->assertRedirect();
+
+            $product = Product::query()->where('slug', 'delete-me')->firstOrFail();
+            $absolute = $this->storedUpload((string) $product->images()->value('path'));
+            $this->assertFileExists($absolute);
+
+            $this->actingAs($admin)
+                ->get('/admin/products/'.$product->id.'/edit')
+                ->assertOk()
+                ->assertSee('Delete stone');
+
+            $this->actingAs($admin)
+                ->delete('/admin/products/'.$product->id)
+                ->assertRedirect('/admin/products')
+                ->assertSessionHas('status');
+
+            $this->assertDatabaseMissing('products', ['id' => $product->id]);
+            $this->assertDatabaseMissing('product_specs', ['product_id' => $product->id]);
+            $this->assertDatabaseMissing('product_images', ['product_id' => $product->id]);
+            $this->assertFileDoesNotExist($absolute);
+            $this->get('/delete-me')->assertNotFound();
+        } finally {
+            File::deleteDirectory($directory);
+        }
+    }
+
+    public function test_deleting_a_stone_keeps_a_photograph_another_stone_still_uses(): void
+    {
+        $admin = User::factory()->create();
+        $category = $this->sandstone();
+        $directory = storage_path('app/public/products/sandstone/keep-photo');
+
+        try {
+            $this->actingAs($admin)->post('/admin/products', [
+                'name' => 'Keep Photo',
+                'slug' => 'keep-photo',
+                'category_id' => $category->id,
+                'is_published' => '1',
+                'photos' => [
+                    UploadedFile::fake()->image('keep-photo.jpg', 320, 240),
+                ],
+            ])->assertRedirect();
+
+            $product = Product::query()->where('slug', 'keep-photo')->firstOrFail();
+            $path = (string) $product->images()->value('path');
+            $absolute = $this->storedUpload($path);
+
+            $this->actingAs($admin)->post('/admin/products/'.$product->id.'/duplicate')->assertRedirect();
+
+            $this->actingAs($admin)->delete('/admin/products/'.$product->id)->assertRedirect('/admin/products');
+
+            $copy = Product::query()->where('slug', 'keep-photo-copy')->firstOrFail();
+            $this->assertSame($path, $copy->images()->value('path'));
+            $this->assertFileExists($absolute);
+        } finally {
+            File::deleteDirectory($directory);
+        }
+    }
+
+    public function test_a_signed_in_visitor_cannot_delete_a_stone(): void
+    {
+        $visitor = User::factory()->create();
+        $visitor->forceFill(['is_site_admin' => false])->save();
+        $product = $this->stone();
+
+        $this->actingAs($visitor)->delete('/admin/products/'.$product->id)->assertForbidden();
+        $this->assertModelExists($product);
+    }
+
+    public function test_the_product_list_pages_matches_and_can_be_reset(): void
+    {
+        $admin = User::factory()->create();
+        $category = $this->sandstone();
+        $other = Category::query()->create([
+            'name' => 'Marble',
+            'slug' => 'marble',
+        ]);
+
+        foreach (range(1, 21) as $number) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => sprintf('Listed %02d', $number),
+                'slug' => sprintf('listed-%02d', $number),
+                'color' => '',
+                'finishes' => [],
+                'applications' => [],
+                'summary' => '',
+            ]);
+        }
+
+        Product::query()->create([
+            'category_id' => $other->id,
+            'name' => 'Hidden Marble',
+            'slug' => 'hidden-marble',
+            'color' => '',
+            'finishes' => [],
+            'applications' => [],
+            'summary' => '',
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/products')
+            ->assertOk()
+            ->assertSee('22 stones')
+            ->assertSee('Listed 01')
+            ->assertDontSee('Listed 21')
+            ->assertSee('page=2', false)
+            ->assertDontSee('Reset filters');
+
+        $this->actingAs($admin)
+            ->get('/admin/products?page=2')
+            ->assertOk()
+            ->assertSee('Listed 21')
+            ->assertDontSee('Listed 01');
+
+        $this->actingAs($admin)
+            ->get('/admin/products?q=Listed&category='.$category->id.'&shown=shown')
+            ->assertOk()
+            ->assertSee('21 stones')
+            ->assertSee('Listed 01')
+            ->assertDontSee('Listed 21')
+            ->assertDontSee('Hidden Marble')
+            ->assertSee('Reset filters')
+            ->assertSee('q=Listed', false)
+            ->assertSee('shown=shown', false)
+            ->assertSee('page=2', false);
     }
 
     private function sandstone(): Category

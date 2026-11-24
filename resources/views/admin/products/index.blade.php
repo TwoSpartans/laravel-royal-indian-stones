@@ -55,7 +55,12 @@
       </select>
     </div>
     <button class="home-btn home-btn-primary" type="submit">Find</button>
+    @if($search !== '' || $categoryId > 0 || $visibility !== '')
+      <a class="home-btn home-btn-ghost" href="{{ route('admin.products.index') }}">Reset filters</a>
+    @endif
   </form>
+
+  <p class="blog-catalogue-count">{{ $products->total() }} {{ $products->total() === 1 ? 'stone' : 'stones' }}</p>
 
   <div class="home-stone-table-wrap">
     <table class="home-stone-table product-catalogue-table">
@@ -86,9 +91,18 @@
               <span class="product-visibility {{ $product->is_published ? 'is-shown' : 'is-hidden' }}">{{ $product->is_published ? 'Shown' : 'Hidden' }}</span>
             </td>
             <td>
-              <a class="product-catalogue-edit" href="{{ route('admin.products.edit', $product) }}#basics" aria-label="Edit {{ $product->name }}">
-                <i class="bi bi-pencil" aria-hidden="true"></i>
-              </a>
+              <div class="product-catalogue-actions">
+                <a class="product-catalogue-edit" href="{{ route('admin.products.edit', $product) }}#basics" aria-label="Edit {{ $product->name }}">
+                  <i class="bi bi-pencil" aria-hidden="true"></i>
+                </a>
+                <form method="post" action="{{ route('admin.products.destroy', $product) }}" onsubmit="return confirm('Delete this stone? It will leave the catalogue. Photographs that no other stone uses are removed too.');">
+                  @csrf
+                  @method('DELETE')
+                  <button class="product-catalogue-edit" type="submit" aria-label="Delete {{ $product->name }}">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                  </button>
+                </form>
+              </div>
             </td>
           </tr>
         @empty
@@ -98,6 +112,10 @@
         @endforelse
       </tbody>
     </table>
+  </div>
+
+  <div class="product-catalogue-pages">
+    {{ $products->links('pagination::bootstrap-5') }}
   </div>
 </div>
 @endsection

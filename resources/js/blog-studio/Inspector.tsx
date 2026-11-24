@@ -145,7 +145,7 @@ export function Inspector(props: Props) {
   );
 }
 
-function ArticleSettings({ bootstrap, meta, onMeta, uploading, onUploadFeatured, onRemoveFeatured }: Props) {
+export function ArticleSettings({ bootstrap, meta, onMeta, uploading, onUploadFeatured, onRemoveFeatured }: Props) {
   return (
     <>
       <Field label="URL slug" id="article-slug" hint={publicArticlePath(bootstrap.blog.publicUrl, meta.slug)}>
@@ -179,25 +179,22 @@ function ArticleSettings({ bootstrap, meta, onMeta, uploading, onUploadFeatured,
       <Field label="Tags" id="article-tags" hint="Separate tags with commas.">
         <input id="article-tags" value={meta.tagsText} onChange={(event) => onMeta({ tagsText: event.target.value })} />
       </Field>
-      <fieldset className="studio-field" id="article-categories">
-        <legend>Categories</legend>
-        {bootstrap.categories.length === 0 ? <p className="studio-hint">No blog categories exist yet.</p> : null}
-        {bootstrap.categories.map((category) => (
-          <label key={category.id} className="studio-check">
-            <input
-              type="checkbox"
-              checked={meta.categoryIds.includes(category.id)}
-              onChange={(event) => onMeta({
-                categoryIds: event.target.checked
-                  ? [...meta.categoryIds, category.id]
-                  : meta.categoryIds.filter((id) => id !== category.id),
-              })}
-            />
-            {category.name}
-            {!category.isActive ? <span className="studio-hint"> (hidden category)</span> : null}
-          </label>
-        ))}
-      </fieldset>
+      <Field label="Category" id="article-categories" hint="One category. It is the public filter and the related-story group.">
+        <select
+          id="article-categories"
+          value={meta.categoryIds[0] ? String(meta.categoryIds[0]) : ''}
+          onChange={(event) => onMeta({
+            categoryIds: event.target.value === '' ? [] : [Number(event.target.value)],
+          })}
+        >
+          <option value="">None</option>
+          {bootstrap.categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}{category.isActive ? '' : ' (hidden)'}
+            </option>
+          ))}
+        </select>
+      </Field>
       <div className="studio-field" id="article-featured">
         <p className="studio-field__label">Featured image</p>
         {meta.featuredUrl ? (

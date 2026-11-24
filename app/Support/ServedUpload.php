@@ -96,6 +96,7 @@ final class ServedUpload
         $path = str_replace('\\', '/', $path);
 
         foreach ([
+            'storage/catalogue/',
             'storage/home/',
             'storage/products/',
             'storage/journal/',

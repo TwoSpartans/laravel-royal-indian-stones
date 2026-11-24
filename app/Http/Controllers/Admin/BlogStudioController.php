@@ -9,7 +9,6 @@ use App\Models\PostCategory;
 use App\Models\Product;
 use App\Services\BlogStudio\ArticleExcerpt;
 use App\Services\BlogStudio\ArticleTemplates;
-use App\Services\BlogStudio\ClassicToStudioConverter;
 use App\Services\BlogStudio\StudioDocumentService;
 use App\Services\RichContent\BlockFrame;
 use App\Services\RichContent\BlockRegistry;
@@ -75,6 +74,10 @@ class BlogStudioController extends Controller
     public function show(Post $post): View
     {
         $this->studio->publishDue();
+        if (! $post->isStudio()) {
+            $this->studio->migrateClassic($post->fresh() ?? $post);
+            $post->refresh();
+        }
         $post->load('draft');
         $document = $post->isLive() && $post->draft
             ? $post->draft->document
@@ -87,17 +90,6 @@ class BlogStudioController extends Controller
             ? JournalMedia::query()->where('path', $qualityPost->image)->value('id')
             : null;
         $scheduled = $post->scheduled_for?->timezone((string) config('app.display_timezone'));
-        $conversion = null;
-        if (! $post->isStudio()) {
-            $converted = app(ClassicToStudioConverter::class)->convert($post);
-            $conversion = [
-                'summary' => [
-                    'blocks' => count(is_array($converted['content'] ?? null) ? $converted['content'] : []),
-                    'notes' => ['The classic HTML stays in place until this Studio version is published.'],
-                ],
-                'hasPreviousStudioVersion' => is_array($post->body_document) && ($post->body_document['content'] ?? []) !== [],
-            ];
-        }
 
         return view('admin.posts.studio', [
             'post' => $post,
@@ -116,6 +108,7 @@ class BlogStudioController extends Controller
                     'publishedAtLabel' => $scheduled instanceof Carbon
                         ? $scheduled->format('j M Y, g:i A').' '.config('app.display_timezone_label')
                         : '',
+                    'scheduleFailureReason' => (string) ($post->schedule_failure_reason ?? ''),
                     'savedAt' => ($post->draft?->updated_at ?? $post->updated_at)?->toIso8601String(),
                     'lockVersion' => (int) $post->lock_version,
                     'schemaVersion' => 1,
@@ -129,7 +122,7 @@ class BlogStudioController extends Controller
                     'previewUrl' => route('admin.posts.preview', $post),
                     'publicUrl' => url('/'.$post->slug),
                 ],
-                'conversion' => $conversion,
+                'conversion' => null,
                 'document' => $document,
                 'quality' => $this->quality->check($qualityPost, is_array($document) ? $document : $this->validator->emptyDocument()),
                 'media' => $this->mediaPayload($document),
@@ -157,7 +150,7 @@ class BlogStudioController extends Controller
                     'schedule' => true,
                     'unpublish' => true,
                     'submitForReview' => false,
-                    'convert' => true,
+                    'convert' => false,
                     'exportJson' => false,
                 ],
                 'routes' => [
@@ -171,7 +164,7 @@ class BlogStudioController extends Controller
                     'products' => route('admin.posts.studio.products'),
                     'convert' => route('admin.posts.studio.convert', $post),
                     'back' => route('admin.posts.index'),
-                    'classic' => route('admin.posts.edit', $post),
+                    'classic' => route('admin.posts.studio', $post),
                     'studio' => route('admin.posts.studio', $post),
                     'productCards' => route('admin.posts.studio.product-cards'),
                 ],
@@ -308,27 +301,11 @@ class BlogStudioController extends Controller
         ]);
     }
 
-    public function convert(Request $request, Post $post): JsonResponse
+    public function convert(Post $post): JsonResponse
     {
-        if ($request->input('to') === 'classic') {
-            $post->content_source = 'classic';
-            $post->save();
-
-            return response()->json([
-                'contentSource' => 'classic',
-                'redirect' => route('admin.posts.edit', $post),
-                'message' => 'The classic editor is open again.',
-                'notes' => [],
-            ]);
-        }
-
-        $result = $this->studio->convert(
-            $post,
-            $request->boolean('restorePreviousStudioVersion') || $request->boolean('useExisting'),
-        );
+        $this->studio->migrateClassic($post);
 
         return response()->json([
-            ...$result,
             'contentSource' => 'studio',
             'redirect' => route('admin.posts.studio', $post),
             'message' => 'The article is ready in Blog Studio.',

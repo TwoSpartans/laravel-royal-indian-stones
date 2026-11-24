@@ -43,6 +43,7 @@ export type StudioBlog = {
   publishedAt: string | null;
   publishedAtInput: string;
   publishedAtLabel: string;
+  scheduleFailureReason: string;
   savedAt: string | null;
   lockVersion: number;
   schemaVersion: number;
@@ -64,6 +65,7 @@ export type PublishingStatus = {
   publishedAt: string | null;
   publishedAtInput: string;
   publishedAtLabel: string;
+  scheduleFailureReason: string;
   version: number;
 };
 

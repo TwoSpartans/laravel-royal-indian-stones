@@ -25,7 +25,7 @@ import { assignMissingBlockIds, BlockId } from './blockIds';
 import { ProductSpotlight, SplitSection, StudioCta, StudioGallery, StudioImage, WorkshopStory } from './extensions';
 import { useMediaQuery } from './hooks';
 import { blockIcon, Icon, type IconName } from './Icon';
-import { Inspector, type BlockAction, type InspectorTab, type MetaState, type SelectedBlock } from './Inspector';
+import { ArticleSettings, Inspector, type BlockAction, type InspectorTab, type MetaState, type SelectedBlock } from './Inspector';
 import { getProductCard, rememberMedia, rememberProductCards, rememberProductName } from './mediaCache';
 import { Modal } from './Modal';
 import { PreviewOverlay } from './PreviewOverlay';
@@ -165,6 +165,7 @@ function statusFrom(blog: StudioBlog): PublishingStatus {
     publishedAt: blog.publishedAt,
     publishedAtInput: blog.publishedAtInput,
     publishedAtLabel: blog.publishedAtLabel,
+    scheduleFailureReason: blog.scheduleFailureReason ?? '',
     version: blog.lockVersion,
   };
 }
@@ -177,6 +178,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
   const canSubmit = permissions.submitForReview && !canPublish;
 
   const [drawer, setDrawer] = useState<'rail' | 'inspector' | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [railTab, setRailTab] = useState<'insert' | 'layers' | 'templates'>('insert');
   const [mode, setMode] = useState<'write' | 'design' | 'optimize'>('write');
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('content');
@@ -201,7 +203,6 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
   const [publishError, setPublishError] = useState('');
   const [publishProblems, setPublishProblems] = useState<string[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [liveNoticeOpen, setLiveNoticeOpen] = useState(true);
   const [hasDraft, setHasDraft] = useState(bootstrap.blog.hasDraftRevision);
   const [uploading, setUploading] = useState<'featured' | 'block' | null>(null);
   const [recovery, setRecovery] = useState<RecoveryCopy | null>(() => readRecovery(bootstrap.blog.id));
@@ -275,6 +276,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
         status: result.status,
         isLive: result.isLive,
         hasDraftRevision: Boolean(result.hasDraftRevision),
+        scheduleFailureReason: result.scheduleFailureReason ?? current.scheduleFailureReason,
         version: result.version,
       }));
       if (!slugTouched.current && result.slug !== metaRef.current.slug) {
@@ -928,6 +930,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
       publishedAt: result.publishedAt,
       publishedAtInput: result.publishedAtInput,
       publishedAtLabel: result.publishedAtLabel,
+      scheduleFailureReason: result.scheduleFailureReason ?? '',
       version: result.version,
     });
     save.setVersion(result.version);
@@ -1130,6 +1133,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
           <button type="button" className="studio-icon-btn" aria-label="Redo" title="Redo" disabled={!history.redo} onClick={() => editor.chain().focus().redo().run()}>
             <Icon name="redo-2" />
           </button>
+          <button type="button" className="studio-btn" onClick={() => setSettingsOpen(true)}>Article settings</button>
           <button type="button" className="studio-btn" onClick={() => void preview()}>Preview</button>
           {permissions.schedule ? (
             <button type="button" className="studio-btn" onClick={() => setPublishOpen(true)}>Schedule</button>
@@ -1189,13 +1193,23 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
               <button type="button" aria-pressed={focusMode} onClick={() => setFocusMode((value) => !value)}>
                 {focusMode ? 'Show side panels' : 'Focus mode'}
               </button>
-              {permissions.convert ? <a href={bootstrap.routes.classic}>Open the classic editor</a> : null}
+              <button type="button" onClick={() => setSettingsOpen(true)}>Article settings</button>
             </div>
           </details>
         </div>
       </header>
 
       <div className="studio-banners">
+        {status.status === 'schedule_failed' ? (
+          <div className="studio-banner is-error" role="alert">
+            <p>
+              This article missed its schedule and was not published.
+              {status.scheduleFailureReason ? ` ${status.scheduleFailureReason}` : ''}
+              {' '}Fix the checks, then publish it or choose a new time.
+            </p>
+            <button type="button" className="studio-btn" onClick={() => setPublishOpen(true)}>Review publishing</button>
+          </div>
+        ) : null}
         {save.state === 'conflict' ? (
           <div className="studio-banner is-error" role="alert">
             <p>{save.message} Your version is kept on this device.</p>
@@ -1248,16 +1262,9 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
             </div>
           </div>
         ) : null}
-        {isPublished && liveNoticeOpen ? (
-          <div className="studio-banner is-info" role="status">
-            <Icon name="info" />
-            <p>
-              You are editing a draft of a live article. Autosave, preview and checks use that draft. Readers keep seeing
-              the published article until you republish it.
-            </p>
-            <button type="button" className="studio-icon-btn" aria-label="Dismiss" onClick={() => setLiveNoticeOpen(false)}>
-              <Icon name="x" />
-            </button>
+        {isPublished && hasDraft ? (
+          <div className="studio-banner is-warning" role="status">
+            <p>Draft saved — readers still see the published version. Republish when this draft should replace it.</p>
           </div>
         ) : null}
         {notice ? (
@@ -1515,7 +1522,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
 
             {outline.empty ? (
               <div className="studio-empty-state">
-                <p>Start with the story, or add a block:</p>
+                <p>This article is empty. Write in the paragraph above, or add the first block. The title and a 160–200 character excerpt are required before publishing.</p>
                 <div className="studio-row">
                   {bootstrap.blocks.filter((block) => block.type !== 'paragraph').map((block) => (
                     <button key={block.type} type="button" className="studio-btn" onClick={() => insertFromRail(block.type)}>
@@ -1599,6 +1606,30 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
               <button type="button" className="studio-btn" onClick={() => applyTemplate(pendingTemplate, 'append')}>Append</button>
               <button type="button" className="studio-btn studio-btn-primary" onClick={() => applyTemplate(pendingTemplate, 'replace')}>Replace article</button>
             </div>
+          </Modal>
+        ) : null}
+        {settingsOpen ? (
+          <Modal title="Article settings" labelId="studio-settings-title" onClose={() => setSettingsOpen(false)} wide>
+            <ArticleSettings
+              bootstrap={bootstrap}
+              tab={inspectorTab}
+              onTab={setInspectorTab}
+              meta={meta}
+              onMeta={updateMeta}
+              selected={selected}
+              blockCount={outline.count}
+              quality={quality}
+              qualityStale={qualityStale}
+              uploading={uploading}
+              onUpdateBlock={updateSelectedBlock}
+              onUploadBlock={(file) => void uploadForBlock(file)}
+              onUploadFeatured={(file) => void uploadFeatured(file)}
+              onRemoveFeatured={() => updateMeta({ featuredMediaId: null, featuredUrl: null, removeFeatured: true })}
+              onPickProduct={openProductPicker}
+              onSetTextBlock={setTextBlock}
+              onBlockAction={runBlockAction}
+              onJump={jump}
+            />
           </Modal>
         ) : null}
         {previewUrl ? <PreviewOverlay url={previewUrl} onClose={() => setPreviewUrl(null)} /> : null}
@@ -1735,7 +1766,9 @@ function StatusChip({
 function SaveIndicator({ state, savedAt, isPublished, hasDraft }: { state: SaveState; savedAt: string | null; isPublished: boolean; hasDraft: boolean }) {
   const time = savedAt ? new Date(savedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null;
   const label = {
-    saved: isPublished && hasDraft ? (time ? `Draft saved ${time}` : 'Draft saved') : (time ? `Saved ${time}` : 'Saved'),
+    saved: isPublished && hasDraft
+      ? (time ? `Draft saved ${time} — readers still see the published version` : 'Draft saved — readers still see the published version')
+      : (time ? `Saved ${time}` : 'Saved'),
     unsaved: 'Unsaved changes',
     saving: 'Saving…',
     offline: 'Offline',

@@ -89,6 +89,7 @@ export type SaveResult = {
   status: PublishingStatus['status'];
   isLive: boolean;
   hasDraftRevision?: boolean;
+  scheduleFailureReason?: string;
   quality: QualityReport;
 };
 

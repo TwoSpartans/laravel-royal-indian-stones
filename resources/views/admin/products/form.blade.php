@@ -163,7 +163,8 @@ document.documentElement.classList.add('product-editor-enhanced');
       <a class="home-btn home-btn-ghost" href="{{ route('admin.products.index') }}">All products</a>
       <button class="home-btn home-btn-ghost" type="button" data-open-preview>Preview</button>
       @if($isEdit)
-        <button class="home-btn home-btn-ghost" type="submit" form="product-duplicate-form">Duplicate</button>
+        <button class="home-btn home-btn-ghost" type="submit" form="product-duplicate-form">Duplicate as hidden</button>
+        <button class="home-btn home-btn-ghost" type="submit" form="product-delete-form">Delete stone</button>
         <a class="home-btn home-btn-ghost" href="{{ url('/'.$product->slug) }}" target="_blank" rel="noopener">
           <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
           View on site
@@ -281,6 +282,7 @@ document.documentElement.classList.add('product-editor-enhanced');
                   <option value="{{ $category->id }}" @selected($selectedCategoryId === $category->id)>{{ $category->name }}</option>
                 @endforeach
               </select>
+              <p class="product-editor-hint">This is the public category. Changing it leaves existing photographs where they are.</p>
             </div>
             <div class="product-editor-field">
               <label for="color">Colour</label>
@@ -289,12 +291,12 @@ document.documentElement.classList.add('product-editor-enhanced');
             <div class="product-editor-field">
               <label for="finishes_text">Finishes</label>
               <input class="form-control{{ $invalid('finishes_text') }}" id="finishes_text" name="finishes_text" value="{{ old('finishes_text', implode(', ', $product->finishes ?? [])) }}" placeholder="Honed, Polished" @if($invalid('finishes_text') !== '') aria-invalid="true" @endif>
-              <p class="product-editor-hint">Separate with commas.</p>
+              <p class="product-editor-hint">Comma-separated. Example: Honed, Polished. Each one becomes a catalogue filter.</p>
             </div>
             <div class="product-editor-field">
               <label for="applications_text">Applications</label>
               <input class="form-control{{ $invalid('applications_text') }}" id="applications_text" name="applications_text" value="{{ old('applications_text', implode(', ', $product->applications ?? [])) }}" placeholder="Paving, Wall cladding" @if($invalid('applications_text') !== '') aria-invalid="true" @endif>
-              <p class="product-editor-hint">Separate with commas.</p>
+              <p class="product-editor-hint">Comma-separated. Example: Paving, Wall cladding. Each one becomes a catalogue filter.</p>
             </div>
           </div>
 
@@ -453,6 +455,10 @@ document.documentElement.classList.add('product-editor-enhanced');
   <form id="product-duplicate-form" method="post" action="{{ route('admin.products.duplicate', $product) }}" data-duplicate-form>
     @csrf
   </form>
+  <form id="product-delete-form" method="post" action="{{ route('admin.products.destroy', $product) }}" data-delete-form>
+    @csrf
+    @method('DELETE')
+  </form>
 @endif
 
 <div class="product-issue-modal" data-issue-modal @unless($errors->any()) hidden @endunless>
@@ -513,5 +519,5 @@ document.documentElement.classList.add('product-editor-enhanced');
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/product-studio.js') }}?v=8"></script>
+<script src="{{ asset('assets/js/product-studio.js') }}?v=9"></script>
 @endpush

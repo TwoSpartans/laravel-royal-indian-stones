@@ -21,6 +21,8 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    private const INDEX_PER_PAGE = 20;
+
     public function __construct(private ResponsivePicture $pictures, private ServedUpload $uploads) {}
 
     public function index(Request $request): View
@@ -41,7 +43,8 @@ class ProductController extends Controller
                 ->when($visibility === 'shown', fn ($query) => $query->where('is_published', true))
                 ->when($visibility === 'hidden', fn ($query) => $query->where('is_published', false))
                 ->orderBy('name')
-                ->get(),
+                ->paginate(self::INDEX_PER_PAGE)
+                ->withQueryString(),
             'categories' => Category::query()->orderBy('name')->get(),
             'search' => $search,
             'categoryId' => $categoryId,
@@ -79,6 +82,24 @@ class ProductController extends Controller
         $this->save($request, $product);
 
         return redirect()->route('admin.products.edit', $product)->with('status', 'Product updated.');
+    }
+
+    public function destroy(Product $product): RedirectResponse
+    {
+        $paths = $product->images()->pluck('path')->filter(fn ($path) => is_string($path) && $path !== '')->unique()->values()->all();
+        $product->delete();
+
+        foreach ($paths as $path) {
+            if (ProductImage::query()->where('path', $path)->exists() || Category::query()->where('image', $path)->exists()) {
+                continue;
+            }
+
+            $this->uploads->delete($path);
+        }
+
+        CatalogueIndex::write();
+
+        return redirect()->route('admin.products.index')->with('status', 'Stone deleted.');
     }
 
     public function duplicate(Product $product): RedirectResponse

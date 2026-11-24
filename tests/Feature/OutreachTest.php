@@ -195,7 +195,7 @@ class OutreachTest extends TestCase
             ->assertSee('Journal has no search description')
             ->assertSee('No search description')
             ->assertSee('A note on basalt from the Jodhpur yard, written for architects specifying paving.')
-            ->assertSee(route('admin.posts.edit', $post), false);
+            ->assertSee(route('admin.posts.studio', $post), false);
     }
 
     public function test_pages_tab_asks_for_alt_text_when_a_featured_photograph_has_none(): void

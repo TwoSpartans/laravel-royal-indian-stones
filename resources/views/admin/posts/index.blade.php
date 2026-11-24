@@ -22,12 +22,12 @@
     <div>
       <p class="home-kicker">Royal Indian Stones / Content manager</p>
       <h1>Blog</h1>
-      <p class="home-lead">Articles on the public journal. Studio is the editor. Classic keeps the older form.</p>
+      <p class="home-lead">Articles on the public journal. Every article opens in Blog Studio.</p>
     </div>
     <div class="home-studio-actions">
       <a class="home-btn home-btn-primary" href="{{ route('admin.posts.studio.create') }}">
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
-        New in Studio
+        New article
       </a>
     </div>
   </div>
@@ -84,6 +84,7 @@
             $cover = is_string($post->image) && $post->image !== '' && is_file(public_path($post->image)) ? $post->image : null;
             $shown = $post->is_published;
             $scheduled = $post->status === 'scheduled';
+            $scheduleFailed = $post->status === 'schedule_failed';
           @endphp
           <tr data-blog-row data-href="{{ route('admin.posts.studio', $post) }}" tabindex="0">
             <td>
@@ -101,6 +102,11 @@
             <td>
               @if($scheduled)
                 <span class="product-visibility">Scheduled</span>
+              @elseif($scheduleFailed)
+                <span class="product-visibility is-hidden">Schedule failed</span>
+                @if($post->schedule_failure_reason)
+                  <small>{{ $post->schedule_failure_reason }}</small>
+                @endif
               @else
                 <span class="product-visibility {{ $shown ? 'is-shown' : 'is-hidden' }}">{{ $shown ? 'Shown' : 'Hidden' }}</span>
               @endif
@@ -108,8 +114,7 @@
             <td>{{ $post->comments_count }}</td>
             <td>
               <div class="blog-row-actions">
-                <a href="{{ route('admin.posts.studio', $post) }}">Open Studio</a>
-                <a href="{{ route('admin.posts.edit', $post) }}">Classic</a>
+                <a href="{{ route('admin.posts.studio', $post) }}">Edit</a>
                 @if($shown)
                   <a href="{{ url('/'.$post->slug) }}" target="_blank" rel="noopener noreferrer">View</a>
                 @endif
