@@ -21,14 +21,15 @@
       @endif
     </div>
     <div class="journal-card-body">
-      @if($post->postCategory)
-        <p class="journal-card-kicker">{{ $post->postCategory->name }}</p>
-      @endif
-      <h3>{{ $post->title }}</h3>
+      <h3 class="journal-card-title"><span class="journal-card-title-text">{{ $post->title }}</span><span class="journal-card-ellipsis" hidden>...</span></h3>
       @if($summary !== '')
-        <p class="journal-card-excerpt">{{ $summary }}</p>
+        <p class="journal-card-excerpt"><span class="journal-card-excerpt-text">{{ $summary }}</span><span class="journal-card-read"><span class="journal-card-read-ellipsis" hidden>...</span><span class="journal-card-read-label"> Read Story</span><span class="journal-arrow" aria-hidden="true">↗</span></span></p>
+      @else
+        <p class="journal-card-read journal-card-read-solo"><span class="journal-card-read-label">Read Story</span><span class="journal-arrow" aria-hidden="true">↗</span></p>
       @endif
-      <p class="journal-card-more"><span class="journal-card-more-label">Read story</span><span class="journal-arrow" aria-hidden="true">↗</span></p>
+      @if($post->published_on)
+        <p class="journal-card-date"><time datetime="{{ $post->published_on->toDateString() }}">{{ $post->published_on->format('j M Y') }}</time></p>
+      @endif
     </div>
   </a>
 </article>

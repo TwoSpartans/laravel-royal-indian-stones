@@ -51,10 +51,7 @@
   <section class="home-categories stone-origin" aria-labelledby="categories-title">
     <div class="container">
       <div class="stone-origin-copy">
-        <div>
-          <p class="eyebrow" aria-hidden="true">&nbsp;</p>
-          <h2 id="categories-title">{{ $exploreCopy['heading'] }}</h2>
-        </div>
+        <h2 id="categories-title">{{ $exploreCopy['heading'] }}</h2>
         <p>{{ $exploreCopy['body'] }}</p>
       </div>
       <div class="category-grid">
@@ -77,10 +74,7 @@
   <section class="home-stones stone-origin" aria-labelledby="origin-title">
     <div class="container">
       <div class="stone-origin-copy">
-        <div>
-          <p class="eyebrow" aria-hidden="true">&nbsp;</p>
-          <h2 id="origin-title">{{ $stonesCopy['heading'] }}</h2>
-        </div>
+        <h2 id="origin-title">{{ $stonesCopy['heading'] }}</h2>
         <p>{{ $stonesCopy['body'] }}</p>
       </div>
       <div class="category-grid">

@@ -58,10 +58,10 @@ img{max-width:100%;height:auto}picture img{object-fit:cover}button,input,select,
 .supplier-quote{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:14px 28px;border:2px solid var(--ris-accent);border-radius:4px;color:var(--ris-accent);background:transparent;font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
 .supplier-quote:hover{background:var(--ris-accent);color:#fff}
 .stone-origin{padding:84px 0;background:#f7f4ef}
-.stone-origin-copy{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:40px 64px;align-items:start;max-width:none;margin:0;padding-bottom:22px;border-bottom:1px solid var(--ris-line);text-align:left}
+.stone-origin-copy{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start;max-width:none;margin:0;padding-bottom:22px;border-bottom:1px solid var(--ris-line);text-align:left}
 .stone-origin .eyebrow{color:var(--ris-accent);letter-spacing:.16em;margin-bottom:14px}
 .stone-origin h2{margin:0;font-size:clamp(40px,4.5vw,64px);font-weight:560;line-height:1.05}
-.stone-origin-copy>p{margin:0;padding-top:28px;font-size:15px;line-height:1.7;color:var(--ris-body)}
+.stone-origin-copy>p{margin:0;font-size:15px;line-height:1.7;color:var(--ris-body)}
 .stone-origin .category-grid{margin-top:22px}
 .stone-origin .category-card{border-radius:16px;padding:8px 8px 4px;border-color:#ece7e1;background:#fff}
 .stone-origin .category-card img{height:168px;border-radius:10px}
@@ -83,7 +83,7 @@ img{max-width:100%;height:auto}picture img{object-fit:cover}button,input,select,
 @media(max-width:991px){.footer-groups{grid-template-columns:1fr 1fr;gap:28px}}
 @media(max-width:767px){.footer-groups{grid-template-columns:1fr}.home-categories .category-card img{height:140px}.featured-card img,.project-card img{height:240px}}
 @media(max-width:991px){.stone-origin .category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stone-origin .category-card.is-wide{grid-column:span 2}.stone-origin .category-card.is-wide img{height:180px}}
-@media(max-width:767px){.stone-origin-copy{grid-template-columns:1fr;gap:16px}.stone-origin-copy>p{padding-top:0}.stone-origin h2{font-size:40px}.stone-origin .category-card img{height:148px}}
+@media(max-width:767px){.stone-origin-copy{gap:10px}.stone-origin h2{font-size:40px}.stone-origin .category-card img{height:148px}}
 @media(max-width:575px){.stone-origin .category-grid{grid-template-columns:1fr}.stone-origin .category-card.is-wide{grid-column:auto}.stone-origin .category-card.is-wide img{height:168px}}
 @media(prefers-reduced-motion:reduce){.category-card,.ris-button,.back-to-top,.back-to-top-arrow{transition:none}.back-to-top.is-bouncing .back-to-top-arrow{animation:none}}
 .back-to-top{display:flex;align-items:center;justify-content:center;width:auto;height:auto;right:22px;bottom:22px;padding:10px;border:1px solid #ffffff33;border-radius:50%;background:var(--ris-accent);color:#fff;text-decoration:none;box-shadow:0 10px 15px -3px #20252033,0 4px 6px -4px #20252033;transform:translateY(12px);transition:transform .5s ease,box-shadow .5s ease,opacity .45s ease,visibility .45s}
@@ -561,8 +561,8 @@ a.about-principle:hover{transform:none}
 .home-page .supplier-band-inner{gap:28px}
 .home-page .supplier-band h2{margin-bottom:10px}
 .home-page .supplier-band p{line-height:1.65}
-.home-page .stone-origin-copy{gap:12px 36px;padding-bottom:12px}
-.home-page .stone-origin-copy>p{padding-top:18px}
+.home-page .stone-origin-copy{gap:10px;padding-bottom:12px}
+.home-page .stone-origin-copy>p{padding-top:0}
 .home-page .stone-origin .category-grid{margin-top:16px}
 .home-page .section-heading{margin-bottom:16px}
 .home-page .category-grid,
@@ -580,7 +580,6 @@ a.about-principle:hover{transform:none}
 .home-page .stone-origin,
 .home-page .home-journal,
 .home-page .enquiry-band{padding:12px 0}
-.home-page .stone-origin-copy>p{padding-top:0}
 }
 #hero.home-hero .hero-shade{background:linear-gradient(90deg,#1c191673 0%,#1c19164d 38%,#1c19160a 100%)}
 .about-page>section{padding:16px 0}

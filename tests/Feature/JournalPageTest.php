@@ -186,6 +186,8 @@ class JournalPageTest extends TestCase
             ->assertDontSee('Guide day 14')
             ->assertDontSee('The hands behind the details.')
             ->assertSee('Stories pagination')
+            ->assertSee('1 Jan 2024')
+            ->assertSee('Read Story')
             ->assertSee('aria-current="page"', false)
             ->assertSee('category=guides', false)
             ->assertSee('page=2', false)
@@ -219,7 +221,7 @@ class JournalPageTest extends TestCase
             ->assertOk()
             ->assertSee('Meet the stone masons')
             ->assertSee('href="'.url('/meet-the-stone-masons').'"', false)
-            ->assertSee('Read story');
+            ->assertSee('Read Story');
     }
 
     public function test_a_due_story_is_published_and_a_blocked_schedule_stays_hidden(): void

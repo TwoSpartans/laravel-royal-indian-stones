@@ -451,10 +451,17 @@
   text-transform: uppercase;
 }
 
-.journal-card h3 {
+.journal-card-title {
+  width: 100%;
+  max-height: calc(1.22em * 2);
+  overflow: hidden;
   font-size: clamp(1.4rem, 1.7vw, 1.65rem);
   line-height: 1.22;
   transition: color 0.22s ease;
+}
+
+.journal-card-ellipsis {
+  font-weight: inherit;
 }
 
 .journal-card-excerpt,
@@ -465,7 +472,40 @@
 }
 
 .journal-card-excerpt {
-  overflow: visible;
+  width: 100%;
+  max-height: calc(1.6em * 2);
+  overflow: hidden;
+  line-height: 1.6;
+}
+
+.journal-card-read,
+.journal-card-read-solo {
+  color: var(--journal-ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.journal-card-read-ellipsis {
+  color: var(--journal-muted);
+  font-weight: 400;
+}
+
+.journal-card-arrow,
+.journal-card-read .journal-arrow {
+  margin-left: 0.28rem;
+}
+
+.journal-card-date {
+  color: var(--journal-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.journal-card-date time {
+  font: inherit;
+  color: inherit;
 }
 
 .journal-card-meta {
@@ -494,10 +534,10 @@
   transition: background-size 0.28s var(--journal-ease);
 }
 
-.journal-card-link:hover h3,
-.journal-card-link:focus-visible h3,
-.journal-card-link:hover .journal-card-more,
-.journal-card-link:focus-visible .journal-card-more {
+.journal-card-link:hover .journal-card-title,
+.journal-card-link:focus-visible .journal-card-title,
+.journal-card-link:hover .journal-card-read,
+.journal-card-link:focus-visible .journal-card-read {
   color: var(--journal-accent);
 }
 
@@ -626,9 +666,8 @@
   .journal-feature-media img,
   .journal-card-media img,
   .journal-card-media,
-  .journal-card h3,
-  .journal-card-more,
-  .journal-card-more-label,
+  .journal-card-title,
+  .journal-card-read,
   .journal-arrow,
   .journal-button,
   .journal-pills a,

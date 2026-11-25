@@ -133,7 +133,7 @@
 @endsection
 
 @push('head')
-<link href="{{ asset('assets/css/journal.css') }}?v=13" rel="stylesheet">
+<link href="{{ asset('assets/css/journal.css') }}?v=16" rel="stylesheet">
 @if($previousPageUrl)
 <link rel="prev" href="{{ $previousPageUrl }}">
 @endif
@@ -141,4 +141,66 @@
 <link rel="next" href="{{ $nextPageUrl }}">
 @endif
 <script type="application/ld+json">{!! json_encode($listingSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+@endpush
+
+@push('scripts')
+<script>
+const journalOverflows = (element) => element.scrollHeight > element.clientHeight + 1;
+
+const fitJournalText = (box, text, dots, full) => {
+  text.textContent = full;
+  dots.hidden = true;
+  if (!journalOverflows(box)) {
+    return;
+  }
+
+  dots.hidden = false;
+  const words = full.split(/\s+/).filter((word) => word !== '');
+  let low = 0;
+  let high = words.length;
+  let best = 0;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    text.textContent = words.slice(0, mid).join(' ');
+    if (!journalOverflows(box)) {
+      best = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  text.textContent = words.slice(0, best).join(' ').replace(/[\s,;:–—-]+$/u, '');
+};
+
+const clampJournalCards = () => {
+  document.querySelectorAll('.journal-card-title').forEach((title) => {
+    const text = title.querySelector('.journal-card-title-text');
+    const dots = title.querySelector('.journal-card-ellipsis');
+    if (!text || !dots) {
+      return;
+    }
+    if (!text.dataset.full) {
+      text.dataset.full = text.textContent;
+    }
+    fitJournalText(title, text, dots, text.dataset.full);
+  });
+
+  document.querySelectorAll('.journal-card-excerpt').forEach((excerpt) => {
+    const text = excerpt.querySelector('.journal-card-excerpt-text');
+    const dots = excerpt.querySelector('.journal-card-read-ellipsis');
+    if (!text || !dots) {
+      return;
+    }
+    if (!text.dataset.full) {
+      text.dataset.full = text.textContent;
+    }
+    fitJournalText(excerpt, text, dots, text.dataset.full);
+  });
+};
+
+clampJournalCards();
+window.addEventListener('resize', clampJournalCards);
+</script>
 @endpush
