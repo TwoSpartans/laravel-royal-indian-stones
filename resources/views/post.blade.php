@@ -26,7 +26,7 @@
           @endif
         </div>
         @if($post->image)
-          <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="eager" sizes="(max-width: 991px) calc(100vw - 32px), (max-width: 1399px) 1140px, (max-width: 1919px) 1560px, 1720px" /></div>
+          <div class="entry-img"><x-picture src="{{ $post->image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="eager" sizes="(max-width: 1440px) calc(100vw - 24px), 1416px" /></div>
         @endif
         @php
           $showStudio = $post->isStudio()
