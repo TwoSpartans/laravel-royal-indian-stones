@@ -28,10 +28,6 @@
     <div class="container">
       <div class="d-flex justify-content-between align-items-center">
         <p class="about-crumb">About Us</p>
-        <ol>
-          <li><a href="{{ url('/') }}">Home</a></li>
-          <li>About Us</li>
-        </ol>
       </div>
     </div>
   </section>

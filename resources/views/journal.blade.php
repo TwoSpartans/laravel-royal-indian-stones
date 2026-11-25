@@ -10,15 +10,6 @@
     <div class="container">
       <div class="d-flex justify-content-between align-items-center">
         <h2>Blogs</h2>
-        <ol>
-          <li><a href="{{ url('/') }}">Home</a></li>
-          @if($topic || $search !== '')
-            <li><a href="{{ url('/blog') }}">Blogs</a></li>
-            <li>{{ $topic->name ?? 'Search' }}</li>
-          @else
-            <li>Blogs</li>
-          @endif
-        </ol>
       </div>
     </div>
   </section>

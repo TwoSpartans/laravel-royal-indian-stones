@@ -6,11 +6,13 @@
     <div class="container">
       @fragment('preview')
         <div class="catalogue-preview-copy">
-          <p class="eyebrow">E-catalogue</p>
-          <h1>{{ $catalogue->title }}</h1>
-          @if(filled($catalogue->description))
-            <p>{{ $catalogue->description }}</p>
-          @endif
+          <div class="catalogue-preview-lead">
+            <p class="eyebrow">E-catalogue</p>
+            <h1>{{ $catalogue->title }}</h1>
+            @if(filled($catalogue->description))
+              <p>{{ $catalogue->description }}</p>
+            @endif
+          </div>
           <div class="button-row">
             <a class="ris-button" href="{{ $pdfUrl }}" download="{{ $pdfName }}">Download PDF</a>
           </div>

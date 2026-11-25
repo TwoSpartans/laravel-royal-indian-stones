@@ -433,7 +433,8 @@ p,.hero-copy>p:not(.eyebrow){font-size:var(--body);line-height:1.65}
 
 .about-page{background:#f7f4ef}
 .about-page>.breadcrumbs{padding:12px 0;background:transparent;border-bottom:1px solid var(--ris-line)}
-.about-page .about-crumb{margin:0;font-family:var(--ris-serif);font-size:22px;font-weight:560;line-height:1.2;color:var(--ris-heading)}
+.about-page .about-crumb{margin:0;font-family:var(--ris-serif);font-size:var(--h2);font-weight:500;letter-spacing:-.015em;line-height:1.2;color:var(--ris-heading)}
+.journal-page .breadcrumbs h2,main:has(.entry-single) .breadcrumbs h2{font-family:var(--ris-serif);font-size:var(--h2);font-weight:500;letter-spacing:-.015em;line-height:1.2;color:var(--ris-heading)}
 .about-page>section{padding:84px 0}
 .about-page .eyebrow{color:var(--ris-accent);letter-spacing:.16em}
 .about-page h2{margin:0 0 16px;font-size:clamp(32px,4vw,52px);font-weight:560;line-height:1.08}
@@ -656,7 +657,7 @@ a.about-principle:hover{transform:none}
 }
 .e-catalogue{padding:28px 0 72px}
 .e-catalogue section{padding:0}
-.e-catalogue h1{margin:0 0 14px;font-size:clamp(2.35rem,5vw,3.4rem);line-height:1.05}
+.e-catalogue h1{margin:0 0 14px;font-size:var(--h1);line-height:1.15}
 .e-catalogue-intro{width:100%;max-width:none;margin:0;color:var(--ris-muted);font-size:clamp(1.0625rem,1.15vw,1.25rem);line-height:1.75}
 .e-catalogue-block{margin-top:52px}
 .e-catalogue-section-head{width:100%;max-width:none;margin:0 0 22px;padding-bottom:14px;border-bottom:1px solid var(--ris-line)}
@@ -691,10 +692,11 @@ a.about-principle:hover{transform:none}
 .catalogue-preview-modal .modal-title{margin:2px 0 0;overflow-wrap:anywhere;font-family:var(--ris-serif);font-size:clamp(1.45rem,2vw,2rem);font-weight:560;line-height:1.15}
 .catalogue-preview-modal .btn-close{flex:0 0 auto;width:44px;height:44px;margin:0;padding:0;border-radius:999px;background-color:#fff;box-shadow:inset 0 0 0 1px var(--ris-line);opacity:1}
 .catalogue-preview-modal .modal-body{display:flex;flex:1 1 auto;flex-direction:column;gap:12px;min-height:0;overflow:hidden;padding:12px 18px 16px}
-.catalogue-preview-modal .catalogue-preview-copy{flex:0 0 auto;min-width:0}
-.catalogue-preview-modal .catalogue-preview-copy>.eyebrow,.catalogue-preview-modal .catalogue-preview-copy h1{display:none}
-.catalogue-preview-modal .catalogue-preview-copy>p{display:-webkit-box;max-width:46rem;margin:0 0 4px;overflow:hidden;color:var(--ris-muted);-webkit-box-orient:vertical;-webkit-line-clamp:2}
-.catalogue-preview-modal .catalogue-preview-copy .button-row{margin:0}
+.catalogue-preview-modal .catalogue-preview-copy{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:0 0 auto;min-width:0}
+.catalogue-preview-modal .catalogue-preview-lead{flex:1 1 auto;min-width:0}
+.catalogue-preview-modal .catalogue-preview-lead>.eyebrow,.catalogue-preview-modal .catalogue-preview-lead>h1{display:none}
+.catalogue-preview-modal .catalogue-preview-lead>p{display:-webkit-box;margin:0;overflow:hidden;color:var(--ris-muted);-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.catalogue-preview-modal .catalogue-preview-copy .button-row{flex:0 0 auto;margin:0 0 0 auto}
 .catalogue-preview-modal .catalogue-preview-frame{flex:1 1 auto;width:100%;max-width:100%;height:auto;min-height:0;border-radius:14px}
 .catalogue-preview-modal .catalogue-preview-note{flex:0 0 auto;margin:0}
 .catalogue-preview-status{margin:0;color:var(--ris-muted)}
@@ -717,16 +719,13 @@ a.about-principle:hover{transform:none}
   .e-material .ris-button{width:100%}
   .e-book{grid-template-columns:6.25rem minmax(0,1fr)}
   .e-book-actions .ris-button{min-height:42px;padding:10px 14px}
-  .catalogue-preview-modal .button-row .ris-button{width:100%}
   .catalogue-preview-modal .modal-dialog{height:100%;max-width:none;margin:0}
   .catalogue-preview-modal .modal-content{border-radius:0}
   .catalogue-preview-modal .modal-header{padding:12px 12px 0}
   .catalogue-preview-modal .modal-body{padding:10px 12px 12px}
-  .catalogue-preview-modal .catalogue-preview-copy{display:contents}
-  .catalogue-preview-modal .catalogue-preview-copy>p{order:1}
-  .catalogue-preview-modal .catalogue-preview-frame{order:2;min-height:180px}
-  .catalogue-preview-modal .catalogue-preview-copy .button-row{order:3}
-  .catalogue-preview-modal .catalogue-preview-note{order:4;font-size:.85rem}
+  .catalogue-preview-modal .catalogue-preview-copy{align-items:flex-start}
+  .catalogue-preview-modal .catalogue-preview-frame{min-height:180px}
+  .catalogue-preview-modal .catalogue-preview-note{font-size:.85rem}
   .catalogue-preview-frame{min-height:320px;height:68vh}
 }
 @media(prefers-reduced-motion:reduce){.e-material,.e-material>picture img,.e-book,.e-book>picture img{transition:none}}

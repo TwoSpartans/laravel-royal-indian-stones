@@ -6,10 +6,6 @@
     <div class="container">
       <div class="d-flex justify-content-between align-items-center">
         <h2>Blogs</h2>
-        <ol>
-          <li><a href="{{ url('/') }}">Home</a></li>
-          <li><a href="{{ url('/blog') }}">Blogs</a></li>
-        </ol>
       </div>
     </div>
   </section>

@@ -47,7 +47,7 @@
 <link href="{{ asset('assets/vendor/boxicons/css/boxicons.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/css/style.css') }}?v=4" rel="stylesheet">
 <link href="{{ asset('assets/css/article-blocks.css') }}?v=5" rel="stylesheet">
-<link href="{{ asset('assets/css/improvements.css') }}?v=117" rel="stylesheet">
+<link href="{{ asset('assets/css/improvements.css') }}?v=122" rel="stylesheet">
 @php
     $deferredStyles = [
         'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Mulish:wght@400..700&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap',
