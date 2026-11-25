@@ -133,7 +133,7 @@
 @endsection
 
 @push('head')
-<link href="{{ asset('assets/css/journal.css') }}?v=20" rel="stylesheet">
+<link href="{{ asset('assets/css/journal.css') }}?v=22" rel="stylesheet">
 @if($previousPageUrl)
 <link rel="prev" href="{{ $previousPageUrl }}">
 @endif
@@ -147,9 +147,9 @@
 <script>
 const journalOverflows = (element) => element.scrollHeight > element.clientHeight + 1;
 
-const fitJournalText = (box, text, dots, full, alwaysShowDots = false) => {
+const fitJournalText = (box, text, dots, full) => {
   text.textContent = full;
-  dots.hidden = !alwaysShowDots;
+  dots.hidden = true;
   if (!journalOverflows(box)) {
     return;
   }
@@ -174,6 +174,31 @@ const fitJournalText = (box, text, dots, full, alwaysShowDots = false) => {
   text.textContent = words.slice(0, best).join(' ').replace(/[\s,;:–—-]+$/u, '');
 };
 
+const fitExcerptToReadStory = (box, text, dots, full) => {
+  dots.hidden = false;
+  text.textContent = full;
+  if (!journalOverflows(box)) {
+    return;
+  }
+
+  let low = 0;
+  let high = full.length;
+  let best = 0;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    text.textContent = full.slice(0, mid);
+    if (!journalOverflows(box)) {
+      best = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  text.textContent = full.slice(0, best).replace(/\s+$/u, '');
+};
+
 const clampJournalCards = () => {
   document.querySelectorAll('.journal-card-title').forEach((title) => {
     const text = title.querySelector('.journal-card-title-text');
@@ -196,11 +221,14 @@ const clampJournalCards = () => {
     if (!text.dataset.full) {
       text.dataset.full = text.textContent;
     }
-    fitJournalText(excerpt, text, dots, text.dataset.full, true);
+    fitExcerptToReadStory(excerpt, text, dots, text.dataset.full);
   });
 };
 
 clampJournalCards();
 window.addEventListener('resize', clampJournalCards);
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(clampJournalCards);
+}
 </script>
 @endpush

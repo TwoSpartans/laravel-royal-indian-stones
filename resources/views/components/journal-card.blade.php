@@ -7,7 +7,10 @@
     if ($alt === '' || strcasecmp($alt, (string) $post->title) === 0) {
         $alt = '';
     }
-    $summary = $post->cardExcerpt();
+    $summary = trim(preg_replace('/\s+/u', ' ', (string) $post->summary) ?? '');
+    if ($summary === '') {
+        $summary = trim(preg_replace('/\s+/u', ' ', (string) $post->meta_description) ?? '');
+    }
     $sizes = $wide
         ? '(max-width: 767px) calc(100vw - 2rem), 46vw'
         : '(max-width: 767px) calc(100vw - 2rem), (max-width: 1099px) 46vw, 30vw';

@@ -480,6 +480,8 @@
   overflow: hidden;
   color: var(--ris-body, #65534C);
   line-height: 1.6;
+  text-align: justify;
+  text-align-last: start;
 }
 
 .journal-card-read,
@@ -584,7 +586,7 @@
   gap: 0.75rem;
   align-items: center;
   justify-content: center;
-  margin-top: 3.75rem;
+  margin-top: 1rem;
   margin-bottom: 0.5rem;
 }
 
