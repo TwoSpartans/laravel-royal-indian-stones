@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ $ok ? 'Thank you' : 'Please check your request' }} | Royal Indian Stones</title>
 <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400..700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('assets/css/improvements.css') }}?v=116">
+<link rel="stylesheet" href="{{ asset('assets/css/improvements.css') }}?v=117">
 </head>
 <body>
 <main class="form-response">
