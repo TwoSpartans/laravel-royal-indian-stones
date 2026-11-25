@@ -6,13 +6,12 @@
     <div class="container">
       <p class="eyebrow">Royal Indian Stones</p>
       <h1>E-catalogue</h1>
-      <p class="e-catalogue-intro">Preview or download a catalogue, then browse the natural stones we cut and export from India.</p>
+      <p class="e-catalogue-intro">Discover the full range of natural stones we quarry, cut and export from India. Each catalogue brings together our latest collections — complete with finishes, sizes and applications — so architects, landscapers and importers can quickly find the right material. Preview any catalogue right in your browser or download the PDF, then open a material to explore the individual stones.</p>
 
       @if($catalogues->isNotEmpty())
         <section class="e-catalogue-block" aria-labelledby="e-catalogue-books">
           <div class="e-catalogue-section-head">
             <h2 id="e-catalogue-books">Catalogues</h2>
-            <p>Preview a catalogue in the browser, then download the PDF.</p>
           </div>
           <div class="e-book-grid">
             @foreach($catalogues as $catalogue)

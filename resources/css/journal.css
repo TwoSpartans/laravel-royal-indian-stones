@@ -16,12 +16,12 @@
     --color-journal-line: #d8c8ad;
     --color-journal-field: #9a8870;
     --color-rih-wheat: #d1ba8a;
-    --font-brand: "Cormorant Garamond", ui-serif, Georgia, serif;
-    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-brand: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
 }
 
 #journal {
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
     color: #282d35;
     background: #f7f0e3;
 }
@@ -29,6 +29,10 @@
 #journal :is(h1, h2, h3, h4, p, ul, ol, figure) {
     margin: 0;
     padding: 0;
+}
+
+#journal :is(h1, h2, h3, h4, h5, h6) {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 #journal ul {

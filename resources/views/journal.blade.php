@@ -133,7 +133,7 @@
 @endsection
 
 @push('head')
-<link href="{{ asset('assets/css/journal.css') }}?v=16" rel="stylesheet">
+<link href="{{ asset('assets/css/journal.css') }}?v=18" rel="stylesheet">
 @if($previousPageUrl)
 <link rel="prev" href="{{ $previousPageUrl }}">
 @endif

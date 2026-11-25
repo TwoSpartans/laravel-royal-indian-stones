@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Blog Studio — {{ $post->title }} — {{ config('app.name') }}</title>
     <link rel="icon" href="{{ asset('assets/img/favicon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
     @viteReactRefresh
     @vite(['resources/js/blog-studio/main.tsx'])
 </head>

@@ -1,5 +1,5 @@
 body {
-  font-family: "Open Sans", sans-serif;
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
   color: #4d4643;
 }
 
@@ -19,7 +19,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Muli", sans-serif;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 h1 {
@@ -441,7 +441,7 @@ h1 {
 }
 
 #hero .btn-get-started {
-  font-family: "Muli", sans-serif;
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
   font-weight: 500;
   font-size: 14px;
   letter-spacing: 1px;
@@ -1274,7 +1274,7 @@ section {
   transition: none;
   font-size: 14px;
   font-weight: 400;
-  font-family: "Muli", sans-serif;
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
   font-weight: 600;
   transition: 0.3s;
 }
@@ -2174,7 +2174,7 @@ section {
   font-size: 14px;
   line-height: 24px;
   margin-bottom: 0;
-  font-family: "Muli", sans-serif;
+  font-family: "Open Sans", sans-serif;
   color: #b4aca8;
 }
 

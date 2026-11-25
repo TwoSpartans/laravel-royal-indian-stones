@@ -146,6 +146,13 @@ function excerptLength(value: string): number {
   return [...value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()].length;
 }
 
+function releasePreview(url: string | null): void {
+  if (!url) {
+    return;
+  }
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 function checkImage(file: File): string | null {
   if (!ACCEPTED_IMAGES.includes(file.type)) {
     return 'Uploads must be a JPG, PNG, or WEBP image.';
@@ -857,9 +864,7 @@ export function StudioWorkspace({ bootstrap }: { bootstrap: Bootstrap }) {
       }
       setNotice({ tone: 'error', text: (cause as RequestError).message || 'The image could not be uploaded.' });
     } finally {
-      if (localUrl) {
-        URL.revokeObjectURL(localUrl);
-      }
+      releasePreview(localUrl);
       setUploading(null);
     }
   };

@@ -458,7 +458,7 @@
 .studio-excerpt {
     margin-top: 0;
     color: var(--color-textPrimary);
-    font-family: var(--font-ui);
+    font-family: "Source Sans 3", "Segoe UI", sans-serif;
     font-size: 16px;
     font-weight: 400;
     line-height: 25px;
@@ -472,7 +472,24 @@
 }
 
 .studio-prose {
-    font-family: var(--font-ui);
+    font-family: "Source Sans 3", "Segoe UI", sans-serif;
+}
+
+.studio-prose :is(h1, h2, h3, h4, h5, h6) {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.studio-prose,
+.studio-node,
+.studio-node figure {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.studio-prose img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
 }
 
 .studio-prose h2.is-current-block,

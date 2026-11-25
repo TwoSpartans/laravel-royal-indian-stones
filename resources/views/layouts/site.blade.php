@@ -45,12 +45,12 @@
 <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/vendor/boxicons/css/boxicons.min.css') }}" rel="stylesheet">
-<link href="{{ asset('assets/css/style.css') }}?v=2" rel="stylesheet">
-<link href="{{ asset('assets/css/article-blocks.css') }}?v=1" rel="stylesheet">
-<link href="{{ asset('assets/css/improvements.css') }}?v=109" rel="stylesheet">
+<link href="{{ asset('assets/css/style.css') }}?v=3" rel="stylesheet">
+<link href="{{ asset('assets/css/article-blocks.css') }}?v=4" rel="stylesheet">
+<link href="{{ asset('assets/css/improvements.css') }}?v=115" rel="stylesheet">
 @php
     $deferredStyles = [
-        'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap',
+        'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Open+Sans:wght@400;600&family=Poppins:wght@300;400&family=Source+Sans+3:wght@400;500;600&display=swap',
         asset('assets/vendor/animate.css/animate.min.css'),
         asset('assets/vendor/aos/aos.css'),
         asset('assets/vendor/glightbox/css/glightbox.min.css'),

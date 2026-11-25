@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 export type MediaPreview = {
   id: number;
@@ -168,13 +168,9 @@ export function useProductName(productId: number): string | null {
 }
 
 export function useMediaUrl(mediaId: number): string | null {
-  const [url, setUrl] = useState(() => getMediaUrl(mediaId));
-
-  useEffect(() => {
-    setUrl(getMediaUrl(mediaId));
-
-    return subscribe(() => setUrl(getMediaUrl(mediaId)));
-  }, [mediaId]);
-
-  return url;
+  return useSyncExternalStore(
+    subscribe,
+    () => getMediaUrl(mediaId),
+    () => null,
+  );
 }

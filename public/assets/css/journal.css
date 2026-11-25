@@ -35,8 +35,11 @@
 
 .journal h1,
 .journal h2,
-.journal h3 {
-  font-family: var(--ris-serif), "Times New Roman", serif;
+.journal h3,
+.journal h4,
+.journal h5,
+.journal h6 {
+  font-family: var(--ris-serif), ui-sans-serif, system-ui, sans-serif;
   font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--journal-ink);
