@@ -98,7 +98,7 @@
     <section class="home-journal" aria-labelledby="journal-title">
       <div class="container">
         <div class="section-heading">
-          <div><p class="eyebrow" aria-hidden="true">&nbsp;</p><h2 id="journal-title">{{ $journalCopy['heading'] }}</h2></div>
+          <div><h2 id="journal-title">{{ $journalCopy['heading'] }}</h2></div>
           <a class="text-link" href="{{ url('/blog') }}">{{ $journalCopy['button_label'] }}</a>
         </div>
         <div class="journal-grid">

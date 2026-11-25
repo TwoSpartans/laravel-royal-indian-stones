@@ -188,6 +188,7 @@ class JournalPageTest extends TestCase
             ->assertSee('Stories pagination')
             ->assertSee('1 Jan 2024')
             ->assertSee('Read Story')
+            ->assertSee('<span class="journal-card-read-ellipsis">...</span>', false)
             ->assertSee('aria-current="page"', false)
             ->assertSee('category=guides', false)
             ->assertSee('page=2', false)

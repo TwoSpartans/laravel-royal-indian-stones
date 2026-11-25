@@ -133,7 +133,7 @@
 @endsection
 
 @push('head')
-<link href="{{ asset('assets/css/journal.css') }}?v=18" rel="stylesheet">
+<link href="{{ asset('assets/css/journal.css') }}?v=20" rel="stylesheet">
 @if($previousPageUrl)
 <link rel="prev" href="{{ $previousPageUrl }}">
 @endif
@@ -147,9 +147,9 @@
 <script>
 const journalOverflows = (element) => element.scrollHeight > element.clientHeight + 1;
 
-const fitJournalText = (box, text, dots, full) => {
+const fitJournalText = (box, text, dots, full, alwaysShowDots = false) => {
   text.textContent = full;
-  dots.hidden = true;
+  dots.hidden = !alwaysShowDots;
   if (!journalOverflows(box)) {
     return;
   }
@@ -196,7 +196,7 @@ const clampJournalCards = () => {
     if (!text.dataset.full) {
       text.dataset.full = text.textContent;
     }
-    fitJournalText(excerpt, text, dots, text.dataset.full);
+    fitJournalText(excerpt, text, dots, text.dataset.full, true);
   });
 };
 

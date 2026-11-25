@@ -1,4 +1,4 @@
-.rich-content{--font-brand:"Inter",ui-sans-serif,system-ui,sans-serif;--font-sans:"Source Sans 3","Segoe UI",sans-serif;--color-primary:#1A4D3E;--color-accent:#D4A843;--color-warmBorder:#EADFCF;--color-textPrimary:#262626;color:#3f3f3f;font-family:var(--font-sans);font-size:1.05rem;line-height:1.75}
+.rich-content{--font-brand:"Mulish","Muli",ui-sans-serif,system-ui,sans-serif;--font-sans:"Source Sans 3","Segoe UI",sans-serif;--color-primary:#1A4D3E;--color-accent:#D4A843;--color-warmBorder:#EADFCF;--color-textPrimary:#574741;color:#65534C;font-family:var(--font-sans);font-size:1.05rem;line-height:1.75}
 .rich-content :is(h1,h2,h3,h4,h5,h6){font-family:var(--font-brand);font-weight:600}
 .rich-content h2,.rich-content h3{color:var(--color-textPrimary);font-family:var(--font-brand);font-weight:600;line-height:1.2}
 .rich-content h2{font-size:2rem}

@@ -19,7 +19,7 @@
 }
 
 .journal {
-  color: var(--journal-ink);
+  color: var(--ris-body, #65534C);
   font-family: var(--font-text), "Segoe UI", sans-serif;
   font-size: 1rem;
   line-height: 1.6;
@@ -42,7 +42,7 @@
   font-family: var(--ris-serif), ui-sans-serif, system-ui, sans-serif;
   font-weight: 500;
   letter-spacing: -0.02em;
-  color: var(--journal-ink);
+  color: var(--ris-heading, #574741);
   overflow-wrap: break-word;
 }
 
@@ -403,7 +403,7 @@
 .journal-card-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 3.5rem 2.25rem;
+  gap: 1.5rem 2.25rem;
   align-items: start;
   margin-top: 2.5rem;
 }
@@ -478,6 +478,7 @@
   width: 100%;
   max-height: calc(1.6em * 2);
   overflow: hidden;
+  color: var(--ris-body, #65534C);
   line-height: 1.6;
 }
 
@@ -489,7 +490,7 @@
 }
 
 .journal-card-read-ellipsis {
-  color: var(--journal-muted);
+  color: var(--ris-body, #65534C);
   font-weight: 400;
 }
 
